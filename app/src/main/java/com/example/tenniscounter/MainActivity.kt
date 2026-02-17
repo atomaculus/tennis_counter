@@ -198,15 +198,17 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                     isSaved = isSaved,
                     onSave = {
                         val saved = viewModel.saveFinishedMatch()
+                        val sharePayload = viewModel.buildShareStubText()
                         if (saved) {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             transientMessage = "Saved OK"
+                        } else {
+                            transientMessage = "Already saved"
                         }
-                    },
-                    onShare = {
-                        viewModel.buildShareStubText()
-                        transientMessage = "Share ready (stub)"
+                        if (sharePayload.isNotBlank()) {
+                            // Share stub prepared for future phone handoff flow.
+                        }
                     },
                     onNewMatch = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -401,7 +403,6 @@ private fun MatchFinishedScreen(
     summary: FinishedMatchSummary?,
     isSaved: Boolean,
     onSave: () -> Unit,
-    onShare: () -> Unit,
     onNewMatch: () -> Unit
 ) {
     val safeSummary = summary
@@ -481,16 +482,6 @@ private fun MatchFinishedScreen(
                         fontWeight = FontWeight.Black,
                         color = CourtGreenDark
                     )
-                }
-                Button(
-                    onClick = onShare,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = WhiteStrong.copy(alpha = 0.22f),
-                        contentColor = WhiteStrong
-                    )
-                ) {
-                    Text("SHARE", fontWeight = FontWeight.Black, color = WhiteStrong)
                 }
                 Button(
                     onClick = onNewMatch,
