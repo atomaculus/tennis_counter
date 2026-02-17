@@ -1,16 +1,21 @@
 package com.example.tenniscounter
 
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,13 +25,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,11 +55,26 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.rememberScalingLazyListState
 import com.example.tenniscounter.ui.TennisViewModel
+import kotlin.math.abs
+import kotlinx.coroutines.delay
 
 private val CourtGreen = Color(0xFF0F3415)
 private val CourtGreenDark = Color(0xFF0A250F)
 private val WhiteStrong = Color(0xFFF8FFF8)
 private val WhiteSoft = Color(0xFFD9E7D9)
+private val ScrimBlack = Color(0xAA000000)
+
+enum class ActiveSheet {
+    None,
+    PlayerA,
+    PlayerB,
+    Admin
+}
+
+data class SheetAction(
+    val label: String,
+    val onClick: () -> Unit
+)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,66 +107,204 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
     val haptic = LocalHapticFeedback.current
     val listState = rememberScalingLazyListState()
 
-    Scaffold(
-        modifier = Modifier.background(CourtGreenDark),
-        timeText = { TimeText() },
-        positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
-    ) {
-        ScalingLazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            state = listState,
-            autoCentering = AutoCenteringParams(itemIndex = 1),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
+    var showResetMessage by remember { mutableStateOf(false) }
+
+    var isPressedA by remember { mutableStateOf(false) }
+    var isPressedB by remember { mutableStateOf(false) }
+    var pressedAtA by remember { mutableLongStateOf(0L) }
+    var pressedAtB by remember { mutableLongStateOf(0L) }
+    var simultaneousLongPressHandled by remember { mutableStateOf(false) }
+
+    val simultaneousWindowMs = 420L
+
+    fun onPressStateChange(isPlayerA: Boolean, isPressed: Boolean) {
+        val now = SystemClock.elapsedRealtime()
+        if (isPlayerA) {
+            isPressedA = isPressed
+            if (isPressed) pressedAtA = now
+        } else {
+            isPressedB = isPressed
+            if (isPressed) pressedAtB = now
+        }
+
+        if (!isPressedA && !isPressedB) {
+            simultaneousLongPressHandled = false
+        }
+    }
+
+    // Simultaneous long press is considered valid only if both buttons were pressed almost together.
+    fun shouldOpenAdminSheet(): Boolean {
+        return isPressedA && isPressedB && abs(pressedAtA - pressedAtB) <= simultaneousWindowMs
+    }
+
+    fun handleLongPress(isPlayerA: Boolean) {
+        if (shouldOpenAdminSheet()) {
+            if (!simultaneousLongPressHandled) {
+                simultaneousLongPressHandled = true
+                activeSheet = ActiveSheet.Admin
+            }
+            return
+        }
+
+        if (simultaneousLongPressHandled) return
+        activeSheet = if (isPlayerA) ActiveSheet.PlayerA else ActiveSheet.PlayerB
+    }
+
+    LaunchedEffect(showResetMessage) {
+        if (showResetMessage) {
+            delay(1200)
+            showResetMessage = false
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.background(CourtGreenDark),
+            timeText = { TimeText() },
+            positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
         ) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
-                ) {
-                    CompactScore(label = "SETS", a = state.playerA.sets, b = state.playerB.sets)
-                    CompactScore(label = "GAMES", a = state.playerA.games, b = state.playerB.games)
+            ScalingLazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
+                state = listState,
+                autoCentering = AutoCenteringParams(itemIndex = 1),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
+                    ) {
+                        CompactScore(label = "SETS", a = state.playerA.sets, b = state.playerB.sets)
+                        CompactScore(label = "GAMES", a = state.playerA.games, b = state.playerB.games)
+                    }
+                }
+
+                item {
+                    PointsBoard(
+                        pointA = state.pointLabelForA(),
+                        pointB = state.pointLabelForB()
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AddPointGestureButton(
+                            label = "+A",
+                            onPressStateChange = { pressed -> onPressStateChange(true, pressed) },
+                            onTap = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.addPointToPlayerA()
+                            },
+                            onLongPress = { handleLongPress(isPlayerA = true) }
+                        )
+                        AddPointGestureButton(
+                            label = "+B",
+                            onPressStateChange = { pressed -> onPressStateChange(false, pressed) },
+                            onTap = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.addPointToPlayerB()
+                            },
+                            onLongPress = { handleLongPress(isPlayerA = false) }
+                        )
+                    }
+                }
+
+                item {
+                    TimerFooter(elapsedSeconds = state.elapsedSeconds)
+                }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showResetMessage,
+            enter = fadeIn(animationSpec = tween(120)) + scaleIn(initialScale = 0.94f),
+            exit = fadeOut(animationSpec = tween(150)) + scaleOut(targetScale = 0.94f),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 6.dp)
+        ) {
+            Text(
+                text = "Match reset",
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CourtGreen)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                color = WhiteStrong,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 11.sp
+            )
+        }
+
+        if (activeSheet != ActiveSheet.None) {
+            val title: String
+            val actions: List<SheetAction>
+
+            when (activeSheet) {
+                ActiveSheet.PlayerA -> {
+                    title = "Player A"
+                    actions = listOf(
+                        SheetAction("Undo last point (Player A)") {
+                            if (viewModel.undoLastPointForPlayerA()) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction("Cancel") { activeSheet = ActiveSheet.None }
+                    )
+                }
+                ActiveSheet.PlayerB -> {
+                    title = "Player B"
+                    actions = listOf(
+                        SheetAction("Undo last point (Player B)") {
+                            if (viewModel.undoLastPointForPlayerB()) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction("Cancel") { activeSheet = ActiveSheet.None }
+                    )
+                }
+                ActiveSheet.Admin -> {
+                    title = "Admin"
+                    actions = listOf(
+                        SheetAction("Reset current game") {
+                            viewModel.resetGame()
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction("Reset match") {
+                            viewModel.resetMatch()
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            showResetMessage = true
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction("Cancel") { activeSheet = ActiveSheet.None }
+                    )
+                }
+                ActiveSheet.None -> {
+                    title = ""
+                    actions = emptyList()
                 }
             }
 
-            item {
-                PointsBoard(
-                    pointA = state.pointLabelForA(),
-                    pointB = state.pointLabelForB()
-                )
-            }
-
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AddPointButton(
-                        label = "+A",
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.addPointToPlayerA()
-                        }
-                    )
-                    AddPointButton(
-                        label = "+B",
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.addPointToPlayerB()
-                        }
-                    )
-                }
-            }
-
-            item {
-                TimerFooter(elapsedSeconds = state.elapsedSeconds)
-            }
+            BottomActionSheet(
+                title = title,
+                actions = actions,
+                onDismiss = { activeSheet = ActiveSheet.None }
+            )
         }
     }
 }
@@ -217,15 +381,32 @@ fun BigPoint(label: String, points: String) {
 }
 
 @Composable
-fun AddPointButton(label: String, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.size(64.dp),
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(
-            backgroundColor = WhiteStrong,
-            contentColor = CourtGreenDark
-        )
+fun AddPointGestureButton(
+    label: String,
+    onPressStateChange: (Boolean) -> Unit,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .clip(CircleShape)
+            .background(WhiteStrong)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        onPressStateChange(true)
+                        try {
+                            tryAwaitRelease()
+                        } finally {
+                            onPressStateChange(false)
+                        }
+                    },
+                    onTap = { onTap() },
+                    onLongPress = { onLongPress() }
+                )
+            },
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
@@ -257,6 +438,58 @@ fun TimerFooter(elapsedSeconds: Int) {
             fontWeight = FontWeight.Black,
             color = WhiteStrong
         )
+    }
+}
+
+@Composable
+fun BottomActionSheet(
+    title: String,
+    actions: List<SheetAction>,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ScrimBlack)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { onDismiss() })
+            }
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+                .background(CourtGreen)
+                .padding(horizontal = 10.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = title,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = WhiteSoft
+            )
+
+            actions.forEach { action ->
+                Button(
+                    onClick = action.onClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = WhiteStrong,
+                        contentColor = CourtGreenDark
+                    )
+                ) {
+                    Text(
+                        text = action.label,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = CourtGreenDark
+                    )
+                }
+            }
+        }
     }
 }
 

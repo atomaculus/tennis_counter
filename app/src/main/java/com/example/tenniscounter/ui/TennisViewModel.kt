@@ -61,9 +61,12 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
 
     private var timerJob: Job? = null
 
+    // History of point winners: true = A, false = B.
+    // Enables player-specific undo without moving logic into UI.
+    private val pointHistory = mutableListOf<Boolean>()
+
     init {
         viewModelScope.launch {
-            // Initialize start time if not present
             val prefs = dataStore.data.first()
             if (prefs[START_TIME_KEY] == null) {
                 dataStore.edit { it[START_TIME_KEY] = SystemClock.elapsedRealtime() }
@@ -127,33 +130,57 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
                 p[START_TIME_KEY] = SystemClock.elapsedRealtime()
                 p[PAUSED_ACCUMULATED_KEY] = 0L
                 p[IS_RUNNING_KEY] = true
+                p[LAST_PAUSE_TIME_KEY] = 0L
             }
             updateTimerValue()
         }
     }
 
-    // Tick clock remains for compatibility if needed, but now it's internal
     fun tickClock() {
-        // Now handled by internal ticker
+        // Kept for compatibility.
     }
 
-    // Score Logic
-    fun addPointToPlayerA() = updatePoint(isPlayerA = true, delta = 1)
-    fun addPointToPlayerB() = updatePoint(isPlayerA = false, delta = 1)
-    fun removePointFromPlayerA() = updatePoint(isPlayerA = true, delta = -1)
-    fun removePointFromPlayerB() = updatePoint(isPlayerA = false, delta = -1)
+    fun addPointToPlayerA() {
+        pointHistory.add(true)
+        applyPointWon(isPlayerA = true)
+    }
 
-    private fun updatePoint(isPlayerA: Boolean, delta: Int) {
+    fun addPointToPlayerB() {
+        pointHistory.add(false)
+        applyPointWon(isPlayerA = false)
+    }
+
+    fun undoLastPointForPlayerA(): Boolean = undoLastPointForPlayer(true)
+
+    fun undoLastPointForPlayerB(): Boolean = undoLastPointForPlayer(false)
+
+    fun resetGame() {
+        pointHistory.clear()
+        val state = _matchState.value
+        _matchState.value = state.copy(
+            playerA = state.playerA.copy(points = 0),
+            playerB = state.playerB.copy(points = 0)
+        )
+    }
+
+    fun resetMatch() {
+        pointHistory.clear()
+        viewModelScope.launch {
+            dataStore.edit { p ->
+                p[START_TIME_KEY] = SystemClock.elapsedRealtime()
+                p[PAUSED_ACCUMULATED_KEY] = 0L
+                p[IS_RUNNING_KEY] = true
+                p[LAST_PAUSE_TIME_KEY] = 0L
+            }
+            _matchState.value = MatchState()
+            updateTimerValue()
+        }
+    }
+
+    private fun applyPointWon(isPlayerA: Boolean) {
         val state = _matchState.value
         val currentA = state.playerA
         val currentB = state.playerB
-
-        if (delta < 0) {
-            val updatedA = if (isPlayerA) currentA.copy(points = (currentA.points - 1).coerceAtLeast(0)) else currentA
-            val updatedB = if (!isPlayerA) currentB.copy(points = (currentB.points - 1).coerceAtLeast(0)) else currentB
-            _matchState.value = state.copy(playerA = updatedA, playerB = updatedB)
-            return
-        }
 
         val (newA, newB) = if (isPlayerA) {
             resolvePointWon(currentA, currentB)
@@ -161,7 +188,39 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
             val (b, a) = resolvePointWon(currentB, currentA)
             a to b
         }
+
         _matchState.value = state.copy(playerA = newA, playerB = newB)
+    }
+
+    private fun undoLastPointForPlayer(isPlayerA: Boolean): Boolean {
+        val index = pointHistory.indexOfLast { winnerIsA -> winnerIsA == isPlayerA }
+        if (index < 0) return false
+
+        pointHistory.removeAt(index)
+        rebuildScoreFromHistory()
+        return true
+    }
+
+    private fun rebuildScoreFromHistory() {
+        var scoreA = PlayerScore()
+        var scoreB = PlayerScore()
+
+        pointHistory.forEach { winnerIsA ->
+            if (winnerIsA) {
+                val (newA, newB) = resolvePointWon(scoreA, scoreB)
+                scoreA = newA
+                scoreB = newB
+            } else {
+                val (newB, newA) = resolvePointWon(scoreB, scoreA)
+                scoreA = newA
+                scoreB = newB
+            }
+        }
+
+        _matchState.value = _matchState.value.copy(
+            playerA = scoreA,
+            playerB = scoreB
+        )
     }
 
     private fun resolvePointWon(winner: PlayerScore, loser: PlayerScore): Pair<PlayerScore, PlayerScore> {
