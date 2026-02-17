@@ -54,7 +54,12 @@ import androidx.wear.compose.material.ScalingLazyColumn
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.rememberScalingLazyListState
+import com.example.tenniscounter.ui.FinishedMatchSummary
+import com.example.tenniscounter.ui.MatchState
 import com.example.tenniscounter.ui.TennisViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 
@@ -64,11 +69,17 @@ private val WhiteStrong = Color(0xFFF8FFF8)
 private val WhiteSoft = Color(0xFFD9E7D9)
 private val ScrimBlack = Color(0xAA000000)
 
-enum class ActiveSheet {
+private enum class AppScreen {
+    Counter,
+    MatchFinished
+}
+
+private enum class ActiveSheet {
     None,
     PlayerA,
     PlayerB,
-    Admin
+    Admin,
+    EndMatchConfirm
 }
 
 data class SheetAction(
@@ -104,11 +115,13 @@ fun TennisWearTheme(content: @Composable () -> Unit) {
 @Composable
 private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
     val state by viewModel.matchState.collectAsState()
+    val finishedSummary by viewModel.finishedMatch.collectAsState()
+    val isSaved by viewModel.isFinishedMatchSaved.collectAsState()
     val haptic = LocalHapticFeedback.current
-    val listState = rememberScalingLazyListState()
 
+    var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
-    var showResetMessage by remember { mutableStateOf(false) }
+    var transientMessage by remember { mutableStateOf<String?>(null) }
 
     var isPressedA by remember { mutableStateOf(false) }
     var isPressedB by remember { mutableStateOf(false) }
@@ -133,7 +146,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
         }
     }
 
-    // Simultaneous long press is considered valid only if both buttons were pressed almost together.
+    // Simultaneous long press requires both downs close in time + both still pressed to reduce false positives.
     fun shouldOpenAdminSheet(): Boolean {
         return isPressedA && isPressedB && abs(pressedAtA - pressedAtB) <= simultaneousWindowMs
     }
@@ -151,99 +164,57 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
         activeSheet = if (isPlayerA) ActiveSheet.PlayerA else ActiveSheet.PlayerB
     }
 
-    LaunchedEffect(showResetMessage) {
-        if (showResetMessage) {
+    LaunchedEffect(transientMessage) {
+        if (transientMessage != null) {
             delay(1200)
-            showResetMessage = false
+            transientMessage = null
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            modifier = Modifier.background(CourtGreenDark),
-            timeText = { TimeText() },
-            positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
-        ) {
-            ScalingLazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 8.dp),
-                state = listState,
-                autoCentering = AutoCenteringParams(itemIndex = 1),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
-                    ) {
-                        CompactScore(label = "SETS", a = state.playerA.sets, b = state.playerB.sets)
-                        CompactScore(label = "GAMES", a = state.playerA.games, b = state.playerB.games)
-                    }
-                }
-
-                item {
-                    PointsBoard(
-                        pointA = state.pointLabelForA(),
-                        pointB = state.pointLabelForB()
-                    )
-                }
-
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AddPointGestureButton(
-                            label = "+A",
-                            onPressStateChange = { pressed -> onPressStateChange(true, pressed) },
-                            onTap = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.addPointToPlayerA()
-                            },
-                            onLongPress = { handleLongPress(isPlayerA = true) }
-                        )
-                        AddPointGestureButton(
-                            label = "+B",
-                            onPressStateChange = { pressed -> onPressStateChange(false, pressed) },
-                            onTap = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.addPointToPlayerB()
-                            },
-                            onLongPress = { handleLongPress(isPlayerA = false) }
-                        )
-                    }
-                }
-
-                item {
-                    TimerFooter(elapsedSeconds = state.elapsedSeconds)
-                }
+        when (appScreen) {
+            AppScreen.Counter -> {
+                CounterScreen(
+                    state = state,
+                    onTapPointA = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.addPointToPlayerA()
+                    },
+                    onTapPointB = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.addPointToPlayerB()
+                    },
+                    onLongPressPointA = { handleLongPress(true) },
+                    onLongPressPointB = { handleLongPress(false) },
+                    onPressStateA = { onPressStateChange(true, it) },
+                    onPressStateB = { onPressStateChange(false, it) },
+                    onEndMatch = { activeSheet = ActiveSheet.EndMatchConfirm }
+                )
             }
-        }
 
-        AnimatedVisibility(
-            visible = showResetMessage,
-            enter = fadeIn(animationSpec = tween(120)) + scaleIn(initialScale = 0.94f),
-            exit = fadeOut(animationSpec = tween(150)) + scaleOut(targetScale = 0.94f),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 6.dp)
-        ) {
-            Text(
-                text = "Match reset",
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CourtGreen)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                color = WhiteStrong,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 11.sp
-            )
+            AppScreen.MatchFinished -> {
+                MatchFinishedScreen(
+                    summary = finishedSummary,
+                    isSaved = isSaved,
+                    onSave = {
+                        val saved = viewModel.saveFinishedMatch()
+                        if (saved) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            transientMessage = "Saved OK"
+                        }
+                    },
+                    onShare = {
+                        viewModel.buildShareStubText()
+                        transientMessage = "Share ready (stub)"
+                    },
+                    onNewMatch = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.startNewMatch()
+                        appScreen = AppScreen.Counter
+                    }
+                )
+            }
         }
 
         if (activeSheet != ActiveSheet.None) {
@@ -264,6 +235,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         SheetAction("Cancel") { activeSheet = ActiveSheet.None }
                     )
                 }
+
                 ActiveSheet.PlayerB -> {
                     title = "Player B"
                     actions = listOf(
@@ -277,6 +249,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         SheetAction("Cancel") { activeSheet = ActiveSheet.None }
                     )
                 }
+
                 ActiveSheet.Admin -> {
                     title = "Admin"
                     actions = listOf(
@@ -288,12 +261,27 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         SheetAction("Reset match") {
                             viewModel.resetMatch()
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            showResetMessage = true
+                            transientMessage = "Match reset"
                             activeSheet = ActiveSheet.None
                         },
                         SheetAction("Cancel") { activeSheet = ActiveSheet.None }
                     )
                 }
+
+                ActiveSheet.EndMatchConfirm -> {
+                    title = "End match?"
+                    actions = listOf(
+                        // Navigation to final screen is manual and only happens after explicit Finish confirmation.
+                        SheetAction("Finish") {
+                            viewModel.finishMatch()
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            appScreen = AppScreen.MatchFinished
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction("Cancel") { activeSheet = ActiveSheet.None }
+                    )
+                }
+
                 ActiveSheet.None -> {
                     title = ""
                     actions = emptyList()
@@ -306,11 +294,240 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                 onDismiss = { activeSheet = ActiveSheet.None }
             )
         }
+
+        AnimatedVisibility(
+            visible = transientMessage != null,
+            enter = fadeIn(animationSpec = tween(120)) + scaleIn(initialScale = 0.94f),
+            exit = fadeOut(animationSpec = tween(150)) + scaleOut(targetScale = 0.94f),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 6.dp)
+        ) {
+            Text(
+                text = transientMessage.orEmpty(),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CourtGreen)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                color = WhiteStrong,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 11.sp
+            )
+        }
     }
 }
 
 @Composable
-fun CompactScore(label: String, a: Int, b: Int) {
+private fun CounterScreen(
+    state: MatchState,
+    onTapPointA: () -> Unit,
+    onTapPointB: () -> Unit,
+    onLongPressPointA: () -> Unit,
+    onLongPressPointB: () -> Unit,
+    onPressStateA: (Boolean) -> Unit,
+    onPressStateB: (Boolean) -> Unit,
+    onEndMatch: () -> Unit
+) {
+    val listState = rememberScalingLazyListState()
+
+    Scaffold(
+        modifier = Modifier.background(CourtGreenDark),
+        timeText = { TimeText() },
+        positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
+    ) {
+        ScalingLazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
+            state = listState,
+            autoCentering = AutoCenteringParams(itemIndex = 1),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
+                ) {
+                    CompactScore(label = "SETS", a = state.playerA.sets, b = state.playerB.sets)
+                    CompactScore(label = "GAMES", a = state.playerA.games, b = state.playerB.games)
+                }
+            }
+
+            item {
+                PointsBoard(
+                    pointA = state.pointLabelForA(),
+                    pointB = state.pointLabelForB()
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AddPointGestureButton(
+                        label = "+A",
+                        onPressStateChange = onPressStateA,
+                        onTap = onTapPointA,
+                        onLongPress = onLongPressPointA
+                    )
+                    AddPointGestureButton(
+                        label = "+B",
+                        onPressStateChange = onPressStateB,
+                        onTap = onTapPointB,
+                        onLongPress = onLongPressPointB
+                    )
+                }
+            }
+
+            item {
+                TimerFooter(elapsedSeconds = state.elapsedSeconds)
+            }
+
+            item {
+                EndMatchButton(onClick = onEndMatch)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MatchFinishedScreen(
+    summary: FinishedMatchSummary?,
+    isSaved: Boolean,
+    onSave: () -> Unit,
+    onShare: () -> Unit,
+    onNewMatch: () -> Unit
+) {
+    val safeSummary = summary
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CourtGreenDark)
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+    ) {
+        if (safeSummary == null) {
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("MATCH FINISHED", fontWeight = FontWeight.Black, color = WhiteStrong)
+                Text("No summary", color = WhiteSoft, fontSize = 11.sp)
+            }
+            return@Box
+        }
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "MATCH FINISHED",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    color = WhiteSoft
+                )
+                Text(
+                    text = safeSummary.setsScore,
+                    fontSize = 44.sp,
+                    fontWeight = FontWeight.Black,
+                    color = WhiteStrong
+                )
+                Text(
+                    text = safeSummary.setsDetail,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = WhiteSoft,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+                Text(
+                    text = "Duration ${formatTime(safeSummary.durationSeconds)}",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = WhiteStrong,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Text(
+                    text = formatTimestamp(safeSummary.createdAt),
+                    fontSize = 9.sp,
+                    color = WhiteSoft,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Button(
+                    onClick = onSave,
+                    enabled = !isSaved,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = WhiteStrong,
+                        contentColor = CourtGreenDark
+                    )
+                ) {
+                    Text(
+                        text = if (isSaved) "Saved OK" else "SAVE MATCH",
+                        fontWeight = FontWeight.Black,
+                        color = CourtGreenDark
+                    )
+                }
+                Button(
+                    onClick = onShare,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = WhiteStrong.copy(alpha = 0.22f),
+                        contentColor = WhiteStrong
+                    )
+                ) {
+                    Text("SHARE", fontWeight = FontWeight.Black, color = WhiteStrong)
+                }
+                Button(
+                    onClick = onNewMatch,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = CourtGreen,
+                        contentColor = WhiteStrong
+                    )
+                ) {
+                    Text("NEW MATCH", fontWeight = FontWeight.Black, color = WhiteStrong)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EndMatchButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = WhiteStrong.copy(alpha = 0.18f),
+            contentColor = WhiteStrong
+        )
+    ) {
+        Text(
+            text = "END MATCH",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 11.sp,
+            color = WhiteStrong
+        )
+    }
+}
+
+@Composable
+private fun CompactScore(label: String, a: Int, b: Int) {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
@@ -334,7 +551,7 @@ fun CompactScore(label: String, a: Int, b: Int) {
 }
 
 @Composable
-fun PointsBoard(pointA: String, pointB: String) {
+private fun PointsBoard(pointA: String, pointB: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -354,7 +571,7 @@ fun PointsBoard(pointA: String, pointB: String) {
 }
 
 @Composable
-fun BigPoint(label: String, points: String) {
+private fun BigPoint(label: String, points: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
@@ -381,7 +598,7 @@ fun BigPoint(label: String, points: String) {
 }
 
 @Composable
-fun AddPointGestureButton(
+private fun AddPointGestureButton(
     label: String,
     onPressStateChange: (Boolean) -> Unit,
     onTap: () -> Unit,
@@ -418,7 +635,7 @@ fun AddPointGestureButton(
 }
 
 @Composable
-fun TimerFooter(elapsedSeconds: Int) {
+private fun TimerFooter(elapsedSeconds: Int) {
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(14.dp))
@@ -442,7 +659,7 @@ fun TimerFooter(elapsedSeconds: Int) {
 }
 
 @Composable
-fun BottomActionSheet(
+private fun BottomActionSheet(
     title: String,
     actions: List<SheetAction>,
     onDismiss: () -> Unit
@@ -497,4 +714,8 @@ private fun formatTime(totalSeconds: Int): String {
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return "%02d:%02d".format(minutes, seconds)
+}
+
+private fun formatTimestamp(epochMillis: Long): String {
+    return SimpleDateFormat("HH:mm  dd/MM", Locale.getDefault()).format(Date(epochMillis))
 }
