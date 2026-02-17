@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tennis Counter</string>
+    <style name="Theme.TennisCounter" parent="android:Theme.Material.NoActionBar"/>
+</resources>
