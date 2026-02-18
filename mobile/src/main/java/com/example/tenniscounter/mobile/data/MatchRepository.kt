@@ -15,5 +15,23 @@ class MatchRepository(
 
     suspend fun insert(match: MatchEntity): Long = matchDao.insert(match)
 
+    suspend fun insertIfNotExists(
+        createdAt: Long,
+        durationSeconds: Long,
+        finalScoreText: String,
+        photoUri: String? = null
+    ): Boolean {
+        if (matchDao.existsMatch(createdAt, durationSeconds, finalScoreText)) return false
+        matchDao.insert(
+            MatchEntity(
+                createdAt = createdAt,
+                durationSeconds = durationSeconds,
+                finalScoreText = finalScoreText,
+                photoUri = photoUri
+            )
+        )
+        return true
+    }
+
     suspend fun update(match: MatchEntity) = matchDao.update(match)
 }

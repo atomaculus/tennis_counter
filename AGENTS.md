@@ -1,190 +1,180 @@
-# AGENTS.md
+ï»¿# AGENTS.md
 
-Guía operativa para Codex y cualquier otro agente de IA que trabaje en este repositorio.
+GuÃ­a operativa para Codex y cualquier otro agente de IA que trabaje en este repositorio.
 
-## 1. Descripción General del Proyecto
+## 1. DescripciÃ³n General del Proyecto
 
-`tennis_counter` es una app Android para **Wear OS** que funciona como contador de tenis en reloj.
+`tennis_counter` es una app Android multi-mÃ³dulo para:
+- **Wear OS** (`:app`): contador de tenis y cierre de partido.
+- **Mobile** (`:mobile`): historial local de partidos y recepciÃ³n de eventos desde Wear.
 
 Estado funcional actual:
-- Marcador de tenis con lógica de points/games/sets (incluye deuce/advantage).
-- Timer de partido con persistencia base usando `DataStore`.
-- Interacciones de UX en pantalla principal:
+- Marcador de tenis con lÃ³gica de points/games/sets (incluye deuce/advantage).
+- Timer de partido con persistencia base usando `DataStore` en Wear.
+- UX principal en Wear:
   - Tap para sumar puntos.
   - Long press por jugador para undo contextual.
-  - Long press simultáneo (A+B) para acciones admin (reset game/reset match).
-- Flujo manual de finalización:
-  - Botón `END MATCH` + confirmación.
-  - Pantalla final `MATCH FINISHED` con resumen y acciones.
-- Guardado local mínimo del resultado final en `DataStore`.
-- Stub de share preparado para futura integración con teléfono.
-
-### Módulos actuales
-- Solo existe **`:app`**.
-
-### Estado actual del proyecto
-- Proyecto en iteración activa de UX/funcionalidad para Wear OS.
-- No existe módulo móvil implementado aún.
-
-### Próximo paso previsto
-- Próximamente se desarrollará **`:mobile`** (teléfono), pero actualmente no está incluido en `settings.gradle.kts`.
+  - Long press simultÃ¡neo (A+B) para acciones admin (reset game/reset match).
+- Flujo manual de finalizaciÃ³n:
+  - BotÃ³n `END MATCH` + confirmaciÃ³n.
+  - Pantalla final `MATCH FINISHED`.
+  - BotÃ³n `SAVE MATCH`.
+- Guardado local del resultado final en Wear (`DataStore`).
+- **SincronizaciÃ³n Wear -> Mobile activa** por Data Layer (`MessageClient`) al tocar `SAVE MATCH`.
+- Mobile recibe, deduplica e inserta en Room (`MatchRepository`).
 
 ---
 
-## 2. Estructura del Repositorio
+## 2. MÃ³dulos y ConfiguraciÃ³n CrÃ­tica
 
-Estructura principal detectada:
-- `app/`
-  - Único módulo Android actualmente.
-  - Implementación Wear OS.
-- `app/src/main/java/com/example/tenniscounter/`
-  - `MainActivity.kt`: UI Compose + flujo principal y pantalla final.
-- `app/src/main/java/com/example/tenniscounter/ui/`
-  - `TennisViewModel.kt`: estado, lógica de marcador/timer y guardado final.
-- `app/src/main/res/values/`
-  - Recursos básicos (`strings.xml`, `themes.xml`).
-- `app/src/main/AndroidManifest.xml`
-  - Configuración de app Wear (`android.hardware.type.watch`).
-- `build.gradle.kts` (raíz)
-  - Plugins Android/Kotlin.
-- `settings.gradle.kts`
-  - Incluye solo `:app`.
-- `gradle/`, `gradlew`, `gradlew.bat`
-  - Wrapper y tooling de Gradle.
+### MÃ³dulos actuales
+- `:app` (Wear OS)
+- `:mobile` (telÃ©fono)
 
-### Nota de higiene del repositorio
-El repositorio puede contener archivos generados por el entorno de desarrollo.  
-Cualquier tarea de saneamiento (`.gitignore` / limpieza de artefactos) debe realizarse en un commit separado y coordinado explícitamente.
+`settings.gradle.kts` incluye ambos:
+- `include(":app")`
+- `include(":mobile")`
 
-### Diferenciación de módulos (estado actual)
-- Wear OS: `:app` (actual).
-- Mobile: no existe todavía (futuro `:mobile`).
-- Compartidos: no existe módulo shared actualmente.
+### ConfiguraciÃ³n crÃ­tica para Wear Data Layer
+Para que Google Play Services enrute mensajes entre Wear y Mobile:
+- `applicationId` de `:app` y `:mobile` debe ser **idÃ©ntico**.
+- Valor actual en ambos: `com.example.tenniscounter`.
+
+Notas:
+- `:mobile` mantiene `namespace = "com.example.tenniscounter.mobile"` (vÃ¡lido).
+- `namespace` y `applicationId` no tienen que ser iguales entre sÃ­, pero para Data Layer importa el `applicationId`.
 
 ---
 
-## 3. Cómo Construir y Ejecutar el Proyecto
+## 3. Estructura Relevante
 
-### Abrir en Android Studio
-1. Abrir la carpeta raíz del repo (`tennis_counter`).
-2. Esperar sync de Gradle.
-3. Seleccionar dispositivo/emulador Wear OS para ejecutar `:app`.
+- `app/src/main/java/com/example/tenniscounter/MainActivity.kt`
+  - UI Wear Compose y flujo `SAVE MATCH`.
+  - EnvÃ­o Data Layer a Mobile en ruta `/match_finished`.
+- `app/src/main/java/com/example/tenniscounter/ui/TennisViewModel.kt`
+  - LÃ³gica de score/timer/save local.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/sync/WearMatchListenerService.kt`
+  - Listener de mensajes Data Layer (`WearableListenerService`).
+- `mobile/src/main/java/com/example/tenniscounter/mobile/data/local/MatchDao.kt`
+  - Query de deduplicaciÃ³n por campos.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/data/MatchRepository.kt`
+  - InserciÃ³n con heurÃ­stica anti-duplicados.
+- `mobile/src/main/AndroidManifest.xml`
+  - Registro del listener service de Wear.
+
+---
+
+## 4. Contrato de SincronizaciÃ³n Wear -> Mobile
+
+Ruta fija:
+- `/match_finished`
+
+Formato:
+- `DataMap` (NO JSON), serializado con `toByteArray()`.
+
+Campos enviados desde Wear:
+- `createdAt` (`Long`)  
+  - con fallback a `System.currentTimeMillis()` si el summary trae `<= 0`.
+- `durationSeconds` (`Long`)
+- `finalScoreText` (`String`)  
+  - valor actual: `summary.setsScore` (compacto y consistente con resultado final visible).
+- `idempotencyKey` (`String`, UUID)
+
+Comportamiento en Mobile:
+- Si `path != "/match_finished"`: ignorar.
+- Parseo de `DataMap.fromByteArray(messageEvent.data)`.
+- InserciÃ³n en Room vÃ­a `MatchRepository`.
+- DeduplicaciÃ³n heurÃ­stica:
+  - No inserta si ya existe match con mismo:
+    - `createdAt`
+    - `durationSeconds`
+    - `finalScoreText`
+
+---
+
+## 5. Manifest del Listener (Mobile)
+
+El `service` de listener debe cumplir:
+- `android:exported="true"`
+- `intent-filter` con acciÃ³n:
+  - `com.google.android.gms.wearable.BIND_LISTENER`
+- **NO** declarar:
+  - `android:permission="com.google.android.gms.wearable.BIND_LISTENER"`
+
+Ejemplo correcto:
+```xml
+<service
+    android:name=".sync.WearMatchListenerService"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
+    </intent-filter>
+</service>
+```
+
+---
+
+## 6. Build y EjecuciÃ³n
 
 ### Build por consola
-
 Windows (PowerShell):
 ```bash
-.\gradlew.bat :app:assembleDebug
+.\gradlew.bat :app:assembleDebug :mobile:assembleDebug
 ```
 
-Build completo:
-```bash
-.\gradlew.bat build
-```
+### EjecuciÃ³n en Android Studio
+- `:app` en dispositivo/emulador Wear.
+- `:mobile` en telÃ©fono.
 
-### Ejecutar app Wear
-- Desde Android Studio: seleccionar configuración `app` y target Wear OS.
-- Verificar que el dispositivo destino sea reloj físico o emulador Wear.
-
-### Ejecutar futura app Mobile (cuando exista)
-Cuando exista `:mobile`, el comando esperado será:
-```bash
-.\gradlew.bat :mobile:assembleDebug
-```
-Hoy ese comando fallará porque el módulo aún no existe.
-
-### Configuración relevante
-- `compileSdk = 34`
-- `minSdk = 30`
-- Kotlin/JVM target 17
-- Compose habilitado en `:app`
-- Si falla build por Java, configurar `JAVA_HOME` localmente.
+Nota importante tras cambios de `applicationId`:
+- Si Android Studio intenta lanzar `com.example.tenniscounter.mobile/...` y falla, recrear Run Configuration.
+- Componente esperado de mobile:
+  - paquete app: `com.example.tenniscounter`
+  - activity: `com.example.tenniscounter.mobile.MainActivity`
 
 ---
 
-## 4. Arquitectura y Convenciones
+## 7. Observabilidad / Debug
 
-### Stack principal
-- Lenguaje: **Kotlin**
-- UI: **Jetpack Compose** (Wear Compose Material)
-- Estado UI: `StateFlow` en ViewModel consumido con `collectAsState`
+Tags de logs:
+- Wear envÃ­o: `WearDataLayer`
+- Mobile recepciÃ³n: `WearMatchListener`
 
-### Patrón detectado
-- Predominio **MVVM** (ViewModel + UI reactiva).
-
-### Convenciones de paquetes
-- `com.example.tenniscounter`: actividad principal y composición de pantallas.
-- `com.example.tenniscounter.ui`: modelos, estado y lógica de negocio del marcador.
-
-### Reglas de navegación
-- Navegación actual sin Navigation Compose formal.
-- Se maneja por estado de pantalla (por ejemplo, enum `AppScreen`).
-- Mantener navegación simple y estable hasta decisión explícita de migración.
-
-### Convenciones de naming
-- Clases/modelos: `PascalCase`
-- Funciones/propiedades: `camelCase`
-- Estados/acciones UI con nombres explícitos y legibles.
-
-### Buenas prácticas obligatorias
-- No mover lógica de negocio a Composables.
-- Mantener la lógica de marcador/timer en ViewModel.
-- Preservar feedback háptico y UX existente.
-- Priorizar legibilidad y simplicidad para uso en Wear bajo movimiento.
-- Hacer cambios pequeños, incrementales y fáciles de revisar.
-- Regla crítica: **no romper funcionalidad existente en Wear OS**.
-
-## Estrategia futura de modularización
-Cuando se implemente el módulo :mobile:
-- Evitar duplicar lógica de marcador o timer.
-- Evaluar crear un módulo :shared si hay lógica compartida entre wear y mobile.
-- Mantener separación clara entre capas de dominio y UI.
-- Definir contratos explícitos entre módulos si hay sincronización futura.
+Casos clave de diagnÃ³stico:
+- Wear:
+  - `connectedNodes count=0` => telÃ©fono no detectable por Data Layer.
+  - envÃ­o exitoso => log `Sent /match_finished`.
+- Mobile:
+  - `onMessageReceived path=/match_finished ...`
+  - `Match inserted...` o `Duplicate match ignored...`
 
 ---
 
-## 5. Testing (Estado Actual)
+## 8. Reglas para Agentes de IA
 
-Estado actual:
-- El testing es **manual** desde Android Studio (emulador/dispositivo).
-- No hay tests automatizados configurados aún.
-
-Evolución futura recomendada:
-- Unit tests (JUnit) para lógica de marcador/timer/undo/reset.
-- Tests de UI con Compose Testing para flujos críticos.
-- Para nuevas funcionalidades importantes, considerar tests básicos desde el inicio.
-
----
-
-## 6. Reglas para Agentes de IA
-
-- Leer siempre `AGENTS.md` antes de modificar código.
-- Mantener consistencia entre módulos actuales y futuros.
-- No duplicar lógica si puede compartirse.
-- Evitar cambios innecesarios en archivos no relacionados.
-- Respetar contratos entre UI y ViewModel.
-- Hacer cambios incrementales y explicarlos claramente.
-- Si una capacidad aún no existe (por ejemplo `:mobile` o share real), usar stubs seguros sin romper runtime.
-- No asumir infraestructura inexistente; declarar límites explícitamente.
-
-## Uso de contexto en sesiones largas
-- Priorizar leer archivos del repositorio antes que depender de historial de conversación.
-- Utilizar AGENTS.md como fuente de verdad.
-- Trabajar en cambios incrementales y bloques pequeños cuando los contextos son extensos.
+- Leer siempre `AGENTS.md` antes de modificar cÃ³digo.
+- Mantener cambios incrementales por fases y mostrar diff cuando se solicite.
+- No romper la lÃ³gica existente de Wear.
+- En tareas de Data Layer, verificar siempre:
+  - `applicationId` alineado entre mÃ³dulos.
+  - manifest del listener correcto.
+  - contrato de ruta y keys.
+- No introducir migraciones de Room sin pedido explÃ­cito.
 
 ---
 
-## 7. Convenciones de Commits
-
-Usar mensajes claros, descriptivos y acotados al cambio.
+## 9. Convenciones de Commit
 
 Formato sugerido:
 - `feat: ...`
 - `fix: ...`
 - `refactor: ...`
-- Opcional por alcance: `feat(wear): ...`, `fix(ui): ...`
+- opcional por alcance:
+  - `feat(wear): ...`
+  - `feat(mobile): ...`
+  - `fix(sync): ...`
 
 Reglas:
-- Evitar commits masivos sin explicación.
-- Un commit debe representar una intención coherente.
-- Separar commits funcionales de commits de saneamiento técnico.
+- Commits coherentes por intenciÃ³n.
+- Evitar commits masivos sin explicaciÃ³n.
+- Separar cambios funcionales de limpieza tÃ©cnica.

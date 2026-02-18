@@ -1,7 +1,9 @@
 package com.example.tenniscounter
 
+import android.content.Context
 import android.os.Bundle
 import android.os.SystemClock
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
@@ -31,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,20 +58,28 @@ import androidx.wear.compose.material.ScalingLazyColumn
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.rememberScalingLazyListState
+import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.DataMap
+import com.google.android.gms.wearable.Wearable
 import com.example.tenniscounter.ui.FinishedMatchSummary
 import com.example.tenniscounter.ui.MatchState
 import com.example.tenniscounter.ui.TennisViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val CourtGreen = Color(0xFF0F3415)
 private val CourtGreenDark = Color(0xFF0A250F)
 private val WhiteStrong = Color(0xFFF8FFF8)
 private val WhiteSoft = Color(0xFFD9E7D9)
 private val ScrimBlack = Color(0xAA000000)
+private const val WEAR_DATA_LAYER_TAG = "WearDataLayer"
 
 private enum class AppScreen {
     Counter,
@@ -80,6 +92,12 @@ private enum class ActiveSheet {
     PlayerB,
     Admin,
     EndMatchConfirm
+}
+
+private enum class PhoneSendResult {
+    Sent,
+    NoConnectedPhone,
+    Failed
 }
 
 data class SheetAction(
@@ -117,6 +135,8 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
     val state by viewModel.matchState.collectAsState()
     val finishedSummary by viewModel.finishedMatch.collectAsState()
     val isSaved by viewModel.isFinishedMatchSaved.collectAsState()
+    val context = LocalContext.current
+    val uiScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
 
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
@@ -199,12 +219,41 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                     onSave = {
                         val saved = viewModel.saveFinishedMatch()
                         val sharePayload = viewModel.buildShareStubText()
+                        val summaryToSend = finishedSummary
+                        Log.i(
+                            WEAR_DATA_LAYER_TAG,
+                            "Save tapped saved=$saved hasSummary=${summaryToSend != null}"
+                        )
                         if (saved) {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             transientMessage = "Saved OK"
                         } else {
                             transientMessage = "Already saved"
+                        }
+                        if (saved && summaryToSend != null) {
+                            uiScope.launch(Dispatchers.IO) {
+                                when (sendMatchFinishedToPhone(context.applicationContext, summaryToSend)) {
+                                    PhoneSendResult.Sent -> {
+                                        Log.i(WEAR_DATA_LAYER_TAG, "Match sent to phone")
+                                    }
+
+                                    PhoneSendResult.NoConnectedPhone -> {
+                                        withContext(Dispatchers.Main) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            transientMessage = "Phone not connected"
+                                        }
+                                    }
+
+                                    PhoneSendResult.Failed -> {
+                                        withContext(Dispatchers.Main) {
+                                            transientMessage = "Saved OK, send failed"
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (saved && summaryToSend == null) {
+                            Log.w(WEAR_DATA_LAYER_TAG, "Save succeeded but no finishedSummary available to send")
                         }
                         if (sharePayload.isNotBlank()) {
                             // Share stub prepared for future phone handoff flow.
@@ -709,4 +758,58 @@ private fun formatTime(totalSeconds: Int): String {
 
 private fun formatTimestamp(epochMillis: Long): String {
     return SimpleDateFormat("HH:mm  dd/MM", Locale.getDefault()).format(Date(epochMillis))
+}
+
+private fun buildFinalScoreText(summary: FinishedMatchSummary): String {
+    // Keep payload consistent with the prominent final result shown in end screen.
+    return summary.setsScore
+}
+
+private fun sendMatchFinishedToPhone(
+    context: Context,
+    summary: FinishedMatchSummary
+): PhoneSendResult {
+    val idempotencyKey = UUID.randomUUID().toString()
+    val createdAt = if (summary.createdAt > 0L) summary.createdAt else System.currentTimeMillis()
+    val finalScoreText = buildFinalScoreText(summary)
+    val dataMap = DataMap().apply {
+        putLong("createdAt", createdAt)
+        putLong("durationSeconds", summary.durationSeconds.toLong())
+        putString("finalScoreText", finalScoreText)
+        putString("idempotencyKey", idempotencyKey)
+    }
+    val payload = dataMap.toByteArray()
+    Log.i(
+        WEAR_DATA_LAYER_TAG,
+        "Preparing /match_finished createdAt=$createdAt durationSeconds=${summary.durationSeconds} finalScoreText=$finalScoreText idempotencyKey=$idempotencyKey payloadSize=${payload.size}"
+    )
+
+    return try {
+        val connectedNodes = Tasks.await(Wearable.getNodeClient(context).connectedNodes)
+        Log.i(
+            WEAR_DATA_LAYER_TAG,
+            "connectedNodes count=${connectedNodes.size} ids=${connectedNodes.joinToString { it.id }}"
+        )
+        val node = connectedNodes.firstOrNull()
+        if (node == null) {
+            Log.w(WEAR_DATA_LAYER_TAG, "No connected phone node for /match_finished")
+            return PhoneSendResult.NoConnectedPhone
+        }
+        Log.i(
+            WEAR_DATA_LAYER_TAG,
+            "Sending /match_finished to nodeId=${node.id} displayName=${node.displayName} isNearby=${node.isNearby}"
+        )
+        Tasks.await(
+            Wearable.getMessageClient(context).sendMessage(
+                node.id,
+                "/match_finished",
+                payload
+            )
+        )
+        Log.i(WEAR_DATA_LAYER_TAG, "Sent /match_finished to node=${node.id} idempotencyKey=$idempotencyKey")
+        PhoneSendResult.Sent
+    } catch (t: Throwable) {
+        Log.e(WEAR_DATA_LAYER_TAG, "Failed sending /match_finished", t)
+        PhoneSendResult.Failed
+    }
 }
