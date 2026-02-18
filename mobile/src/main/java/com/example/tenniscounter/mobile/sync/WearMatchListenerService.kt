@@ -39,10 +39,11 @@ class WearMatchListenerService : WearableListenerService() {
         val createdAt = dataMap.getLong(KEY_CREATED_AT, -1L)
         val durationSeconds = dataMap.getLong(KEY_DURATION_SECONDS, -1L)
         val finalScoreText = dataMap.getString(KEY_FINAL_SCORE_TEXT).orEmpty()
+        val setScoresText = dataMap.getString(KEY_SET_SCORES_TEXT)?.trim().orEmpty().ifBlank { null }
         val idempotencyKey = dataMap.getString(KEY_IDEMPOTENCY_KEY).orEmpty()
         Log.i(
             TAG,
-            "Decoded payload createdAt=$createdAt durationSeconds=$durationSeconds finalScoreText=$finalScoreText idempotencyKey=$idempotencyKey"
+            "Decoded payload createdAt=$createdAt durationSeconds=$durationSeconds finalScoreText=$finalScoreText setScoresText=${setScoresText.orEmpty()} idempotencyKey=$idempotencyKey"
         )
 
         if (createdAt <= 0L || durationSeconds < 0L || finalScoreText.isBlank()) {
@@ -55,6 +56,7 @@ class WearMatchListenerService : WearableListenerService() {
                 createdAt = createdAt,
                 durationSeconds = durationSeconds,
                 finalScoreText = finalScoreText,
+                setScoresText = setScoresText,
                 photoUri = null
             )
 
@@ -78,6 +80,7 @@ class WearMatchListenerService : WearableListenerService() {
         const val KEY_CREATED_AT = "createdAt"
         const val KEY_DURATION_SECONDS = "durationSeconds"
         const val KEY_FINAL_SCORE_TEXT = "finalScoreText"
+        const val KEY_SET_SCORES_TEXT = "setScoresText"
         const val KEY_IDEMPOTENCY_KEY = "idempotencyKey"
     }
 }

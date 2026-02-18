@@ -89,10 +89,17 @@ private fun MatchHistoryItem(
                 text = match.finalScoreText,
                 fontWeight = FontWeight.Bold
             )
+            match.setScoresText?.let { setScores ->
+                Text(text = formatSetScoresForDisplay(setScores))
+            }
             Text(text = formatDate(match.createdAt))
             Text(text = "Duration: ${formatDuration(match.durationSeconds)}")
         }
     }
+}
+
+private fun formatSetScoresForDisplay(setScoresText: String): String {
+    return setScoresText.trim().split(Regex("\\s+")).joinToString(" · ")
 }
 
 private fun formatDate(timestampMillis: Long): String {

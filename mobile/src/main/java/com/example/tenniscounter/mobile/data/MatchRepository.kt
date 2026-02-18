@@ -19,6 +19,7 @@ class MatchRepository(
         createdAt: Long,
         durationSeconds: Long,
         finalScoreText: String,
+        setScoresText: String? = null,
         photoUri: String? = null
     ): Boolean {
         if (matchDao.existsMatch(createdAt, durationSeconds, finalScoreText)) return false
@@ -27,6 +28,7 @@ class MatchRepository(
                 createdAt = createdAt,
                 durationSeconds = durationSeconds,
                 finalScoreText = finalScoreText,
+                setScoresText = setScoresText,
                 photoUri = photoUri
             )
         )

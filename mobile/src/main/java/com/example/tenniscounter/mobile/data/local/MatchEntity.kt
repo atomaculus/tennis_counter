@@ -9,5 +9,6 @@ data class MatchEntity(
     val createdAt: Long,
     val durationSeconds: Long,
     val finalScoreText: String,
+    val setScoresText: String? = null,
     val photoUri: String? = null
 )

@@ -30,11 +30,12 @@ object MatchShareManager {
     suspend fun prepareShareRenderModel(context: Context, match: MatchEntity): Result<ShareRenderModel> =
         runCatching {
             val data = ShareCardData(
-            scoreText = match.finalScoreText,
-            durationText = "Duration: ${formatDuration(match.durationSeconds)}",
-            dateText = formatDate(match.createdAt),
-            photoUri = match.photoUri
-        )
+                scoreText = match.finalScoreText,
+                setScoresText = match.setScoresText,
+                durationText = "Duration: ${formatDuration(match.durationSeconds)}",
+                dateText = formatDate(match.createdAt),
+                photoUri = match.photoUri
+            )
 
             val photoBitmap = withContext(Dispatchers.IO) {
                 loadPhotoBitmap(context, data.photoUri)

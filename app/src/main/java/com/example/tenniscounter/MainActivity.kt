@@ -232,8 +232,9 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                             transientMessage = "Already saved"
                         }
                         if (saved && summaryToSend != null) {
+                            val setScoresText = buildSetScoresText(state)
                             uiScope.launch(Dispatchers.IO) {
-                                when (sendMatchFinishedToPhone(context.applicationContext, summaryToSend)) {
+                                when (sendMatchFinishedToPhone(context.applicationContext, summaryToSend, setScoresText)) {
                                     PhoneSendResult.Sent -> {
                                         Log.i(WEAR_DATA_LAYER_TAG, "Match sent to phone")
                                     }
@@ -767,7 +768,8 @@ private fun buildFinalScoreText(summary: FinishedMatchSummary): String {
 
 private fun sendMatchFinishedToPhone(
     context: Context,
-    summary: FinishedMatchSummary
+    summary: FinishedMatchSummary,
+    setScoresText: String?
 ): PhoneSendResult {
     val idempotencyKey = UUID.randomUUID().toString()
     val createdAt = if (summary.createdAt > 0L) summary.createdAt else System.currentTimeMillis()
@@ -776,12 +778,15 @@ private fun sendMatchFinishedToPhone(
         putLong("createdAt", createdAt)
         putLong("durationSeconds", summary.durationSeconds.toLong())
         putString("finalScoreText", finalScoreText)
+        if (!setScoresText.isNullOrBlank()) {
+            putString("setScoresText", setScoresText)
+        }
         putString("idempotencyKey", idempotencyKey)
     }
     val payload = dataMap.toByteArray()
     Log.i(
         WEAR_DATA_LAYER_TAG,
-        "Preparing /match_finished createdAt=$createdAt durationSeconds=${summary.durationSeconds} finalScoreText=$finalScoreText idempotencyKey=$idempotencyKey payloadSize=${payload.size}"
+        "Preparing /match_finished finalScoreText=$finalScoreText setScoresText=${setScoresText.orEmpty()} durationSeconds=${summary.durationSeconds} createdAt=$createdAt idempotencyKey=$idempotencyKey payloadSize=${payload.size}"
     )
 
     return try {
@@ -812,4 +817,9 @@ private fun sendMatchFinishedToPhone(
         Log.e(WEAR_DATA_LAYER_TAG, "Failed sending /match_finished", t)
         PhoneSendResult.Failed
     }
+}
+
+private fun buildSetScoresText(matchState: MatchState): String? {
+    val completedSetsText = matchState.completedSets.joinToString(" ") { "${it.a}-${it.b}" }
+    return completedSetsText.ifBlank { null }
 }

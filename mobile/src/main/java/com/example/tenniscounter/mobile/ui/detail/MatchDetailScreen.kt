@@ -98,6 +98,12 @@ fun MatchDetailScreen(
                 fontSize = 56.sp,
                 fontWeight = FontWeight.Bold
             )
+            currentMatch.setScoresText?.let { setScores ->
+                Text(
+                    text = formatSetScoresForDisplay(setScores),
+                    fontSize = 18.sp
+                )
+            }
             Text(text = formatDate(currentMatch.createdAt))
             Text(text = "Duration: ${formatDuration(currentMatch.durationSeconds)}")
             Text(text = "Photo: ${currentMatch.photoUri ?: "No photo selected"}")
@@ -248,4 +254,8 @@ private fun formatDuration(totalSeconds: Long): String {
     } else {
         String.format("%02d:%02d", minutes, seconds)
     }
+}
+
+private fun formatSetScoresForDisplay(setScoresText: String): String {
+    return setScoresText.trim().split(Regex("\\s+")).joinToString(" · ")
 }

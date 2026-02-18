@@ -19,14 +19,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 data class ShareCardData(
     val scoreText: String,
+    val setScoresText: String?,
     val durationText: String,
     val dateText: String,
     val photoUri: String?
@@ -40,6 +41,7 @@ fun ShareCard(
 ) {
     val imageBitmap = remember(photoBitmap) { photoBitmap?.asImageBitmap() }
     val displayScore = remember(data.scoreText) { data.scoreText.replace('-', '–') }
+    val displaySetScores = remember(data.setScoresText) { data.setScoresText?.formatSetScoresForDisplay() }
 
     Box(modifier = modifier.fillMaxSize()) {
         if (imageBitmap != null) {
@@ -113,8 +115,25 @@ fun ShareCard(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .fillMaxWidth()
-                    .padding(top = 36.dp)
+                    .padding(top = 12.dp)
             )
+
+            if (!displaySetScores.isNullOrBlank()) {
+                Text(
+                    text = displaySetScores,
+                    color = Color.White.copy(alpha = 0.93f),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Clip,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(top = 168.dp)
+                )
+            }
         }
 
         Column(
@@ -147,4 +166,8 @@ fun ShareCard(
             )
         }
     }
+}
+
+private fun String.formatSetScoresForDisplay(): String {
+    return trim().split(Regex("\\s+")).joinToString(" · ")
 }
