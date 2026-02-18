@@ -5,8 +5,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,7 +19,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -35,6 +39,7 @@ fun ShareCard(
     modifier: Modifier = Modifier
 ) {
     val imageBitmap = remember(photoBitmap) { photoBitmap?.asImageBitmap() }
+    val displayScore = remember(data.scoreText) { data.scoreText.replace('-', '–') }
 
     Box(modifier = modifier.fillMaxSize()) {
         if (imageBitmap != null) {
@@ -42,7 +47,8 @@ fun ShareCard(
                 bitmap = imageBitmap,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.Center
             )
         } else {
             Box(
@@ -63,24 +69,82 @@ fun ShareCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.45f))
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.08f),
+                            Color.Black.copy(alpha = 0.22f),
+                            Color.Black.copy(alpha = 0.52f)
+                        )
+                    )
+                )
         )
+
+        Text(
+            text = "MATCH RESULT",
+            color = Color.White.copy(alpha = 0.85f),
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 1.2.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .padding(top = 54.dp)
+        )
+
+        BoxWithConstraints(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(horizontal = 48.dp)
+        ) {
+            val scoreFontSize = (maxWidth.value * 0.31f).coerceIn(84f, 128f).sp
+            Text(
+                text = displayScore,
+                color = Color.White,
+                fontSize = scoreFontSize,
+                fontWeight = FontWeight.Black,
+                lineHeight = scoreFontSize,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(top = 36.dp)
+            )
+        }
 
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(64.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 56.dp, vertical = 64.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(text = "MATCH RESULT", color = Color.White, fontSize = 24.sp)
             Text(
-                text = data.scoreText,
-                color = Color.White,
-                fontSize = 120.sp,
-                fontWeight = FontWeight.Black
+                text = data.durationText,
+                color = Color.White.copy(alpha = 0.93f),
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier.fillMaxWidth()
             )
-            Text(text = data.durationText, color = Color.White, fontSize = 34.sp)
-            Text(text = data.dateText, color = Color.White, fontSize = 30.sp)
+            Text(
+                text = data.dateText,
+                color = Color.White.copy(alpha = 0.84f),
+                fontSize = 24.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
