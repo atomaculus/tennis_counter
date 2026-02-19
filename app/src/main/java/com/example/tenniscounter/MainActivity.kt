@@ -191,6 +191,22 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
         }
     }
 
+    LaunchedEffect(
+        appScreen,
+        state.playerA.points,
+        state.playerA.games,
+        state.playerA.sets,
+        state.playerB.points,
+        state.playerB.games,
+        state.playerB.sets,
+        state.elapsedSeconds,
+        state.isRunning
+    ) {
+        if (appScreen == AppScreen.Counter) {
+            viewModel.onCounterScreenVisible()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         when (appScreen) {
             AppScreen.Counter -> {

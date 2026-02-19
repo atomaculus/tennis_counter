@@ -1,15 +1,14 @@
 package com.example.tenniscounter.ui
 
 import android.app.Application
-import android.content.Context
+import android.content.Intent
 import android.os.SystemClock
-import androidx.datastore.preferences.core.booleanPreferencesKey
+import android.util.Log
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.tenniscounter.timer.MatchTimerService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,8 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-
-private val Context.dataStore by preferencesDataStore(name = "timer_prefs")
 
 private val POINT_LABELS = listOf("0", "15", "30", "40", "AD")
 
@@ -75,12 +72,9 @@ private data class ResolveResult(
 )
 
 class TennisViewModel(application: Application) : AndroidViewModel(application) {
-    private val dataStore = application.dataStore
+    private val appContext = application.applicationContext
+    private val dataStore = appContext.dataStore
 
-    private val START_TIME_KEY = longPreferencesKey("start_time")
-    private val PAUSED_ACCUMULATED_KEY = longPreferencesKey("paused_accumulated")
-    private val IS_RUNNING_KEY = booleanPreferencesKey("is_running")
-    private val LAST_PAUSE_TIME_KEY = longPreferencesKey("last_pause_time")
     private val SAVED_MATCHES_KEY = stringSetPreferencesKey("saved_matches_v1")
 
     private val _matchState = MutableStateFlow(MatchState())
@@ -98,9 +92,10 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         viewModelScope.launch {
-            val prefs = dataStore.data.first()
-            if (prefs[START_TIME_KEY] == null) {
-                dataStore.edit { it[START_TIME_KEY] = SystemClock.elapsedRealtime() }
+            TimerStateStore.ensureInitialized(appContext, SystemClock.elapsedRealtime())
+            val timerSnapshot = TimerStateStore.read(appContext)
+            if (timerSnapshot.isRunning) {
+                startMatchTimerService()
             }
             startTicker()
         }
@@ -117,39 +112,50 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private suspend fun updateTimerValue() {
-        val prefs = dataStore.data.first()
-        val startTime = prefs[START_TIME_KEY] ?: SystemClock.elapsedRealtime()
-        val isRunning = prefs[IS_RUNNING_KEY] ?: true
-        val pausedAccumulated = prefs[PAUSED_ACCUMULATED_KEY] ?: 0L
-        val lastPauseTime = prefs[LAST_PAUSE_TIME_KEY] ?: 0L
-
         val now = SystemClock.elapsedRealtime()
-        val totalElapsedMillis = if (isRunning) {
-            (now - startTime) - pausedAccumulated
-        } else {
-            (lastPauseTime - startTime) - pausedAccumulated
-        }
+        val timerSnapshot = TimerStateStore.read(appContext)
 
         _matchState.value = _matchState.value.copy(
-            elapsedSeconds = (totalElapsedMillis / 1000).coerceAtLeast(0).toInt(),
-            isRunning = isRunning
+            elapsedSeconds = timerSnapshot.elapsedSeconds(now),
+            isRunning = timerSnapshot.isRunning
         )
     }
 
     fun resetTimer() {
         viewModelScope.launch {
-            dataStore.edit { p ->
-                p[START_TIME_KEY] = SystemClock.elapsedRealtime()
-                p[PAUSED_ACCUMULATED_KEY] = 0L
-                p[IS_RUNNING_KEY] = true
-                p[LAST_PAUSE_TIME_KEY] = 0L
-            }
+            TimerStateStore.start(appContext, SystemClock.elapsedRealtime())
+            startMatchTimerService()
             updateTimerValue()
         }
     }
 
     fun tickClock() {
         // Kept for compatibility.
+    }
+
+    fun onCounterScreenVisible() {
+        viewModelScope.launch {
+            val now = SystemClock.elapsedRealtime()
+            val state = _matchState.value
+            val timerSnapshot = TimerStateStore.read(appContext)
+            val elapsed = timerSnapshot.elapsedSeconds(now)
+            val isFresh = state.isFreshScoreboard()
+
+            if (isFresh && !timerSnapshot.isRunning && elapsed > 0) {
+                Log.i(TIMER_TAG, "reset timer on fresh scoreboard after task removed")
+                TimerStateStore.resetStopped(appContext)
+                _matchState.value = state.copy(elapsedSeconds = 0, isRunning = false)
+            }
+
+            val refreshedSnapshot = TimerStateStore.read(appContext)
+            val refreshedElapsed = refreshedSnapshot.elapsedSeconds(now)
+            if (isFresh && !refreshedSnapshot.isRunning && refreshedElapsed == 0) {
+                Log.i(TIMER_TAG, "auto-start timer on entering match screen")
+                TimerStateStore.start(appContext, now)
+                startMatchTimerService()
+                updateTimerValue()
+            }
+        }
     }
 
     fun addPointToPlayerA() {
@@ -184,12 +190,8 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         pointHistory.clear()
         scoreBaseline = BaselineScore(PlayerScore(), PlayerScore(), emptyList())
         viewModelScope.launch {
-            dataStore.edit { p ->
-                p[START_TIME_KEY] = SystemClock.elapsedRealtime()
-                p[PAUSED_ACCUMULATED_KEY] = 0L
-                p[IS_RUNNING_KEY] = true
-                p[LAST_PAUSE_TIME_KEY] = 0L
-            }
+            TimerStateStore.start(appContext, SystemClock.elapsedRealtime())
+            startMatchTimerService()
             _matchState.value = MatchState()
             updateTimerValue()
         }
@@ -344,4 +346,23 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         val seconds = totalSeconds % 60
         return "%02d:%02d".format(minutes, seconds)
     }
+
+    private fun startMatchTimerService() {
+        val serviceIntent = Intent(appContext, MatchTimerService::class.java)
+        appContext.startService(serviceIntent)
+    }
+
+    private companion object {
+        const val TIMER_TAG = "MatchTimer"
+    }
+}
+
+private fun MatchState.isFreshScoreboard(): Boolean {
+    return playerA.points == 0 &&
+        playerA.games == 0 &&
+        playerA.sets == 0 &&
+        playerB.points == 0 &&
+        playerB.games == 0 &&
+        playerB.sets == 0 &&
+        completedSets.isEmpty()
 }
