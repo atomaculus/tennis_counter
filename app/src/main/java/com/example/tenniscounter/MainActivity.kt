@@ -58,6 +58,8 @@ import androidx.wear.compose.material.ScalingLazyColumn
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.rememberScalingLazyListState
+import com.example.tenniscounter.sync.PendingMatchMessage
+import com.example.tenniscounter.sync.PendingMatchStore
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.Wearable
@@ -70,6 +72,7 @@ import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -80,6 +83,9 @@ private val WhiteStrong = Color(0xFFF8FFF8)
 private val WhiteSoft = Color(0xFFD9E7D9)
 private val ScrimBlack = Color(0xAA000000)
 private const val WEAR_DATA_LAYER_TAG = "WearDataLayer"
+private const val ACK_WAIT_RETRY_MS = 10_000L
+private const val RETRY_TRIGGER_THROTTLE_MS = 1_500L
+private val retryScope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
 private enum class AppScreen {
     Counter,
@@ -113,6 +119,16 @@ class MainActivity : ComponentActivity() {
                 TennisCounterApp()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        triggerPendingRetry(applicationContext, "onStart")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        triggerPendingRetry(applicationContext, "onResume")
     }
 }
 
@@ -250,7 +266,13 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         if (saved && summaryToSend != null) {
                             val setScoresText = buildSetScoresText(state)
                             uiScope.launch(Dispatchers.IO) {
-                                when (sendMatchFinishedToPhone(context.applicationContext, summaryToSend, setScoresText)) {
+                                val pendingMessage = createPendingMatchMessage(summaryToSend, setScoresText)
+                                PendingMatchStore.savePending(context.applicationContext, pendingMessage)
+                                when (sendPendingMatchToPhone(
+                                    context = context.applicationContext,
+                                    pending = pendingMessage,
+                                    reason = "save_tap"
+                                )) {
                                     PhoneSendResult.Sent -> {
                                         Log.i(WEAR_DATA_LAYER_TAG, "Match sent to phone")
                                     }
@@ -782,12 +804,28 @@ private fun buildFinalScoreText(summary: FinishedMatchSummary): String {
     return summary.setsScore
 }
 
-private fun sendMatchFinishedToPhone(
-    context: Context,
+private fun createPendingMatchMessage(
     summary: FinishedMatchSummary,
     setScoresText: String?
-): PhoneSendResult {
+): PendingMatchMessage {
     val idempotencyKey = UUID.randomUUID().toString()
+    val payload = buildMatchFinishedPayload(summary, setScoresText, idempotencyKey)
+    val now = System.currentTimeMillis()
+    return PendingMatchMessage(
+        idempotencyKey = idempotencyKey,
+        payload = payload,
+        createdAtMillis = now,
+        attemptCount = 0,
+        nextRetryAtMillis = now,
+        targetNodeId = null
+    )
+}
+
+private fun buildMatchFinishedPayload(
+    summary: FinishedMatchSummary,
+    setScoresText: String?,
+    idempotencyKey: String
+): ByteArray {
     val createdAt = if (summary.createdAt > 0L) summary.createdAt else System.currentTimeMillis()
     val finalScoreText = buildFinalScoreText(summary)
     val dataMap = DataMap().apply {
@@ -799,10 +837,17 @@ private fun sendMatchFinishedToPhone(
         }
         putString("idempotencyKey", idempotencyKey)
     }
-    val payload = dataMap.toByteArray()
+    return dataMap.toByteArray()
+}
+
+private fun sendPendingMatchToPhone(
+    context: Context,
+    pending: PendingMatchMessage,
+    reason: String
+): PhoneSendResult {
     Log.i(
         WEAR_DATA_LAYER_TAG,
-        "Preparing /match_finished finalScoreText=$finalScoreText setScoresText=${setScoresText.orEmpty()} durationSeconds=${summary.durationSeconds} createdAt=$createdAt idempotencyKey=$idempotencyKey payloadSize=${payload.size}"
+        "Sending pending /match_finished reason=$reason idempotencyKey=${pending.idempotencyKey} attempt=${pending.attemptCount} nextRetryAt=${pending.nextRetryAtMillis} targetNodeId=${pending.targetNodeId.orEmpty()} payloadSize=${pending.payload.size}"
     )
 
     return try {
@@ -811,27 +856,96 @@ private fun sendMatchFinishedToPhone(
             WEAR_DATA_LAYER_TAG,
             "connectedNodes count=${connectedNodes.size} ids=${connectedNodes.joinToString { it.id }}"
         )
-        val node = connectedNodes.firstOrNull()
+        if (connectedNodes.size > 1) {
+            Log.w(WEAR_DATA_LAYER_TAG, "Multiple connected nodes detected for idempotencyKey=${pending.idempotencyKey}")
+        }
+        var node = connectedNodes.firstOrNull { it.id == pending.targetNodeId }
+        if (pending.targetNodeId != null && node == null) {
+            Log.w(
+                WEAR_DATA_LAYER_TAG,
+                "Configured targetNodeId=${pending.targetNodeId} not found for idempotencyKey=${pending.idempotencyKey}. Falling back."
+            )
+        }
         if (node == null) {
-            Log.w(WEAR_DATA_LAYER_TAG, "No connected phone node for /match_finished")
+            node = connectedNodes.firstOrNull()
+        }
+        if (node == null) {
+            val nextRetryAt = System.currentTimeMillis() + computeRetryDelayMillis(pending.attemptCount)
+            PendingMatchStore.updateAfterAttempt(
+                context = context,
+                idempotencyKey = pending.idempotencyKey,
+                attemptCount = pending.attemptCount + 1,
+                nextRetryAtMillis = nextRetryAt
+            )
+            Log.w(WEAR_DATA_LAYER_TAG, "No connected phone node for /match_finished idempotencyKey=${pending.idempotencyKey}")
             return PhoneSendResult.NoConnectedPhone
+        }
+        if (connectedNodes.size == 1 && pending.targetNodeId != node.id) {
+            PendingMatchStore.updateTargetNodeId(context, pending.idempotencyKey, node.id)
+            Log.i(WEAR_DATA_LAYER_TAG, "Pinned targetNodeId=${node.id} for idempotencyKey=${pending.idempotencyKey}")
         }
         Log.i(
             WEAR_DATA_LAYER_TAG,
-            "Sending /match_finished to nodeId=${node.id} displayName=${node.displayName} isNearby=${node.isNearby}"
+            "Sending /match_finished to nodeId=${node.id} displayName=${node.displayName} isNearby=${node.isNearby} idempotencyKey=${pending.idempotencyKey}"
         )
         Tasks.await(
             Wearable.getMessageClient(context).sendMessage(
                 node.id,
                 "/match_finished",
-                payload
+                pending.payload
             )
         )
-        Log.i(WEAR_DATA_LAYER_TAG, "Sent /match_finished to node=${node.id} idempotencyKey=$idempotencyKey")
+        PendingMatchStore.updateAfterAttempt(
+            context = context,
+            idempotencyKey = pending.idempotencyKey,
+            attemptCount = pending.attemptCount + 1,
+            nextRetryAtMillis = System.currentTimeMillis() + ACK_WAIT_RETRY_MS
+        )
+        Log.i(WEAR_DATA_LAYER_TAG, "Sent /match_finished to node=${node.id} idempotencyKey=${pending.idempotencyKey}")
         PhoneSendResult.Sent
     } catch (t: Throwable) {
-        Log.e(WEAR_DATA_LAYER_TAG, "Failed sending /match_finished", t)
+        val nextRetryAt = System.currentTimeMillis() + computeRetryDelayMillis(pending.attemptCount)
+        PendingMatchStore.updateAfterAttempt(
+            context = context,
+            idempotencyKey = pending.idempotencyKey,
+            attemptCount = pending.attemptCount + 1,
+            nextRetryAtMillis = nextRetryAt
+        )
+        Log.e(WEAR_DATA_LAYER_TAG, "Failed sending /match_finished idempotencyKey=${pending.idempotencyKey}", t)
         PhoneSendResult.Failed
+    }
+}
+
+private fun computeRetryDelayMillis(attemptCount: Int): Long {
+    val cappedAttempt = attemptCount.coerceIn(0, 4)
+    return 5_000L * (1L shl cappedAttempt)
+}
+
+private val retryCoordinatorLock = Any()
+private var lastRetryTriggerElapsedRealtime: Long = 0L
+
+private fun triggerPendingRetry(context: Context, reason: String) {
+    val nowElapsedRealtime = SystemClock.elapsedRealtime()
+    synchronized(retryCoordinatorLock) {
+        if (nowElapsedRealtime - lastRetryTriggerElapsedRealtime < RETRY_TRIGGER_THROTTLE_MS) {
+            Log.d(WEAR_DATA_LAYER_TAG, "Retry trigger throttled reason=$reason")
+            return
+        }
+        lastRetryTriggerElapsedRealtime = nowElapsedRealtime
+    }
+
+    retryScope.launch {
+        val pending = PendingMatchStore.readPending(context) ?: return@launch
+        val now = System.currentTimeMillis()
+        if (now < pending.nextRetryAtMillis) {
+            Log.d(
+                WEAR_DATA_LAYER_TAG,
+                "Retry skipped (not due yet) reason=$reason idempotencyKey=${pending.idempotencyKey} nextRetryAt=${pending.nextRetryAtMillis}"
+            )
+            return@launch
+        }
+        val result = sendPendingMatchToPhone(context, pending, reason = reason)
+        Log.i(WEAR_DATA_LAYER_TAG, "Retry executed reason=$reason idempotencyKey=${pending.idempotencyKey} result=$result")
     }
 }
 

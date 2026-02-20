@@ -2,8 +2,10 @@ package com.example.tenniscounter.mobile.sync
 
 import android.util.Log
 import com.example.tenniscounter.mobile.di.MobileServiceLocator
+import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.MessageEvent
+import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,21 +52,49 @@ class WearMatchListenerService : WearableListenerService() {
             Log.w(TAG, "Ignoring /match_finished with missing required fields")
             return
         }
+        if (idempotencyKey.isBlank()) {
+            Log.e(TAG, "Ignoring /match_finished with missing idempotencyKey. sourceNodeId=${messageEvent.sourceNodeId}")
+            return
+        }
 
         serviceScope.launch {
             val inserted = MobileServiceLocator.matchRepository(applicationContext).insertIfNotExists(
                 createdAt = createdAt,
                 durationSeconds = durationSeconds,
                 finalScoreText = finalScoreText,
+                idempotencyKey = idempotencyKey,
                 setScoresText = setScoresText,
                 photoUri = null
             )
 
             if (inserted) {
                 Log.i(TAG, "Match inserted from wear. idempotencyKey=$idempotencyKey")
+                sendAck(messageEvent.sourceNodeId, idempotencyKey, status = "inserted")
             } else {
                 Log.i(TAG, "Duplicate match ignored. idempotencyKey=$idempotencyKey")
+                sendAck(messageEvent.sourceNodeId, idempotencyKey, status = "duplicate")
             }
+        }
+    }
+
+    private fun sendAck(sourceNodeId: String, idempotencyKey: String, status: String) {
+        val ackPayload = DataMap().apply {
+            putString(KEY_IDEMPOTENCY_KEY, idempotencyKey)
+            putString(KEY_STATUS, status)
+        }.toByteArray()
+
+        runCatching {
+            Tasks.await(
+                Wearable.getMessageClient(applicationContext).sendMessage(
+                    sourceNodeId,
+                    MATCH_FINISHED_ACK_PATH,
+                    ackPayload
+                )
+            )
+        }.onSuccess {
+            Log.i(TAG, "ACK sent sourceNodeId=$sourceNodeId idempotencyKey=$idempotencyKey status=$status")
+        }.onFailure {
+            Log.e(TAG, "ACK send failed sourceNodeId=$sourceNodeId idempotencyKey=$idempotencyKey status=$status", it)
         }
     }
 
@@ -77,10 +107,12 @@ class WearMatchListenerService : WearableListenerService() {
     private companion object {
         const val TAG = "WearMatchListener"
         const val MATCH_FINISHED_PATH = "/match_finished"
+        const val MATCH_FINISHED_ACK_PATH = "/match_finished_ack"
         const val KEY_CREATED_AT = "createdAt"
         const val KEY_DURATION_SECONDS = "durationSeconds"
         const val KEY_FINAL_SCORE_TEXT = "finalScoreText"
         const val KEY_SET_SCORES_TEXT = "setScoresText"
         const val KEY_IDEMPOTENCY_KEY = "idempotencyKey"
+        const val KEY_STATUS = "status"
     }
 }

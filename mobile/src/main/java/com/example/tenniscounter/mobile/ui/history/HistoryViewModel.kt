@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.tenniscounter.mobile.data.MatchRepository
 import com.example.tenniscounter.mobile.data.local.MatchEntity
+import java.util.UUID
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -24,7 +25,8 @@ class HistoryViewModel(
                     createdAt = System.currentTimeMillis(),
                     durationSeconds = 0L,
                     finalScoreText = "0-0",
-                    photoUri = null
+                    photoUri = null,
+                    idempotencyKey = UUID.randomUUID().toString()
                 )
             )
             onCreated(id)

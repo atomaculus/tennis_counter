@@ -22,6 +22,14 @@
         <service
             android:name=".timer.MatchTimerService"
             android:exported="false" />
+
+        <service
+            android:name=".sync.WearAckListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
