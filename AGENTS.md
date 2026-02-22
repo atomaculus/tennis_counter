@@ -19,7 +19,13 @@ Estado funcional actual:
   - Botón `END MATCH` + confirmación.
   - Pantalla final `MATCH FINISHED`.
   - Botón `SAVE MATCH`.
+  - Estado visual de sync en Wear bajo `SAVE MATCH`:
+    - `Syncing...`
+    - `Retry in Ns`
+    - `Synced ✓` (transitorio)
+  - Botón `NEW MATCH` visible y sin cambios de comportamiento.
 - Sync Wear -> Mobile activo por Data Layer (`MessageClient`).
+- Sync con idempotency + ACK Wear<->Mobile para limpiar pendientes en Wear.
 - Mobile recibe, deduplica e inserta en Room (`MatchRepository`).
 
 ---
@@ -50,7 +56,12 @@ Notas:
 ### Wear
 - `app/src/main/java/com/example/tenniscounter/MainActivity.kt`
   - UI Wear Compose.
-  - Handler de `SAVE MATCH` y envío Data Layer (`/match_finished`).
+  - Handler de `SAVE MATCH`, envío Data Layer (`/match_finished`) y UI de estado de sync en `MATCH FINISHED`.
+- `app/src/main/java/com/example/tenniscounter/sync/PendingMatchStore.kt`
+  - Persistencia local de pending message en Wear (`SharedPreferences`) para retry/ACK.
+  - Lectura de estado UI (`getPending()` / `hasPending()`).
+- `app/src/main/java/com/example/tenniscounter/sync/WearAckListenerService.kt`
+  - Listener Wear para ACK desde mobile (`/match_finished_ack`) y limpieza de pending por `idempotencyKey`.
 - `app/src/main/java/com/example/tenniscounter/ui/TennisViewModel.kt`
   - Lógica de score, timer, summary final y save local.
 - `app/src/main/java/com/example/tenniscounter/ui/TimerStateStore.kt`
@@ -58,7 +69,7 @@ Notas:
 - `app/src/main/java/com/example/tenniscounter/timer/MatchTimerService.kt`
   - Service del timer con `onTaskRemoved()` para consolidar tiempo y frenar el timer.
 - `app/src/main/AndroidManifest.xml`
-  - Registro de `MatchTimerService`.
+  - Registro de `MatchTimerService` y `WearAckListenerService`.
 
 ### Mobile
 - `mobile/src/main/java/com/example/tenniscounter/mobile/sync/WearMatchListenerService.kt`
@@ -113,6 +124,30 @@ Comportamiento en Mobile:
     - `finalScoreText`
 - Backward compatibility:
   - Si `setScoresText` no viene, se guarda `null` y UI/share no se rompen.
+
+ACK Mobile -> Wear:
+- Ruta fija:
+  - `/match_finished_ack`
+- Formato:
+  - `DataMap` serializado con `toByteArray()`
+- Campos:
+  - `idempotencyKey` (`String`)
+  - `status` (`String`) valores actuales observados: `inserted` / `duplicate`
+- Comportamiento en Wear:
+  - `WearAckListenerService` parsea ACK y ejecuta `PendingMatchStore.clearIfMatches(...)`
+  - Si el `idempotencyKey` no coincide con el pending actual, no limpia
+
+Retry/pendiente en Wear (alto nivel):
+- `SAVE MATCH` guarda primero un `PendingMatchMessage` local.
+- Se intenta envío inmediato al teléfono.
+- Si falla/no hay teléfono, queda pending para retry.
+- `PendingMatchStore` conserva:
+  - `idempotencyKey`
+  - `payload`
+  - `createdAtMillis`
+  - `attemptCount`
+  - `nextRetryAtMillis`
+  - `targetNodeId` (opcional)
 
 ---
 
@@ -194,6 +229,7 @@ Nota tras cambio de `applicationId` de mobile:
 
 Tags de logs:
 - Wear envío: `WearDataLayer`
+- Wear ACK: `WearAckListener`
 - Wear timer/service: `MatchTimer`, `MatchTimerService`
 - Mobile recepción: `WearMatchListener`
 
@@ -201,10 +237,16 @@ Casos de diagnóstico:
 - Wear:
   - `connectedNodes count=0` => teléfono no detectable por Data Layer.
   - envío exitoso => log `Sent /match_finished`.
+  - ACK recibido => log con `ACK received ... clearedPending=true/false`.
+  - UI `MATCH FINISHED` (bajo `SAVE MATCH`) refleja pending local:
+    - `Syncing...` si hay pending listo para retry/envío
+    - `Retry in Ns` si `now < nextRetryAt`
+    - `Synced ✓` transitorio cuando no hay pending tras `SAVE MATCH`
 - Mobile:
   - `onMessageReceived path=/match_finished ...`
   - `Decoded payload ... durationSeconds=...`
   - `Match inserted...` o `Duplicate match ignored...`
+  - `ACK sent ... status=inserted|duplicate`
 
 ---
 
@@ -215,7 +257,11 @@ Casos de diagnóstico:
 - En Data Layer, verificar siempre:
   - `applicationId` alineado entre módulos.
   - manifest de listener correcto.
-  - contrato de ruta y keys.
+  - contrato de rutas y keys (`/match_finished` y `/match_finished_ack`).
+- En UI Wear de `MATCH FINISHED`:
+  - no ocultar ni cambiar comportamiento de `NEW MATCH`.
+  - mantener cambios de diseño mínimos (label/chip pequeño bajo `SAVE MATCH`).
+- No tocar lógica de ACK/idempotency/retry al hacer ajustes visuales de estado; solo leer `PendingMatchStore`.
 - Para cambios de Room:
   - agregar migración explícita si cambia schema.
 - Para cambios de timer Wear:
