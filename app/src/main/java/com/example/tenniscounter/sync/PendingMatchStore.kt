@@ -12,6 +12,12 @@ data class PendingMatchMessage(
     val targetNodeId: String?
 )
 
+data class PendingMatch(
+    val idempotencyKey: String,
+    val attemptCount: Int,
+    val nextRetryAt: Long
+)
+
 object PendingMatchStore {
     private const val PREFS_NAME = "wear_pending_match_store"
     private const val KEY_IDEMPOTENCY = "idempotency_key"
@@ -50,6 +56,18 @@ object PendingMatchStore {
             )
         }
     }
+
+    fun getPending(context: Context): PendingMatch? {
+        return readPending(context)?.let { pending ->
+            PendingMatch(
+                idempotencyKey = pending.idempotencyKey,
+                attemptCount = pending.attemptCount,
+                nextRetryAt = pending.nextRetryAtMillis
+            )
+        }
+    }
+
+    fun hasPending(context: Context): Boolean = getPending(context) != null
 
     fun clearIfMatches(context: Context, idempotencyKey: String): Boolean {
         synchronized(lock) {

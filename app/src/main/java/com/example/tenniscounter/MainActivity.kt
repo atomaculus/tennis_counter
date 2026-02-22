@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,6 +45,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -158,6 +160,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
     var transientMessage by remember { mutableStateOf<String?>(null) }
+    var saveTapSignal by remember { mutableIntStateOf(0) }
 
     var isPressedA by remember { mutableStateOf(false) }
     var isPressedB by remember { mutableStateOf(false) }
@@ -249,6 +252,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                     summary = finishedSummary,
                     isSaved = isSaved,
                     onSave = {
+                        saveTapSignal++
                         val saved = viewModel.saveFinishedMatch()
                         val sharePayload = viewModel.buildShareStubText()
                         val summaryToSend = finishedSummary
@@ -302,7 +306,8 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.startNewMatch()
                         appScreen = AppScreen.Counter
-                    }
+                    },
+                    saveTapSignal = saveTapSignal
                 )
             }
         }
@@ -491,7 +496,8 @@ private fun MatchFinishedScreen(
     summary: FinishedMatchSummary?,
     isSaved: Boolean,
     onSave: () -> Unit,
-    onNewMatch: () -> Unit
+    onNewMatch: () -> Unit,
+    saveTapSignal: Int
 ) {
     val safeSummary = summary
 
@@ -571,6 +577,7 @@ private fun MatchFinishedScreen(
                         color = CourtGreenDark
                     )
                 }
+                SyncStatusLabel(saveTapSignal = saveTapSignal)
                 Button(
                     onClick = onNewMatch,
                     modifier = Modifier.fillMaxWidth(),
@@ -585,6 +592,59 @@ private fun MatchFinishedScreen(
         }
     }
 }
+
+
+@Composable
+private fun SyncStatusLabel(saveTapSignal: Int) {
+    val context = LocalContext.current
+    val syncedVisibleWindowMs = 4_000L
+    var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var statusText by remember { mutableStateOf<String?>(null) }
+    var lastSaveTapAtMillis by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(saveTapSignal) {
+        if (saveTapSignal > 0) {
+            lastSaveTapAtMillis = System.currentTimeMillis()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            nowMillis = System.currentTimeMillis()
+            delay(1000)
+        }
+    }
+
+    LaunchedEffect(nowMillis, lastSaveTapAtMillis) {
+        val pending = PendingMatchStore.getPending(context.applicationContext)
+        val nextStatus = when {
+            pending != null && nowMillis < pending.nextRetryAt -> {
+                val remainingSeconds = ((pending.nextRetryAt - nowMillis + 999L) / 1000L).coerceAtLeast(1L)
+                "Retry in ${remainingSeconds}s"
+            }
+            pending != null -> "Syncing..."
+            lastSaveTapAtMillis > 0L && (nowMillis - lastSaveTapAtMillis) <= syncedVisibleWindowMs ->
+                "Synced \u2713"
+            else -> null
+        }
+        if (statusText != nextStatus) {
+            statusText = nextStatus
+        }
+    }
+    val label = statusText ?: return
+
+    Text(
+        text = label,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = WhiteSoft,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp, end = 10.dp, bottom = 2.dp)
+    )
+}
+
 
 @Composable
 private fun EndMatchButton(onClick: () -> Unit) {
@@ -953,3 +1013,4 @@ private fun buildSetScoresText(matchState: MatchState): String? {
     val completedSetsText = matchState.completedSets.joinToString(" ") { "${it.a}-${it.b}" }
     return completedSetsText.ifBlank { null }
 }
+
