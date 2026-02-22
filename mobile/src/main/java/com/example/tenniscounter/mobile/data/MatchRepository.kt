@@ -19,20 +19,21 @@ class MatchRepository(
         createdAt: Long,
         durationSeconds: Long,
         finalScoreText: String,
+        idempotencyKey: String,
         setScoresText: String? = null,
         photoUri: String? = null
     ): Boolean {
-        if (matchDao.existsMatch(createdAt, durationSeconds, finalScoreText)) return false
-        matchDao.insert(
+        val rowId = matchDao.insertOrIgnore(
             MatchEntity(
                 createdAt = createdAt,
                 durationSeconds = durationSeconds,
                 finalScoreText = finalScoreText,
                 setScoresText = setScoresText,
-                photoUri = photoUri
+                photoUri = photoUri,
+                idempotencyKey = idempotencyKey
             )
         )
-        return true
+        return rowId != -1L
     }
 
     suspend fun update(match: MatchEntity) = matchDao.update(match)

@@ -2,6 +2,7 @@
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -20,18 +21,8 @@ interface MatchDao {
     @Insert
     suspend fun insert(match: MatchEntity): Long
 
-    @Query(
-        "SELECT EXISTS(" +
-            "SELECT 1 FROM matches " +
-            "WHERE createdAt = :createdAt " +
-            "AND durationSeconds = :durationSeconds " +
-            "AND finalScoreText = :finalScoreText LIMIT 1)"
-    )
-    suspend fun existsMatch(
-        createdAt: Long,
-        durationSeconds: Long,
-        finalScoreText: String
-    ): Boolean
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertOrIgnore(match: MatchEntity): Long
 
     @Update
     suspend fun update(match: MatchEntity)
