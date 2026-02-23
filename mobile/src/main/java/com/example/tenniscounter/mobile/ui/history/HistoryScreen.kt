@@ -1,25 +1,30 @@
 package com.example.tenniscounter.mobile.ui.history
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tenniscounter.mobile.data.local.MatchEntity
+import com.example.tenniscounter.mobile.ui.components.MatchCard
+import com.example.tenniscounter.mobile.ui.components.PrimaryButton
+import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
+import com.example.tenniscounter.mobile.ui.theme.PlayceColors
+import com.example.tenniscounter.mobile.ui.theme.PlayceTheme
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -32,40 +37,75 @@ fun HistoryScreen(
 ) {
     val matches by viewModel.matches.collectAsStateWithLifecycle()
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    onNewMatch { createdId ->
-                        onMatchClick(createdId)
-                    }
-                }
-            ) {
-                Text("New match")
+    HistoryContent(
+        matches = matches,
+        onMatchClick = onMatchClick,
+        onCreateMatch = {
+            onNewMatch { createdId ->
+                onMatchClick(createdId)
             }
         }
+    )
+}
+
+@Composable
+private fun HistoryContent(
+    matches: List<MatchEntity>,
+    onMatchClick: (Long) -> Unit,
+    onCreateMatch: () -> Unit
+) {
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PlayceColors.Background),
+        containerColor = PlayceColors.Background
     ) { innerPadding ->
         if (matches.isEmpty()) {
-            Column(
+            EmptyHistoryState(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("No matches yet")
-            }
+                    .padding(innerPadding),
+                onCreateMatch = onCreateMatch
+            )
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "PLAYCE",
+                                color = PlayceColors.TextPrimary,
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                            Text(
+                                text = "Your match highlights",
+                                color = PlayceColors.TextSecondary,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        PrimaryButton(
+                            text = "New Match",
+                            onClick = onCreateMatch,
+                            style = PrimaryButtonStyle.Outline
+                        )
+                    }
+                }
+
                 items(matches, key = { it.id }) { match ->
-                    MatchHistoryItem(
+                    MatchCard(
                         match = match,
+                        dateText = formatDate(match.createdAt),
+                        durationText = formatDuration(match.durationSeconds).takeIf { match.durationSeconds > 0 },
+                        setScoresText = match.setScoresText?.let(::formatSetScoresForDisplay),
                         onClick = { onMatchClick(match.id) }
                     )
                 }
@@ -75,31 +115,39 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun MatchHistoryItem(
-    match: MatchEntity,
-    onClick: () -> Unit
+private fun EmptyHistoryState(
+    modifier: Modifier = Modifier,
+    onCreateMatch: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+    Column(
+        modifier = modifier.padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = match.finalScoreText,
-                fontWeight = FontWeight.Bold
+                text = "No Playces yet",
+                color = PlayceColors.TextPrimary,
+                style = MaterialTheme.typography.headlineMedium
             )
-            match.setScoresText?.let { setScores ->
-                Text(text = formatSetScoresForDisplay(setScores))
-            }
-            Text(text = formatDate(match.createdAt))
-            Text(text = "Duration: ${formatDuration(match.durationSeconds)}")
+            Text(
+                text = "Capture your next match highlight and build your history here.",
+                color = PlayceColors.TextSecondary,
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
+        PrimaryButton(
+            text = "Create your first Playce",
+            onClick = onCreateMatch,
+            style = PrimaryButtonStyle.Outline,
+            modifier = Modifier
+                .padding(top = 22.dp)
+                .fillMaxWidth()
+        )
     }
 }
 
 private fun formatSetScoresForDisplay(setScoresText: String): String {
-    return setScoresText.trim().split(Regex("\\s+")).joinToString(" · ")
+    return setScoresText.trim().split(Regex("\\s+")).joinToString(" | ")
 }
 
 private fun formatDate(timestampMillis: Long): String {
@@ -117,5 +165,48 @@ private fun formatDuration(totalSeconds: Long): String {
         String.format("%d:%02d:%02d", hours, minutes, seconds)
     } else {
         String.format("%02d:%02d", minutes, seconds)
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun HistoryPreview() {
+    PlayceTheme {
+        HistoryContent(
+            matches = listOf(
+                MatchEntity(
+                    id = 1,
+                    createdAt = System.currentTimeMillis(),
+                    durationSeconds = 4812,
+                    finalScoreText = "6-4 / 3-6 / 6-3",
+                    setScoresText = "6-4 3-6 6-3",
+                    photoUri = null,
+                    idempotencyKey = "preview-1"
+                ),
+                MatchEntity(
+                    id = 2,
+                    createdAt = System.currentTimeMillis() - 3_600_000,
+                    durationSeconds = 2650,
+                    finalScoreText = "7-6 / 6-4",
+                    setScoresText = "7-6 6-4",
+                    photoUri = null,
+                    idempotencyKey = "preview-2"
+                )
+            ),
+            onMatchClick = {},
+            onCreateMatch = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun HistoryEmptyPreview() {
+    PlayceTheme {
+        HistoryContent(
+            matches = emptyList(),
+            onMatchClick = {},
+            onCreateMatch = {}
+        )
     }
 }
