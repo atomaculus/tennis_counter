@@ -15,6 +15,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -79,15 +81,46 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val CourtGreen = Color(0xFF0F3415)
-private val CourtGreenDark = Color(0xFF0A250F)
-private val WhiteStrong = Color(0xFFF8FFF8)
-private val WhiteSoft = Color(0xFFD9E7D9)
-private val ScrimBlack = Color(0xAA000000)
+private object PlayceWearColors {
+    val Background = Color(0xFF000000)
+    val Surface = Color(0xFF101010)
+    val SurfaceElevated = Color(0xFF171717)
+    val SurfacePressed = Color(0xFF202020)
+    val Border = Color(0xFF2A2A2A)
+    val TextPrimary = Color(0xFFF5F5F5)
+    val TextSecondary = Color(0xFFB6B6B6)
+    val Accent = Color(0xFFB8FF2C)
+    val AccentPressed = Color(0xFFA6E828)
+    val AccentSoft = Color(0x2218FF8C)
+    val Scrim = Color(0xCC000000)
+    val Danger = Color(0xFFFF6B6B)
+}
+
+private object PlayceWearSpacing {
+    val Xs: Dp = 4.dp
+    val Sm: Dp = 8.dp
+    val Md: Dp = 10.dp
+    val Lg: Dp = 12.dp
+    val Xl: Dp = 16.dp
+}
+
+private object PlayceWearShapes {
+    val Chip = RoundedCornerShape(12.dp)
+    val Card = RoundedCornerShape(16.dp)
+    val Sheet = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+    val Pill = RoundedCornerShape(999.dp)
+}
+
 private const val WEAR_DATA_LAYER_TAG = "WearDataLayer"
 private const val ACK_WAIT_RETRY_MS = 10_000L
 private const val RETRY_TRIGGER_THROTTLE_MS = 1_500L
 private val retryScope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+private enum class PlayceButtonVariant {
+    Primary,
+    Secondary,
+    Danger
+}
 
 private enum class AppScreen {
     Counter,
@@ -138,14 +171,109 @@ class MainActivity : ComponentActivity() {
 fun TennisWearTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colors = Colors(
-            primary = WhiteStrong,
-            secondary = Color.White,
-            background = CourtGreenDark,
-            onBackground = WhiteStrong,
-            onPrimary = CourtGreenDark
+            primary = PlayceWearColors.Accent,
+            secondary = PlayceWearColors.SurfaceElevated,
+            background = PlayceWearColors.Background,
+            onBackground = PlayceWearColors.TextPrimary,
+            onPrimary = PlayceWearColors.Background
         ),
         content = content
     )
+}
+
+@Composable
+private fun PlayceCard(
+    modifier: Modifier = Modifier,
+    accentBorder: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(PlayceWearShapes.Card)
+            .background(PlayceWearColors.Surface)
+            .border(
+                width = 1.dp,
+                color = if (accentBorder) PlayceWearColors.AccentSoft else PlayceWearColors.Border,
+                shape = PlayceWearShapes.Card
+            )
+            .padding(PlayceWearSpacing.Lg)
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun PlayceChip(
+    text: String,
+    modifier: Modifier = Modifier,
+    accent: Boolean = false
+) {
+    Box(
+        modifier = modifier
+            .clip(PlayceWearShapes.Chip)
+            .background(if (accent) PlayceWearColors.AccentSoft else PlayceWearColors.SurfaceElevated)
+            .border(
+                width = 1.dp,
+                color = if (accent) PlayceWearColors.Accent.copy(alpha = 0.25f) else PlayceWearColors.Border,
+                shape = PlayceWearShapes.Chip
+            )
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (accent) PlayceWearColors.Accent else PlayceWearColors.TextSecondary,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
+}
+
+@Composable
+private fun PlayceButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    variant: PlayceButtonVariant = PlayceButtonVariant.Secondary
+) {
+    val background = when (variant) {
+        PlayceButtonVariant.Primary -> PlayceWearColors.Accent
+        PlayceButtonVariant.Secondary -> PlayceWearColors.SurfaceElevated
+        PlayceButtonVariant.Danger -> PlayceWearColors.Danger.copy(alpha = 0.18f)
+    }
+    val content = when (variant) {
+        PlayceButtonVariant.Primary -> PlayceWearColors.Background
+        PlayceButtonVariant.Secondary -> PlayceWearColors.TextPrimary
+        PlayceButtonVariant.Danger -> PlayceWearColors.Danger
+    }
+
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = when (variant) {
+                    PlayceButtonVariant.Primary -> PlayceWearColors.Accent.copy(alpha = 0.35f)
+                    PlayceButtonVariant.Secondary -> PlayceWearColors.Border
+                    PlayceButtonVariant.Danger -> PlayceWearColors.Danger.copy(alpha = 0.28f)
+                },
+                shape = PlayceWearShapes.Pill
+            ),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = if (enabled) background else PlayceWearColors.Surface,
+            contentColor = if (enabled) content else PlayceWearColors.TextSecondary
+        )
+    ) {
+        Text(
+            text = text,
+            fontWeight = FontWeight.Black,
+            fontSize = 11.sp,
+            color = if (enabled) content else PlayceWearColors.TextSecondary
+        )
+    }
 }
 
 @Composable
@@ -401,10 +529,11 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
             Text(
                 text = transientMessage.orEmpty(),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CourtGreen)
+                    .clip(PlayceWearShapes.Chip)
+                    .background(PlayceWearColors.SurfaceElevated)
+                    .border(1.dp, PlayceWearColors.Accent.copy(alpha = 0.2f), PlayceWearShapes.Chip)
                     .padding(horizontal = 10.dp, vertical = 6.dp),
-                color = WhiteStrong,
+                color = PlayceWearColors.TextPrimary,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 11.sp
             )
@@ -426,18 +555,18 @@ private fun CounterScreen(
     val listState = rememberScalingLazyListState()
 
     Scaffold(
-        modifier = Modifier.background(CourtGreenDark),
+        modifier = Modifier.background(PlayceWearColors.Background),
         timeText = { TimeText() },
         positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
     ) {
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = PlayceWearSpacing.Sm),
             state = listState,
             autoCentering = AutoCenteringParams(itemIndex = 1),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
         ) {
             item {
                 Row(
@@ -460,8 +589,8 @@ private fun CounterScreen(
             item {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -504,7 +633,7 @@ private fun MatchFinishedScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CourtGreenDark)
+            .background(PlayceWearColors.Background)
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         if (safeSummary == null) {
@@ -512,8 +641,12 @@ private fun MatchFinishedScreen(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("MATCH FINISHED", fontWeight = FontWeight.Black, color = WhiteStrong)
-                Text("No summary", color = WhiteSoft, fontSize = 11.sp)
+                Text(
+                    "MATCH FINISHED",
+                    fontWeight = FontWeight.Black,
+                    color = PlayceWearColors.TextPrimary
+                )
+                Text("No summary", color = PlayceWearColors.TextSecondary, fontSize = 11.sp)
             }
             return@Box
         }
@@ -523,71 +656,64 @@ private fun MatchFinishedScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "MATCH FINISHED",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Black,
-                    color = WhiteSoft
-                )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
+            ) {
+                PlayceChip(text = "MATCH FINISHED", accent = true)
                 Text(
                     text = safeSummary.setsScore,
-                    fontSize = 44.sp,
+                    fontSize = 46.sp,
                     fontWeight = FontWeight.Black,
-                    color = WhiteStrong
+                    color = PlayceWearColors.TextPrimary
                 )
-                Text(
-                    text = safeSummary.setsDetail,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = WhiteSoft,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-                Text(
-                    text = "Duration ${formatTime(safeSummary.durationSeconds)}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WhiteStrong,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-                Text(
-                    text = formatTimestamp(safeSummary.createdAt),
-                    fontSize = 9.sp,
-                    color = WhiteSoft,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+                PlayceCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    accentBorder = true
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = safeSummary.setsDetail,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PlayceWearColors.TextSecondary
+                        )
+                        Text(
+                            text = "Duration ${formatTime(safeSummary.durationSeconds)}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PlayceWearColors.TextPrimary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                        Text(
+                            text = formatTimestamp(safeSummary.createdAt),
+                            fontSize = 9.sp,
+                            color = PlayceWearColors.TextSecondary,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
             }
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Button(
+                PlayceButton(
+                    text = if (isSaved) "Saved OK" else "SAVE MATCH",
                     onClick = onSave,
                     enabled = !isSaved,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = WhiteStrong,
-                        contentColor = CourtGreenDark
-                    )
-                ) {
-                    Text(
-                        text = if (isSaved) "Saved OK" else "SAVE MATCH",
-                        fontWeight = FontWeight.Black,
-                        color = CourtGreenDark
-                    )
-                }
+                    variant = PlayceButtonVariant.Primary
+                )
                 SyncStatusLabel(saveTapSignal = saveTapSignal)
-                Button(
+                PlayceButton(
+                    text = "NEW MATCH",
                     onClick = onNewMatch,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = CourtGreen,
-                        contentColor = WhiteStrong
-                    )
-                ) {
-                    Text("NEW MATCH", fontWeight = FontWeight.Black, color = WhiteStrong)
-                }
+                    variant = PlayceButtonVariant.Secondary
+                )
             }
         }
     }
@@ -637,87 +763,80 @@ private fun SyncStatusLabel(saveTapSignal: Int) {
         text = label,
         fontSize = 10.sp,
         fontWeight = FontWeight.SemiBold,
-        color = WhiteSoft,
+        color = when {
+            label.startsWith("Synced") -> PlayceWearColors.Accent
+            label.startsWith("Retry") -> PlayceWearColors.TextSecondary
+            else -> PlayceWearColors.TextPrimary
+        },
         textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 10.dp, end = 10.dp, bottom = 2.dp)
+            .clip(PlayceWearShapes.Chip)
+            .background(PlayceWearColors.Surface)
+            .border(1.dp, PlayceWearColors.Border, PlayceWearShapes.Chip)
+            .padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 5.dp)
     )
 }
 
 
 @Composable
 private fun EndMatchButton(onClick: () -> Unit) {
-    Button(
+    PlayceButton(
+        text = "END MATCH",
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(
-            backgroundColor = WhiteStrong.copy(alpha = 0.18f),
-            contentColor = WhiteStrong
-        )
-    ) {
-        Text(
-            text = "END MATCH",
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 11.sp,
-            color = WhiteStrong
-        )
-    }
+        variant = PlayceButtonVariant.Secondary
+    )
 }
 
 @Composable
 private fun CompactScore(label: String, a: Int, b: Int) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(CourtGreen)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = WhiteSoft
-        )
-        Text(
-            text = "$a - $b",
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Black,
-            color = WhiteStrong
-        )
+    PlayceCard(accentBorder = false) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = label,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = PlayceWearColors.TextSecondary
+            )
+            Text(
+                text = "$a - $b",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Black,
+                color = PlayceWearColors.TextPrimary
+            )
+        }
     }
 }
 
 @Composable
 private fun PointsBoard(pointA: String, pointB: String) {
-    Row(
+    PlayceCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 4.dp),
+        accentBorder = true
     ) {
-        BigPoint(label = "A", points = pointA)
-        Text(
-            text = "-",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Black,
-            color = WhiteSoft
-        )
-        BigPoint(label = "B", points = pointB)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BigPoint(label = "A", points = pointA)
+            Text(
+                text = "-",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                color = PlayceWearColors.TextSecondary
+            )
+            BigPoint(label = "B", points = pointB)
+        }
     }
 }
 
 @Composable
 private fun BigPoint(label: String, points: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = WhiteSoft
-        )
+        PlayceChip(text = label, accent = false)
         AnimatedContent(
             targetState = points,
             transitionSpec = {
@@ -730,7 +849,8 @@ private fun BigPoint(label: String, points: String) {
                 text = targetValue,
                 fontSize = 56.sp,
                 fontWeight = FontWeight.Black,
-                color = WhiteStrong
+                color = PlayceWearColors.TextPrimary,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }
@@ -743,18 +863,22 @@ private fun AddPointGestureButton(
     onTap: () -> Unit,
     onLongPress: () -> Unit
 ) {
+    var isPressed by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .size(64.dp)
             .clip(CircleShape)
-            .background(WhiteStrong)
+            .background(if (isPressed) PlayceWearColors.AccentPressed else PlayceWearColors.Accent)
+            .border(1.dp, PlayceWearColors.Accent.copy(alpha = 0.4f), CircleShape)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
+                        isPressed = true
                         onPressStateChange(true)
                         try {
                             tryAwaitRelease()
                         } finally {
+                            isPressed = false
                             onPressStateChange(false)
                         }
                     },
@@ -768,32 +892,28 @@ private fun AddPointGestureButton(
             text = label,
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
-            color = CourtGreenDark
+            color = PlayceWearColors.Background
         )
     }
 }
 
 @Composable
 private fun TimerFooter(elapsedSeconds: Int) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(CourtGreen)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "TIMER",
-            fontSize = 9.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = WhiteSoft
-        )
-        Text(
-            text = formatTime(elapsedSeconds),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Black,
-            color = WhiteStrong
-        )
+    PlayceCard(accentBorder = false) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "TIMER",
+                fontSize = 9.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = PlayceWearColors.Accent
+            )
+            Text(
+                text = formatTime(elapsedSeconds),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = PlayceWearColors.TextPrimary
+            )
+        }
     }
 }
 
@@ -806,7 +926,7 @@ private fun BottomActionSheet(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ScrimBlack)
+            .background(PlayceWearColors.Scrim)
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { onDismiss() })
             }
@@ -815,35 +935,24 @@ private fun BottomActionSheet(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-                .background(CourtGreen)
+                .clip(PlayceWearShapes.Sheet)
+                .background(PlayceWearColors.Surface)
+                .border(1.dp, PlayceWearColors.Border, PlayceWearShapes.Sheet)
                 .padding(horizontal = 10.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                text = title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = WhiteSoft
-            )
+            PlayceChip(text = title, accent = true)
 
             actions.forEach { action ->
-                Button(
+                PlayceButton(
+                    text = action.label,
                     onClick = action.onClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = WhiteStrong,
-                        contentColor = CourtGreenDark
-                    )
-                ) {
-                    Text(
-                        text = action.label,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                        color = CourtGreenDark
-                    )
-                }
+                    variant = when {
+                        action.label.contains("END MATCH", ignoreCase = true) -> PlayceButtonVariant.Danger
+                        else -> PlayceButtonVariant.Secondary
+                    }
+                )
             }
         }
     }
