@@ -19,14 +19,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,11 +48,13 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.AutoCenteringParams
 import androidx.wear.compose.material.Button
@@ -629,6 +634,7 @@ private fun MatchFinishedScreen(
     saveTapSignal: Int
 ) {
     val safeSummary = summary
+    val scrollState = rememberScrollState()
 
     Box(
         modifier = Modifier
@@ -652,11 +658,16 @@ private fun MatchFinishedScreen(
         }
 
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
         ) {
+            SyncStatusLabel(saveTapSignal = saveTapSignal)
+
             Column(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
             ) {
@@ -708,7 +719,6 @@ private fun MatchFinishedScreen(
                     enabled = !isSaved,
                     variant = PlayceButtonVariant.Primary
                 )
-                SyncStatusLabel(saveTapSignal = saveTapSignal)
                 PlayceButton(
                     text = "NEW MATCH",
                     onClick = onNewMatch,
@@ -759,8 +769,16 @@ private fun SyncStatusLabel(saveTapSignal: Int) {
     }
     val label = statusText ?: return
 
+    val normalizedLabel = when {
+        label.startsWith("Retry in", ignoreCase = true) -> label.uppercase(Locale.getDefault())
+        label.startsWith("Retry", ignoreCase = true) -> "RETRY"
+        label.startsWith("Syncing", ignoreCase = true) -> "SYNCING..."
+        label.startsWith("Synced", ignoreCase = true) -> "SENT"
+        else -> label.uppercase(Locale.getDefault())
+    }
+
     Text(
-        text = label,
+        text = normalizedLabel,
         fontSize = 10.sp,
         fontWeight = FontWeight.SemiBold,
         color = when {
@@ -772,8 +790,14 @@ private fun SyncStatusLabel(saveTapSignal: Int) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(PlayceWearShapes.Chip)
-            .background(PlayceWearColors.Surface)
-            .border(1.dp, PlayceWearColors.Border, PlayceWearShapes.Chip)
+            .background(
+                if (label.startsWith("Synced")) PlayceWearColors.AccentSoft else PlayceWearColors.Surface
+            )
+            .border(
+                1.dp,
+                if (label.startsWith("Synced")) PlayceWearColors.Accent.copy(alpha = 0.28f) else PlayceWearColors.Border,
+                PlayceWearShapes.Chip
+            )
             .padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 5.dp)
     )
 }
@@ -816,26 +840,54 @@ private fun PointsBoard(pointA: String, pointB: String) {
             .padding(horizontal = 4.dp),
         accentBorder = true
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BigPoint(label = "A", points = pointA)
-            Text(
-                text = "-",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                color = PlayceWearColors.TextSecondary
-            )
-            BigPoint(label = "B", points = pointB)
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val pointFontSize = when {
+                maxWidth < 146.dp -> 36.sp
+                maxWidth < 164.dp -> 42.sp
+                maxWidth < 182.dp -> 48.sp
+                else -> 56.sp
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BigPoint(
+                    label = "A",
+                    points = pointA,
+                    pointFontSize = pointFontSize,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = "-",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    color = PlayceWearColors.TextSecondary,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                BigPoint(
+                    label = "B",
+                    points = pointB,
+                    pointFontSize = pointFontSize,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun BigPoint(label: String, points: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun BigPoint(
+    label: String,
+    points: String,
+    modifier: Modifier = Modifier,
+    pointFontSize: TextUnit = 56.sp
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         PlayceChip(text = label, accent = false)
         AnimatedContent(
             targetState = points,
@@ -847,10 +899,16 @@ private fun BigPoint(label: String, points: String) {
         ) { targetValue ->
             Text(
                 text = targetValue,
-                fontSize = 56.sp,
+                fontSize = pointFontSize,
                 fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Monospace,
                 color = PlayceWearColors.TextPrimary,
-                modifier = Modifier.padding(top = 2.dp)
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp)
             )
         }
     }
