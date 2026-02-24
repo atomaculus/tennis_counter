@@ -27,6 +27,11 @@ Estado funcional actual:
 - Sync Wear -> Mobile activo por Data Layer (`MessageClient`).
 - Sync con idempotency + ACK Wear<->Mobile para limpiar pendientes en Wear.
 - Mobile recibe, deduplica e inserta en Room (`MatchRepository`).
+- Rediseño visual PLAYCE aplicado:
+  - **Mobile (`:mobile`)** con estética dark minimal + acento verde tenis.
+  - **Wear (`:app`)** con theme PLAYCE consistente (dark minimal + acento verde).
+  - Wear score responsivo (sin overlap en `30-15`, `40-30`, `AD-40`).
+  - Wear `MATCH FINISHED` conserva CTAs (`SAVE MATCH` / `NEW MATCH`) + estado de sync visible como pill discreto.
 
 ---
 
@@ -57,6 +62,9 @@ Notas:
 - `app/src/main/java/com/example/tenniscounter/MainActivity.kt`
   - UI Wear Compose.
   - Handler de `SAVE MATCH`, envío Data Layer (`/match_finished`) y UI de estado de sync en `MATCH FINISHED`.
+  - Theme/components PLAYCE para Wear (colores, cards/chips/buttons).
+  - Score board responsivo (ajuste de tamaño por ancho disponible).
+  - `MATCH FINISHED` con layout scrollable para pantallas pequeñas.
 - `app/src/main/java/com/example/tenniscounter/sync/PendingMatchStore.kt`
   - Persistencia local de pending message en Wear (`SharedPreferences`) para retry/ACK.
   - Lectura de estado UI (`getPending()` / `hasPending()`).
@@ -90,6 +98,10 @@ Notas:
   - Render de imagen shareable incluyendo detalle de sets.
 - `mobile/src/main/java/com/example/tenniscounter/mobile/ui/share/MatchShareManager.kt`
   - Prepara datos del share card.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/ui/components/*`
+  - Componentes UI PLAYCE reutilizables (`MatchCard`, `PrimaryButton`, `SectionHeader`, `ShareCard`).
+- `mobile/src/main/java/com/example/tenniscounter/mobile/ui/theme/*`
+  - Theme PLAYCE (`PlayceColors`, `PlayceTheme`, `PlayceShapes`, `PlayceTypography`).
 - `mobile/src/main/AndroidManifest.xml`
   - Registro correcto del listener de Wear.
 
@@ -239,9 +251,8 @@ Casos de diagnóstico:
   - envío exitoso => log `Sent /match_finished`.
   - ACK recibido => log con `ACK received ... clearedPending=true/false`.
   - UI `MATCH FINISHED` (bajo `SAVE MATCH`) refleja pending local:
-    - `Syncing...` si hay pending listo para retry/envío
-    - `Retry in Ns` si `now < nextRetryAt`
-    - `Synced ✓` transitorio cuando no hay pending tras `SAVE MATCH`
+    - pill superior discreto con estado (`SYNCING...`, `RETRY IN Ns`, `SENT`)
+    - sin ocultar `SAVE MATCH` / `NEW MATCH`
 - Mobile:
   - `onMessageReceived path=/match_finished ...`
   - `Decoded payload ... durationSeconds=...`
@@ -260,8 +271,11 @@ Casos de diagnóstico:
   - contrato de rutas y keys (`/match_finished` y `/match_finished_ack`).
 - En UI Wear de `MATCH FINISHED`:
   - no ocultar ni cambiar comportamiento de `NEW MATCH`.
-  - mantener cambios de diseño mínimos (label/chip pequeño bajo `SAVE MATCH`).
+  - mantener el estado de sync/retry como pill/banner discreto (no ocupar el espacio principal del CTA).
 - No tocar lógica de ACK/idempotency/retry al hacer ajustes visuales de estado; solo leer `PendingMatchStore`.
+- En UI Wear del score:
+  - priorizar legibilidad sobre densidad visual en pantallas pequeñas.
+  - evitar overlap (usar layout responsivo/weights y, si hace falta, reducir fontSize por ancho).
 - Para cambios de Room:
   - agregar migración explícita si cambia schema.
 - Para cambios de timer Wear:
