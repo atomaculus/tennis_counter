@@ -30,6 +30,11 @@ Estado funcional actual:
 - Rediseño visual PLAYCE aplicado:
   - **Mobile (`:mobile`)** con estética dark minimal + acento verde tenis.
   - **Wear (`:app`)** con theme PLAYCE consistente (dark minimal + acento verde).
+  - Branding PLAYCE aplicado en launcher icons (Mobile + Wear) con adaptive icon:
+    - fondo negro sólido
+    - logo `A` verde como foreground
+  - Header principal de historial en mobile usa `wordmark` PLAYCE (imagen) en lugar de texto plano.
+  - Mobile `MainActivity` usa theme `NoActionBar` para evitar barra superior nativa duplicada.
   - Wear score responsivo (sin overlap en `30-15`, `40-30`, `AD-40`).
   - Wear `MATCH FINISHED` conserva CTAs (`SAVE MATCH` / `NEW MATCH`) + estado de sync visible como pill discreto.
 
@@ -78,6 +83,13 @@ Notas:
   - Service del timer con `onTaskRemoved()` para consolidar tiempo y frenar el timer.
 - `app/src/main/AndroidManifest.xml`
   - Registro de `MatchTimerService` y `WearAckListenerService`.
+  - Launcher icon configurado vía `@mipmap/ic_launcher` (adaptive icon PLAYCE).
+- `app/src/main/res/mipmap-anydpi-v26/*`
+  - Adaptive icons Wear (`ic_launcher`, `ic_launcher_round`).
+- `app/src/main/res/drawable/ic_launcher_background.xml`
+  - Fondo negro del adaptive icon.
+- `app/src/main/res/drawable/ic_launcher_foreground.png`
+  - Foreground con logo `A` verde centrado/reescalado.
 
 ### Mobile
 - `mobile/src/main/java/com/example/tenniscounter/mobile/sync/WearMatchListenerService.kt`
@@ -92,6 +104,7 @@ Notas:
   - Inserción con dedupe y soporte `setScoresText`.
 - `mobile/src/main/java/com/example/tenniscounter/mobile/ui/history/HistoryScreen.kt`
   - Muestra resultado global y, si existe, detalle de sets.
+  - Header usa `wordmark` PLAYCE (`playce_wordmark_header.png`).
 - `mobile/src/main/java/com/example/tenniscounter/mobile/ui/detail/MatchDetailScreen.kt`
   - Muestra resultado global + detalle de sets.
 - `mobile/src/main/java/com/example/tenniscounter/mobile/ui/share/ShareCard.kt`
@@ -104,6 +117,17 @@ Notas:
   - Theme PLAYCE (`PlayceColors`, `PlayceTheme`, `PlayceShapes`, `PlayceTypography`).
 - `mobile/src/main/AndroidManifest.xml`
   - Registro correcto del listener de Wear.
+  - `MainActivity` con theme `Theme.Playce.Mobile` (sin barra superior nativa).
+- `mobile/src/main/res/values/themes.xml`
+  - Theme XML nativo (`android:Theme.Material.NoActionBar`) para quitar ActionBar sin depender de themes XML de Material/AppCompat.
+- `mobile/src/main/res/mipmap-anydpi-v26/*`
+  - Adaptive icons Mobile (`ic_launcher`, `ic_launcher_round`).
+- `mobile/src/main/res/drawable/ic_launcher_background.xml`
+  - Fondo negro del adaptive icon.
+- `mobile/src/main/res/drawable/ic_launcher_foreground.png`
+  - Foreground con logo `A` verde centrado/reescalado.
+- `assets/branding/*`
+  - Assets fuente de branding PLAYCE (ícono/wordmark de referencia).
 
 ---
 
@@ -228,6 +252,7 @@ Clean + mobile rebuild (útil para invalidar overlays/dex):
 ### Ejecución en Android Studio
 - `:app` en dispositivo/emulador Wear.
 - `:mobile` en teléfono.
+- Si aparece una barra superior nativa en mobile (duplicando el wordmark), verificar que `MainActivity` siga usando `Theme.Playce.Mobile`.
 
 Nota tras cambio de `applicationId` de mobile:
 - Si Android Studio intenta lanzar `com.example.tenniscounter.mobile/...` y falla, recrear Run Configuration.
@@ -265,6 +290,9 @@ Casos de diagnóstico:
 
 - Leer siempre `AGENTS.md` antes de modificar código.
 - Mantener cambios incrementales y no romper lógica existente.
+- En cambios de branding/UI:
+  - no modificar lógica de scoring/sync/timer/DB.
+  - priorizar cambios en recursos/theme/layout.
 - En Data Layer, verificar siempre:
   - `applicationId` alineado entre módulos.
   - manifest de listener correcto.
@@ -276,6 +304,8 @@ Casos de diagnóstico:
 - En UI Wear del score:
   - priorizar legibilidad sobre densidad visual en pantallas pequeñas.
   - evitar overlap (usar layout responsivo/weights y, si hace falta, reducir fontSize por ancho).
+- En mobile header:
+  - no reintroducir barra superior nativa (ActionBar) si ya existe wordmark dentro de Compose.
 - Para cambios de Room:
   - agregar migración explícita si cambia schema.
 - Para cambios de timer Wear:
