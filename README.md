@@ -1,44 +1,24 @@
-\# Tennis Counter para Wear OS
+# PLAYCE (play + ace)
 
+Sistema de scoring de tenis: Wear OS (partido en vivo) + Android mobile (historial y share card).
 
+## Estructura
+- `app/` -> Wear OS (contador, timer, sync con ACK)
+- `mobile/` -> Android phone (Room, historial, detalle, compartir)
 
-Aplicación base para smartwatch Android (Wear OS) que incluye:
+## Build de release
+1. Configurar versiones en `gradle.properties`:
+   - `PLAYCE_VERSION_CODE`
+   - `PLAYCE_VERSION_NAME`
+2. Copiar `keystore.properties.template` a `keystore.properties` y completar datos reales.
+3. Generar artefactos:
+   - `./gradlew :mobile:bundleRelease`
+   - `./gradlew :app:assembleRelease`
 
+## Crash reporting
+- Activar `enableCrashlytics=true` en `gradle.properties`.
+- Agregar `google-services.json` en módulos que reporten crashes.
 
-
-\- Cronómetro de partido (mm:ss).
-
-\- Botones para sumar y restar puntos de Jugador A y Jugador B.
-
-\- Conteo de puntos con lógica de deuce/ventaja.
-
-\- Conteo automático de games y sets con regla de diferencia de 2.
-
-
-
-\## Lógica de tenis implementada
-
-
-
-\- Puntos: 0, 15, 30, 40, AD.
-
-\- Un game se gana con al menos 4 puntos y 2 de diferencia.
-
-\- Un set se gana con al menos 6 games y 2 de diferencia.
-
-
-
-\## Siguientes mejoras recomendadas
-
-
-
-\- Tie-break (6-6).
-
-\- Historial por set.
-
-\- Vibración al ganar game/set.
-
-\- Soporte para crown/rotary input y layout optimizado circular.
-
-
-
+## Publicación
+Ver checklist detallado en `docs/playstore-checklist.md`.
+Borrador de política en `docs/privacy-policy.md`.
