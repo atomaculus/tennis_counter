@@ -1,0 +1,366 @@
+package com.example.tenniscounter.mobile.ui.counter
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.tenniscounter.mobile.billing.PremiumUiState
+import com.example.tenniscounter.mobile.ui.components.PrimaryButton
+import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
+import com.example.tenniscounter.mobile.ui.theme.PlayceColors
+import com.example.tenniscounter.mobile.ui.theme.PlayceTheme
+
+@Composable
+fun MobileCounterScreen(
+    viewModel: MobileCounterViewModel,
+    premiumUiState: PremiumUiState,
+    onOpenHistory: () -> Unit,
+    onUnlockPremium: () -> Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    Scaffold(
+        containerColor = PlayceColors.Background
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(PlayceColors.Background)
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            HeaderRow(
+                premiumUiState = premiumUiState,
+                onOpenHistory = onOpenHistory,
+                onUnlockPremium = onUnlockPremium
+            )
+            TimerCard(
+                elapsedSeconds = state.elapsedSeconds,
+                isRunning = state.isTimerRunning,
+                onToggleTimer = viewModel::toggleTimer
+            )
+            ScoreboardCard(
+                state = state,
+                onPointA = viewModel::addPointToPlayerA,
+                onPointB = viewModel::addPointToPlayerB,
+                onUndoA = viewModel::undoLastPointForPlayerA,
+                onUndoB = viewModel::undoLastPointForPlayerB
+            )
+            ActionRow(
+                onResetGame = viewModel::resetGame,
+                onResetMatch = viewModel::resetMatch
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeaderRow(
+    premiumUiState: PremiumUiState,
+    onOpenHistory: () -> Unit,
+    onUnlockPremium: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "PLAYCE Counter",
+                        color = PlayceColors.TextPrimary,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        text = if (premiumUiState.isPremiumUnlocked) {
+                            "Premium unlocked"
+                        } else {
+                            "Free mode: live counter on mobile"
+                        },
+                        color = PlayceColors.TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PrimaryButton(
+                    text = "History",
+                    onClick = onOpenHistory,
+                    style = PrimaryButtonStyle.Outline,
+                    modifier = Modifier.weight(1f)
+                )
+                if (!premiumUiState.isPremiumUnlocked) {
+                    PrimaryButton(
+                        text = "Premium",
+                        onClick = onUnlockPremium,
+                        style = PrimaryButtonStyle.Solid,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimerCard(
+    elapsedSeconds: Int,
+    isRunning: Boolean,
+    onToggleTimer: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Match timer",
+                    color = PlayceColors.TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = formatElapsed(elapsedSeconds),
+                    color = PlayceColors.TextPrimary,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            PrimaryButton(
+                text = if (isRunning) "Pause" else "Resume",
+                onClick = onToggleTimer,
+                style = PrimaryButtonStyle.Outline
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScoreboardCard(
+    state: MobileCounterState,
+    onPointA: () -> Unit,
+    onPointB: () -> Unit,
+    onUndoA: () -> Boolean,
+    onUndoB: () -> Boolean
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Live score",
+                color = PlayceColors.TextPrimary,
+                style = MaterialTheme.typography.titleLarge
+            )
+            ScoreHeaderRow()
+            PlayerRow(
+                name = "Player A",
+                sets = state.playerA.sets,
+                games = state.playerA.games,
+                pointsLabel = state.pointLabelForA(),
+                onAddPoint = onPointA,
+                onUndo = { onUndoA() }
+            )
+            PlayerRow(
+                name = "Player B",
+                sets = state.playerB.sets,
+                games = state.playerB.games,
+                pointsLabel = state.pointLabelForB(),
+                onAddPoint = onPointB,
+                onUndo = { onUndoB() }
+            )
+            if (state.completedSets.isNotEmpty()) {
+                Text(
+                    text = "Completed sets: " + state.completedSets.joinToString(" | ") { "${it.a}-${it.b}" },
+                    color = PlayceColors.TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScoreHeaderRow() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "",
+            modifier = Modifier.weight(1.6f)
+        )
+        ScoreHeaderCell("Sets")
+        ScoreHeaderCell("Games")
+        ScoreHeaderCell("Pts")
+    }
+}
+
+@Composable
+private fun PlayerRow(
+    name: String,
+    sets: Int,
+    games: Int,
+    pointsLabel: String,
+    onAddPoint: () -> Unit,
+    onUndo: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = PlayceColors.Background),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = name,
+                    color = PlayceColors.TextPrimary,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1.6f)
+                )
+                ScoreValueCell(sets.toString())
+                ScoreValueCell(games.toString())
+                ScoreValueCell(pointsLabel)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PrimaryButton(
+                    text = "+ Point",
+                    onClick = onAddPoint,
+                    modifier = Modifier.weight(1f)
+                )
+                PrimaryButton(
+                    text = "Undo",
+                    onClick = onUndo,
+                    style = PrimaryButtonStyle.Outline,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionRow(
+    onResetGame: () -> Unit,
+    onResetMatch: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        PrimaryButton(
+            text = "Reset Game",
+            onClick = onResetGame,
+            style = PrimaryButtonStyle.Outline,
+            modifier = Modifier.weight(1f)
+        )
+        PrimaryButton(
+            text = "New Match",
+            onClick = onResetMatch,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun RowScope.ScoreHeaderCell(text: String) {
+    Text(
+        text = text,
+        color = PlayceColors.TextSecondary,
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier
+            .weight(0.75f)
+            .padding(horizontal = 2.dp),
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun RowScope.ScoreValueCell(text: String) {
+    Text(
+        text = text,
+        color = PlayceColors.TextPrimary,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier
+            .weight(0.75f)
+            .padding(horizontal = 2.dp),
+        textAlign = TextAlign.Center
+    )
+}
+
+private fun formatElapsed(totalSeconds: Int): String {
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        String.format("%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format("%02d:%02d", minutes, seconds)
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun MobileCounterPreview() {
+    PlayceTheme {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(PlayceColors.Background)
+        ) {
+            ScoreboardCard(
+                state = MobileCounterState(
+                    playerA = CounterPlayerScore(points = 4, games = 2, sets = 1),
+                    playerB = CounterPlayerScore(points = 3, games = 1, sets = 0),
+                    completedSets = listOf(CounterSetScore(6, 4))
+                ),
+                onPointA = {},
+                onPointB = {},
+                onUndoA = { true },
+                onUndoB = { true }
+            )
+        }
+    }
+}

@@ -29,6 +29,7 @@ Estado funcional actual:
 - Mobile recibe, deduplica e inserta en Room (`MatchRepository`).
 - Monetización freemium en Mobile (Google Play Billing, compra única `premium_unlock`):
   - App gratis + unlock Premium opcional.
+  - Counter en mobile disponible gratis (lógica de scoring tipo Wear + timer local).
   - Sin Premium: mobile bloquea historial/detalle/share y no guarda matches recibidos desde Wear.
   - Con Premium: habilita guardado, historial, detalle y share card.
 - Rediseño visual PLAYCE aplicado:
@@ -112,6 +113,8 @@ Notas:
 - `mobile/src/main/java/com/example/tenniscounter/mobile/ui/history/HistoryScreen.kt`
   - Muestra resultado global y, si existe, detalle de sets.
   - Header usa `wordmark` PLAYCE (`playce_wordmark_header.png`).
+- `mobile/src/main/java/com/example/tenniscounter/mobile/ui/counter/*`
+  - Counter en mobile (scoring de tenis, undo, reset game/match, timer local).
 - `mobile/src/main/java/com/example/tenniscounter/mobile/ui/detail/MatchDetailScreen.kt`
   - Muestra resultado global + detalle de sets.
 - `mobile/src/main/java/com/example/tenniscounter/mobile/ui/share/ShareCard.kt`

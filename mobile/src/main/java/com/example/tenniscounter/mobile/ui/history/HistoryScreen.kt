@@ -45,6 +45,7 @@ fun HistoryScreen(
     premiumUiState: PremiumUiState,
     onUnlockPremium: () -> Unit,
     onRestorePurchases: () -> Unit,
+    onOpenCounter: () -> Unit,
     onMatchClick: (Long) -> Unit,
     onNewMatch: ((Long) -> Unit) -> Unit
 ) {
@@ -55,6 +56,7 @@ fun HistoryScreen(
         premiumUiState = premiumUiState,
         onUnlockPremium = onUnlockPremium,
         onRestorePurchases = onRestorePurchases,
+        onOpenCounter = onOpenCounter,
         onMatchClick = onMatchClick,
         onCreateMatch = {
             onNewMatch { createdId ->
@@ -70,6 +72,7 @@ private fun HistoryContent(
     premiumUiState: PremiumUiState,
     onUnlockPremium: () -> Unit,
     onRestorePurchases: () -> Unit,
+    onOpenCounter: () -> Unit,
     onMatchClick: (Long) -> Unit,
     onCreateMatch: () -> Unit
 ) {
@@ -84,6 +87,7 @@ private fun HistoryContent(
                 premiumUiState = premiumUiState,
                 onUnlockPremium = onUnlockPremium,
                 onRestorePurchases = onRestorePurchases,
+                onOpenCounter = onOpenCounter,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -124,8 +128,8 @@ private fun HistoryContent(
                             )
                         }
                         PrimaryButton(
-                            text = "New Match",
-                            onClick = onCreateMatch,
+                            text = "Counter",
+                            onClick = onOpenCounter,
                             style = PrimaryButtonStyle.Outline
                         )
                     }
@@ -150,6 +154,7 @@ private fun PremiumLockedHistoryState(
     premiumUiState: PremiumUiState,
     onUnlockPremium: () -> Unit,
     onRestorePurchases: () -> Unit,
+    onOpenCounter: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -209,6 +214,11 @@ private fun PremiumLockedHistoryState(
                     text = if (premiumUiState.isPurchaseInProgress) "Opening purchase..." else "Unlock Premium",
                     onClick = onUnlockPremium,
                     enabled = !premiumUiState.isPurchaseInProgress
+                )
+                PrimaryButton(
+                    text = "Use free counter",
+                    onClick = onOpenCounter,
+                    style = PrimaryButtonStyle.Outline
                 )
                 PrimaryButton(
                     text = "Restore purchase",
@@ -303,6 +313,7 @@ private fun HistoryPreview() {
             premiumUiState = PremiumUiState(isPremiumUnlocked = true),
             onUnlockPremium = {},
             onRestorePurchases = {},
+            onOpenCounter = {},
             onMatchClick = {},
             onCreateMatch = {}
         )
@@ -318,6 +329,7 @@ private fun HistoryEmptyPreview() {
             premiumUiState = PremiumUiState(isPremiumUnlocked = true),
             onUnlockPremium = {},
             onRestorePurchases = {},
+            onOpenCounter = {},
             onMatchClick = {},
             onCreateMatch = {}
         )

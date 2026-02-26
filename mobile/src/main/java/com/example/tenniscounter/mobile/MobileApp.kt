@@ -14,11 +14,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.tenniscounter.mobile.billing.PremiumBillingManager
 import com.example.tenniscounter.mobile.di.MobileServiceLocator
+import com.example.tenniscounter.mobile.ui.counter.MobileCounterScreen
+import com.example.tenniscounter.mobile.ui.counter.MobileCounterViewModel
 import com.example.tenniscounter.mobile.ui.detail.MatchDetailScreen
 import com.example.tenniscounter.mobile.ui.detail.MatchDetailViewModel
 import com.example.tenniscounter.mobile.ui.history.HistoryScreen
 import com.example.tenniscounter.mobile.ui.history.HistoryViewModel
 
+private const val COUNTER_ROUTE = "counter"
 private const val HISTORY_ROUTE = "history"
 private const val DETAIL_ROUTE = "detail/{matchId}"
 private const val DETAIL_ROUTE_PREFIX = "detail"
@@ -40,8 +43,18 @@ fun MobileApp() {
 
     NavHost(
         navController = navController,
-        startDestination = HISTORY_ROUTE
+        startDestination = COUNTER_ROUTE
     ) {
+        composable(COUNTER_ROUTE) {
+            val counterViewModel: MobileCounterViewModel = viewModel()
+            MobileCounterScreen(
+                viewModel = counterViewModel,
+                premiumUiState = premiumUiState,
+                onOpenHistory = { navController.navigate(HISTORY_ROUTE) },
+                onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) }
+            )
+        }
+
         composable(HISTORY_ROUTE) {
             val historyViewModel: HistoryViewModel = viewModel(
                 factory = HistoryViewModel.factory(repository)
@@ -51,6 +64,9 @@ fun MobileApp() {
                 premiumUiState = premiumUiState,
                 onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
                 onRestorePurchases = premiumBillingManager::restorePurchases,
+                onOpenCounter = {
+                    navController.navigate(COUNTER_ROUTE)
+                },
                 onMatchClick = { matchId ->
                     navController.navigate("$DETAIL_ROUTE_PREFIX/$matchId")
                 },
