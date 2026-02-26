@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.tenniscounter.mobile.billing.PremiumUiState
 import com.example.tenniscounter.mobile.data.local.MatchEntity
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
@@ -63,7 +64,10 @@ import kotlin.math.roundToInt
 @Composable
 fun MatchDetailScreen(
     viewModel: MatchDetailViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    premiumUiState: PremiumUiState,
+    onUnlockPremium: () -> Unit,
+    onRestorePurchases: () -> Unit
 ) {
     val match by viewModel.match.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -104,6 +108,16 @@ fun MatchDetailScreen(
             ) {
                 Text("Match not found", color = PlayceColors.TextPrimary)
             }
+            return@Scaffold
+        }
+
+        if (!premiumUiState.isPremiumUnlocked) {
+            LockedDetailContent(
+                premiumUiState = premiumUiState,
+                onUnlockPremium = onUnlockPremium,
+                onRestorePurchases = onRestorePurchases,
+                modifier = Modifier.padding(innerPadding)
+            )
             return@Scaffold
         }
 
@@ -164,6 +178,60 @@ fun MatchDetailScreen(
             onDismissRequest = {
                 shareRenderModel.value = null
             }
+        )
+    }
+}
+
+@Composable
+private fun LockedDetailContent(
+    premiumUiState: PremiumUiState,
+    onUnlockPremium: () -> Unit,
+    onRestorePurchases: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(PlayceColors.Background)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "Premium required",
+            color = PlayceColors.TextPrimary,
+            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
+        )
+        Text(
+            text = "Unlock Premium to view match details, add photos and share your Playce card.",
+            color = PlayceColors.TextSecondary,
+            style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
+        )
+        premiumUiState.productPriceLabel?.let { price ->
+            Text(
+                text = "One-time purchase: $price",
+                color = PlayceColors.TextPrimary,
+                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+            )
+        }
+        premiumUiState.message?.let { message ->
+            Text(
+                text = message,
+                color = PlayceColors.TextSecondary,
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+            )
+        }
+        PrimaryButton(
+            text = if (premiumUiState.isPurchaseInProgress) "Opening purchase..." else "Unlock Premium",
+            onClick = onUnlockPremium,
+            enabled = !premiumUiState.isPurchaseInProgress,
+            modifier = Modifier.fillMaxWidth()
+        )
+        PrimaryButton(
+            text = "Restore purchase",
+            onClick = onRestorePurchases,
+            style = PrimaryButtonStyle.Outline,
+            enabled = premiumUiState.isBillingReady,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

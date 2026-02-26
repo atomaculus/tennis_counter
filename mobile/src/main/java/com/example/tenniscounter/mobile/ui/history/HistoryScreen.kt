@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -25,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tenniscounter.mobile.R
+import com.example.tenniscounter.mobile.billing.PremiumUiState
 import com.example.tenniscounter.mobile.data.local.MatchEntity
 import com.example.tenniscounter.mobile.ui.components.MatchCard
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
@@ -38,6 +42,9 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel,
+    premiumUiState: PremiumUiState,
+    onUnlockPremium: () -> Unit,
+    onRestorePurchases: () -> Unit,
     onMatchClick: (Long) -> Unit,
     onNewMatch: ((Long) -> Unit) -> Unit
 ) {
@@ -45,6 +52,9 @@ fun HistoryScreen(
 
     HistoryContent(
         matches = matches,
+        premiumUiState = premiumUiState,
+        onUnlockPremium = onUnlockPremium,
+        onRestorePurchases = onRestorePurchases,
         onMatchClick = onMatchClick,
         onCreateMatch = {
             onNewMatch { createdId ->
@@ -57,6 +67,9 @@ fun HistoryScreen(
 @Composable
 private fun HistoryContent(
     matches: List<MatchEntity>,
+    premiumUiState: PremiumUiState,
+    onUnlockPremium: () -> Unit,
+    onRestorePurchases: () -> Unit,
     onMatchClick: (Long) -> Unit,
     onCreateMatch: () -> Unit
 ) {
@@ -66,7 +79,16 @@ private fun HistoryContent(
             .background(PlayceColors.Background),
         containerColor = PlayceColors.Background
     ) { innerPadding ->
-        if (matches.isEmpty()) {
+        if (!premiumUiState.isPremiumUnlocked) {
+            PremiumLockedHistoryState(
+                premiumUiState = premiumUiState,
+                onUnlockPremium = onUnlockPremium,
+                onRestorePurchases = onRestorePurchases,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
+        } else if (matches.isEmpty()) {
             EmptyHistoryState(
                 modifier = Modifier
                     .fillMaxSize()
@@ -118,6 +140,82 @@ private fun HistoryContent(
                         onClick = { onMatchClick(match.id) }
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PremiumLockedHistoryState(
+    premiumUiState: PremiumUiState,
+    onUnlockPremium: () -> Unit,
+    onRestorePurchases: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 20.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Image(
+                painter = painterResource(id = R.drawable.playce_wordmark_header),
+                contentDescription = "PLAYCE",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .width(152.dp)
+                    .height(30.dp)
+            )
+            Text(
+                text = "Free mode on watch. Unlock Premium to save and view your matches on phone.",
+                color = PlayceColors.TextSecondary,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "PLAYCE Premium",
+                    color = PlayceColors.TextPrimary,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Text(
+                    text = "Unlock match save, history, detail and share card on mobile.",
+                    color = PlayceColors.TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                premiumUiState.productPriceLabel?.let { price ->
+                    Text(
+                        text = "One-time purchase: $price",
+                        color = PlayceColors.TextPrimary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                premiumUiState.message?.let { message ->
+                    Text(
+                        text = message,
+                        color = PlayceColors.TextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                PrimaryButton(
+                    text = if (premiumUiState.isPurchaseInProgress) "Opening purchase..." else "Unlock Premium",
+                    onClick = onUnlockPremium,
+                    enabled = !premiumUiState.isPurchaseInProgress
+                )
+                PrimaryButton(
+                    text = "Restore purchase",
+                    onClick = onRestorePurchases,
+                    style = PrimaryButtonStyle.Outline,
+                    enabled = premiumUiState.isBillingReady
+                )
             }
         }
     }
@@ -202,6 +300,9 @@ private fun HistoryPreview() {
                     idempotencyKey = "preview-2"
                 )
             ),
+            premiumUiState = PremiumUiState(isPremiumUnlocked = true),
+            onUnlockPremium = {},
+            onRestorePurchases = {},
             onMatchClick = {},
             onCreateMatch = {}
         )
@@ -214,6 +315,9 @@ private fun HistoryEmptyPreview() {
     PlayceTheme {
         HistoryContent(
             matches = emptyList(),
+            premiumUiState = PremiumUiState(isPremiumUnlocked = true),
+            onUnlockPremium = {},
+            onRestorePurchases = {},
             onMatchClick = {},
             onCreateMatch = {}
         )

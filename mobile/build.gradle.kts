@@ -91,6 +91,7 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("com.google.android.gms:play-services-wearable:18.2.0")
+    implementation("com.android.billingclient:billing-ktx:6.2.1")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 

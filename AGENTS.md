@@ -27,6 +27,10 @@ Estado funcional actual:
 - Sync Wear -> Mobile activo por Data Layer (`MessageClient`).
 - Sync con idempotency + ACK Wear<->Mobile para limpiar pendientes en Wear.
 - Mobile recibe, deduplica e inserta en Room (`MatchRepository`).
+- Monetización freemium en Mobile (Google Play Billing, compra única `premium_unlock`):
+  - App gratis + unlock Premium opcional.
+  - Sin Premium: mobile bloquea historial/detalle/share y no guarda matches recibidos desde Wear.
+  - Con Premium: habilita guardado, historial, detalle y share card.
 - Rediseño visual PLAYCE aplicado:
   - **Mobile (`:mobile`)** con estética dark minimal + acento verde tenis.
   - **Wear (`:app`)** con theme PLAYCE consistente (dark minimal + acento verde).
@@ -94,6 +98,9 @@ Notas:
 ### Mobile
 - `mobile/src/main/java/com/example/tenniscounter/mobile/sync/WearMatchListenerService.kt`
   - Receptor Data Layer (`WearableListenerService`).
+  - Si no hay Premium, no guarda el match y responde ACK `premium_locked`.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/billing/*`
+  - Billing de Google Play + cache local de entitlement Premium (`premium_unlock`).
 - `mobile/src/main/java/com/example/tenniscounter/mobile/data/local/MatchEntity.kt`
   - Entidad Room con `setScoresText` nullable.
 - `mobile/src/main/java/com/example/tenniscounter/mobile/data/local/AppDatabase.kt`
@@ -168,7 +175,7 @@ ACK Mobile -> Wear:
   - `DataMap` serializado con `toByteArray()`
 - Campos:
   - `idempotencyKey` (`String`)
-  - `status` (`String`) valores actuales observados: `inserted` / `duplicate`
+  - `status` (`String`) valores actuales observados: `inserted` / `duplicate` / `premium_locked`
 - Comportamiento en Wear:
   - `WearAckListenerService` parsea ACK y ejecuta `PendingMatchStore.clearIfMatches(...)`
   - Si el `idempotencyKey` no coincide con el pending actual, no limpia
@@ -191,10 +198,11 @@ Retry/pendiente en Wear (alto nivel):
 
 El `service` de listener debe cumplir:
 - `android:exported="true"`
-- `intent-filter` con acción:
-  - `com.google.android.gms.wearable.BIND_LISTENER`
-- **NO** declarar:
-  - `android:permission="com.google.android.gms.wearable.BIND_LISTENER"`
+- `intent-filter` específico de mensajes para evitar lint fatal `WearableBindListener`:
+  - acción `com.google.android.gms.wearable.MESSAGE_RECEIVED`
+  - `data` con `android:scheme="wear"`, `android:host="*"`, `android:pathPrefix="/match_finished"`
+- **NO** usar `BIND_LISTENER` genérico en release (rompe `lintVitalRelease`).
+- **NO** declarar `android:permission="com.google.android.gms.wearable.BIND_LISTENER"`.
 
 Ejemplo correcto:
 ```xml
@@ -202,7 +210,11 @@ Ejemplo correcto:
     android:name=".sync.WearMatchListenerService"
     android:exported="true">
     <intent-filter>
-        <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
+        <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+        <data
+            android:host="*"
+            android:pathPrefix="/match_finished"
+            android:scheme="wear" />
     </intent-filter>
 </service>
 ```
