@@ -1,13 +1,16 @@
 package com.example.tenniscounter.mobile.ui.counter
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -17,11 +20,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.tenniscounter.mobile.R
 import com.example.tenniscounter.mobile.billing.PremiumUiState
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
@@ -32,7 +38,6 @@ import com.example.tenniscounter.mobile.ui.theme.PlayceTheme
 fun MobileCounterScreen(
     viewModel: MobileCounterViewModel,
     premiumUiState: PremiumUiState,
-    onOpenHistory: () -> Unit,
     onUnlockPremium: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -50,7 +55,6 @@ fun MobileCounterScreen(
         ) {
             HeaderRow(
                 premiumUiState = premiumUiState,
-                onOpenHistory = onOpenHistory,
                 onUnlockPremium = onUnlockPremium
             )
             TimerCard(
@@ -76,7 +80,6 @@ fun MobileCounterScreen(
 @Composable
 private fun HeaderRow(
     premiumUiState: PremiumUiState,
-    onOpenHistory: () -> Unit,
     onUnlockPremium: () -> Unit
 ) {
     Card(
@@ -93,16 +96,19 @@ private fun HeaderRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(
-                        text = "PLAYCE Counter",
-                        color = PlayceColors.TextPrimary,
-                        style = MaterialTheme.typography.titleLarge
+                    Image(
+                        painter = painterResource(id = R.drawable.playce_wordmark_header),
+                        contentDescription = "PLAYCE",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .width(152.dp)
+                            .height(30.dp)
                     )
                     Text(
                         text = if (premiumUiState.isPremiumUnlocked) {
-                            "Premium unlocked"
+                            "Counter + premium tools unlocked"
                         } else {
-                            "Free mode: live counter on mobile"
+                            "Free live counter on mobile"
                         },
                         color = PlayceColors.TextSecondary,
                         style = MaterialTheme.typography.bodyMedium
@@ -110,18 +116,12 @@ private fun HeaderRow(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PrimaryButton(
-                    text = "History",
-                    onClick = onOpenHistory,
-                    style = PrimaryButtonStyle.Outline,
-                    modifier = Modifier.weight(1f)
-                )
                 if (!premiumUiState.isPremiumUnlocked) {
                     PrimaryButton(
                         text = "Premium",
                         onClick = onUnlockPremium,
                         style = PrimaryButtonStyle.Solid,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }

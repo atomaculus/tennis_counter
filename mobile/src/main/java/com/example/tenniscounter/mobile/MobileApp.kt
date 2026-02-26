@@ -1,13 +1,20 @@
 package com.example.tenniscounter.mobile
 
 import android.app.Activity
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -41,59 +48,97 @@ fun MobileApp() {
         onDispose { premiumBillingManager.dispose() }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = COUNTER_ROUTE
-    ) {
-        composable(COUNTER_ROUTE) {
-            val counterViewModel: MobileCounterViewModel = viewModel()
-            MobileCounterScreen(
-                viewModel = counterViewModel,
-                premiumUiState = premiumUiState,
-                onOpenHistory = { navController.navigate(HISTORY_ROUTE) },
-                onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) }
-            )
-        }
+    val navBackStackEntry = navController.currentBackStackEntryAsState().value
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBottomBar = currentRoute == COUNTER_ROUTE || currentRoute == HISTORY_ROUTE
 
-        composable(HISTORY_ROUTE) {
-            val historyViewModel: HistoryViewModel = viewModel(
-                factory = HistoryViewModel.factory(repository)
-            )
-            HistoryScreen(
-                viewModel = historyViewModel,
-                premiumUiState = premiumUiState,
-                onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
-                onRestorePurchases = premiumBillingManager::restorePurchases,
-                onOpenCounter = {
-                    navController.navigate(COUNTER_ROUTE)
-                },
-                onMatchClick = { matchId ->
-                    navController.navigate("$DETAIL_ROUTE_PREFIX/$matchId")
-                },
-                onNewMatch = { onCreated ->
-                    if (premiumUiState.isPremiumUnlocked) {
-                        historyViewModel.createDefaultMatch(onCreated)
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar {
+                    listOf(
+                        COUNTER_ROUTE to "Counter",
+                        HISTORY_ROUTE to "History"
+                    ).forEach { (route, label) ->
+                        NavigationBarItem(
+                            selected = currentRoute == route,
+                            onClick = {
+                                navController.navigate(route) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                    popUpTo(COUNTER_ROUTE) {
+                                        saveState = true
+                                    }
+                                }
+                            },
+                            icon = {},
+                            label = { Text(label) }
+                        )
                     }
                 }
-            )
+            }
         }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = COUNTER_ROUTE,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(COUNTER_ROUTE) {
+                val counterViewModel: MobileCounterViewModel = viewModel()
+                MobileCounterScreen(
+                    viewModel = counterViewModel,
+                    premiumUiState = premiumUiState,
+                    onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) }
+                )
+            }
 
-        composable(
-            route = DETAIL_ROUTE,
-            arguments = listOf(navArgument("matchId") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val matchId = backStackEntry.arguments?.getLong("matchId") ?: return@composable
-            val detailViewModel: MatchDetailViewModel = viewModel(
-                key = "match_detail_$matchId",
-                factory = MatchDetailViewModel.factory(matchId, repository)
-            )
-            MatchDetailScreen(
-                viewModel = detailViewModel,
-                onBack = { navController.popBackStack() },
-                premiumUiState = premiumUiState,
-                onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
-                onRestorePurchases = premiumBillingManager::restorePurchases
-            )
+            composable(HISTORY_ROUTE) {
+                val historyViewModel: HistoryViewModel = viewModel(
+                    factory = HistoryViewModel.factory(repository)
+                )
+                HistoryScreen(
+                    viewModel = historyViewModel,
+                    premiumUiState = premiumUiState,
+                    onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
+                    onRestorePurchases = premiumBillingManager::restorePurchases,
+                    onOpenCounter = {
+                        navController.navigate(COUNTER_ROUTE) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(COUNTER_ROUTE) {
+                                saveState = true
+                            }
+                        }
+                    },
+                    onMatchClick = { matchId ->
+                        navController.navigate("$DETAIL_ROUTE_PREFIX/$matchId")
+                    },
+                    onNewMatch = { onCreated ->
+                        if (premiumUiState.isPremiumUnlocked) {
+                            historyViewModel.createDefaultMatch(onCreated)
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = DETAIL_ROUTE,
+                arguments = listOf(navArgument("matchId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val matchId = backStackEntry.arguments?.getLong("matchId") ?: return@composable
+                val detailViewModel: MatchDetailViewModel = viewModel(
+                    key = "match_detail_$matchId",
+                    factory = MatchDetailViewModel.factory(matchId, repository)
+                )
+                MatchDetailScreen(
+                    viewModel = detailViewModel,
+                    onBack = { navController.popBackStack() },
+                    premiumUiState = premiumUiState,
+                    onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
+                    onRestorePurchases = premiumBillingManager::restorePurchases
+                )
+            }
         }
     }
 }
