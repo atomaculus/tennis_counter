@@ -58,11 +58,13 @@ Estado funcional actual:
 ### Configuración crítica para Wear Data Layer
 Para que Google Play Services enrute mensajes entre Wear y Mobile:
 - `applicationId` de `:app` y `:mobile` debe ser **idéntico**.
-- Valor actual en ambos: `com.example.tenniscounter`.
+- Valor actual en ambos: `com.playce.tenniscounter.app`.
 
 Notas:
 - `:mobile` mantiene `namespace = "com.example.tenniscounter.mobile"`.
 - `namespace` y `applicationId` no tienen que ser iguales entre sí, pero para Data Layer importa el `applicationId`.
+- `targetSdk` y `compileSdk` actuales en ambos módulos: **35**.
+- En Play Console, `versionCode` debe ser único por `applicationId` entre artefactos (mobile/wear), no reutilizar el mismo código al subir otro bundle.
 
 ---
 
@@ -272,7 +274,7 @@ Clean + mobile rebuild (útil para invalidar overlays/dex):
 Nota tras cambio de `applicationId` de mobile:
 - Si Android Studio intenta lanzar `com.example.tenniscounter.mobile/...` y falla, recrear Run Configuration.
 - Componente esperado de mobile:
-  - paquete app: `com.example.tenniscounter`
+  - paquete app: `com.playce.tenniscounter.app`
   - activity: `com.example.tenniscounter.mobile.MainActivity`
 
 ---

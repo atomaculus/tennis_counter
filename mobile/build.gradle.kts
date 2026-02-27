@@ -16,12 +16,12 @@ val playceVersionName = (project.findProperty("PLAYCE_VERSION_NAME") as String?)
 
 android {
     namespace = "com.example.tenniscounter.mobile"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.tenniscounter"
+        applicationId = "com.playce.tenniscounter.app"
         minSdk = 30
-        targetSdk = 34
+        targetSdk = 35
         versionCode = playceVersionCode
         versionName = playceVersionName
     }
