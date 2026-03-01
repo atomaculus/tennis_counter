@@ -3,6 +3,7 @@ package com.example.tenniscounter.mobile.billing
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import com.example.tenniscounter.mobile.BuildConfig
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.BillingResponseCode
@@ -42,7 +43,7 @@ class PremiumBillingManager(
 
     private val _uiState = MutableStateFlow(
         PremiumUiState(
-            isPremiumUnlocked = PremiumAccessStore.isPremiumUnlocked(appContext),
+            isPremiumUnlocked = BuildConfig.DEBUG || PremiumAccessStore.isPremiumUnlocked(appContext),
             isLoading = true
         )
     )
@@ -211,7 +212,7 @@ class PremiumBillingManager(
                 purchase.purchaseState == Purchase.PurchaseState.PURCHASED
         }
 
-        val unlocked = premiumPurchase != null
+        val unlocked = BuildConfig.DEBUG || premiumPurchase != null
         PremiumAccessStore.setPremiumUnlocked(appContext, unlocked)
         _uiState.update { it.copy(isPremiumUnlocked = unlocked) }
 

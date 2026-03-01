@@ -1,8 +1,11 @@
 package com.example.tenniscounter.mobile
 
 import android.app.Activity
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -21,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.tenniscounter.mobile.billing.PremiumBillingManager
 import com.example.tenniscounter.mobile.di.MobileServiceLocator
+import com.example.tenniscounter.mobile.ui.theme.PlayceColors
 import com.example.tenniscounter.mobile.ui.counter.MobileCounterScreen
 import com.example.tenniscounter.mobile.ui.counter.MobileCounterViewModel
 import com.example.tenniscounter.mobile.ui.detail.MatchDetailScreen
@@ -55,15 +61,19 @@ fun MobileApp() {
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = PlayceColors.Surface,
+                    contentColor = PlayceColors.TextPrimary
+                ) {
+                    data class NavItem(val route: String, val label: String, val iconRes: Int)
                     listOf(
-                        COUNTER_ROUTE to "Counter",
-                        HISTORY_ROUTE to "History"
-                    ).forEach { (route, label) ->
+                        NavItem(COUNTER_ROUTE, "Counter", R.drawable.ic_counter),
+                        NavItem(HISTORY_ROUTE, "History", R.drawable.ic_history)
+                    ).forEach { item ->
                         NavigationBarItem(
-                            selected = currentRoute == route,
+                            selected = currentRoute == item.route,
                             onClick = {
-                                navController.navigate(route) {
+                                navController.navigate(item.route) {
                                     launchSingleTop = true
                                     restoreState = true
                                     popUpTo(COUNTER_ROUTE) {
@@ -71,8 +81,21 @@ fun MobileApp() {
                                     }
                                 }
                             },
-                            icon = {},
-                            label = { Text(label) }
+                            icon = {
+                                Icon(
+                                    painter = painterResource(id = item.iconRes),
+                                    contentDescription = item.label,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            },
+                            label = { Text(item.label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = PlayceColors.Accent,
+                                selectedTextColor = PlayceColors.Accent,
+                                unselectedIconColor = PlayceColors.TextSecondary,
+                                unselectedTextColor = PlayceColors.TextSecondary,
+                                indicatorColor = PlayceColors.AccentMuted
+                            )
                         )
                     }
                 }

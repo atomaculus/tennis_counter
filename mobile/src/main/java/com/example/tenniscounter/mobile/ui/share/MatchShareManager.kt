@@ -102,9 +102,23 @@ object MatchShareManager {
         if (photoUri.isNullOrBlank()) return null
         return try {
             val source = ImageDecoder.createSource(context.contentResolver, Uri.parse(photoUri))
-            ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
                 decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                decoder.setTargetSize(WIDTH, HEIGHT)
+                // Scale down to fit within target bounds while preserving aspect ratio.
+                // ContentScale.Crop in Compose will handle the final crop.
+                val srcW = info.size.width
+                val srcH = info.size.height
+                val scale = maxOf(
+                    WIDTH.toFloat() / srcW,
+                    HEIGHT.toFloat() / srcH
+                )
+                if (scale < 1f) {
+                    decoder.setTargetSize(
+                        (srcW * scale).toInt().coerceAtLeast(1),
+                        (srcH * scale).toInt().coerceAtLeast(1)
+                    )
+                }
+                // If image is smaller than target, load at original size
             }
         } catch (_: Exception) {
             null

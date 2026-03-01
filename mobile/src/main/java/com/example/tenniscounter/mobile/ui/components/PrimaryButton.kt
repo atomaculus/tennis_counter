@@ -15,7 +15,8 @@ import com.example.tenniscounter.mobile.ui.theme.PlayceTheme
 
 enum class PrimaryButtonStyle {
     Solid,
-    Outline
+    Outline,
+    Danger
 }
 
 @Composable
@@ -26,34 +27,50 @@ fun PrimaryButton(
     style: PrimaryButtonStyle = PrimaryButtonStyle.Solid,
     enabled: Boolean = true
 ) {
-    if (style == PrimaryButtonStyle.Outline) {
-        OutlinedButton(
-            onClick = onClick,
-            modifier = modifier,
-            enabled = enabled,
-            border = BorderStroke(1.dp, PlayceColors.Border),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = PlayceColors.TextPrimary,
-                containerColor = PlayceColors.Surface
-            )
-        ) {
-            Text(text)
+    when (style) {
+        PrimaryButtonStyle.Outline -> {
+            OutlinedButton(
+                onClick = onClick,
+                modifier = modifier,
+                enabled = enabled,
+                border = BorderStroke(1.dp, PlayceColors.Border),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PlayceColors.TextPrimary,
+                    containerColor = PlayceColors.Surface
+                )
+            ) {
+                Text(text)
+            }
         }
-        return
-    }
-
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = PlayceColors.Accent,
-            contentColor = PlayceColors.Background,
-            disabledContainerColor = PlayceColors.Border,
-            disabledContentColor = PlayceColors.TextSecondary
-        )
-    ) {
-        Text(text)
+        PrimaryButtonStyle.Danger -> {
+            OutlinedButton(
+                onClick = onClick,
+                modifier = modifier,
+                enabled = enabled,
+                border = BorderStroke(1.dp, PlayceColors.Danger.copy(alpha = 0.5f)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PlayceColors.Danger,
+                    containerColor = PlayceColors.Surface
+                )
+            ) {
+                Text(text)
+            }
+        }
+        PrimaryButtonStyle.Solid -> {
+            Button(
+                onClick = onClick,
+                modifier = modifier,
+                enabled = enabled,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PlayceColors.Accent,
+                    contentColor = PlayceColors.Background,
+                    disabledContainerColor = PlayceColors.Border,
+                    disabledContentColor = PlayceColors.TextSecondary
+                )
+            ) {
+                Text(text)
+            }
+        }
     }
 }
 

@@ -12,21 +12,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,9 +47,8 @@ fun ShareCard(
     modifier: Modifier = Modifier
 ) {
     val imageBitmap = remember(photoBitmap) { photoBitmap?.asImageBitmap() }
-    val setScores = remember(data.setScoresText) { data.setScoresText?.trim().orEmpty() }
-    val showAce = remember(data.scoreText, data.durationText) {
-        data.scoreText != "0-0" || data.durationText != "Duration: 00:00"
+    val setScores = remember(data.setScoresText) {
+        data.setScoresText?.trim()?.split(Regex("\\s+"))?.joinToString("  ·  ").orEmpty()
     }
 
     Box(
@@ -57,44 +62,48 @@ fun ShareCard(
                 bitmap = imageBitmap,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.Center
             )
         } else {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.radialGradient(
+                        Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFF121212),
-                                Color(0xFF060606),
-                                Color(0xFF000000)
+                                Color(0xFF0D0D0D),
+                                Color(0xFF111111),
+                                Color(0xFF080808)
                             )
                         )
                     )
             )
         }
 
+        // Gradient overlay - stronger at bottom for text readability
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        listOf(
-                            Color.Black.copy(alpha = 0.22f),
-                            Color.Black.copy(alpha = 0.55f),
-                            Color.Black.copy(alpha = 0.88f)
+                        colorStops = arrayOf(
+                            0.0f to Color.Black.copy(alpha = 0.15f),
+                            0.35f to Color.Black.copy(alpha = 0.25f),
+                            0.65f to Color.Black.copy(alpha = 0.55f),
+                            1.0f to Color.Black.copy(alpha = 0.85f)
                         )
                     )
                 )
         )
 
+        // Subtle accent line
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawLine(
-                color = PlayceColors.Accent.copy(alpha = 0.14f),
-                start = androidx.compose.ui.geometry.Offset(size.width * 0.08f, size.height * 0.22f),
-                end = androidx.compose.ui.geometry.Offset(size.width * 0.92f, size.height * 0.22f),
-                strokeWidth = 4f,
+                color = PlayceColors.Accent.copy(alpha = 0.25f),
+                start = Offset(size.width * 0.08f, size.height * 0.18f),
+                end = Offset(size.width * 0.38f, size.height * 0.18f),
+                strokeWidth = 3f,
                 cap = StrokeCap.Round
             )
         }
@@ -105,29 +114,18 @@ fun ShareCard(
                 .padding(horizontal = 44.dp, vertical = 52.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Top: PLAYCE wordmark with brand colors
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                PlayceWordmark(fontSize = 18.sp, letterSpacing = 3.sp)
                 Text(
-                    text = "PLAYCE",
-                    color = PlayceColors.TextPrimary.copy(alpha = 0.92f),
-                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    text = "MATCH RESULT",
+                    color = PlayceColors.TextSecondary.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.labelSmall,
                     letterSpacing = 2.sp
                 )
-                if (showAce) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(PlayceColors.AccentMuted)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "ACE CAPTURED",
-                            color = PlayceColors.Accent,
-                            style = androidx.compose.material3.MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
             }
 
+            // Center: Score display
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.Start,
@@ -147,15 +145,25 @@ fun ShareCard(
                     Text(
                         text = setScores,
                         color = PlayceColors.TextSecondary,
-                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium
                     )
                 }
             }
 
+            // Bottom: Metadata
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Thin accent divider
+                Canvas(modifier = Modifier.fillMaxWidth().height(1.dp)) {
+                    drawLine(
+                        color = PlayceColors.Accent.copy(alpha = 0.2f),
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, 0f),
+                        strokeWidth = 2f
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -164,23 +172,39 @@ fun ShareCard(
                     Text(
                         text = data.dateText,
                         color = PlayceColors.TextSecondary,
-                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
                         text = data.durationText.removePrefix("Duration: "),
                         color = PlayceColors.TextPrimary,
-                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
-                Text(
-                    text = "Captured with PLAYCE",
-                    color = PlayceColors.TextSecondary.copy(alpha = 0.86f),
-                    style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                    textAlign = TextAlign.Start
-                )
+                PlayceWordmarkSmall()
             }
         }
     }
+}
+
+@Composable
+private fun PlayceWordmarkSmall() {
+    val brandText = buildAnnotatedString {
+        withStyle(SpanStyle(color = PlayceColors.TextSecondary.copy(alpha = 0.6f))) {
+            append("Tracked with ")
+        }
+        withStyle(SpanStyle(color = PlayceColors.TextPrimary.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)) {
+            append("PLAY")
+        }
+        withStyle(SpanStyle(color = PlayceColors.Accent.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)) {
+            append("CE")
+        }
+    }
+    Text(
+        text = brandText,
+        style = MaterialTheme.typography.labelLarge,
+        textAlign = TextAlign.Start
+    )
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)

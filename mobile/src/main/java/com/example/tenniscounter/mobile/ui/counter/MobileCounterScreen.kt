@@ -1,16 +1,23 @@
 package com.example.tenniscounter.mobile.ui.counter
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -20,15 +27,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.tenniscounter.mobile.R
 import com.example.tenniscounter.mobile.billing.PremiumUiState
+import com.example.tenniscounter.mobile.ui.components.PlayceWordmark
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
 import com.example.tenniscounter.mobile.ui.theme.PlayceColors
@@ -50,6 +56,7 @@ fun MobileCounterScreen(
                 .fillMaxSize()
                 .background(PlayceColors.Background)
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -73,6 +80,7 @@ fun MobileCounterScreen(
                 onResetGame = viewModel::resetGame,
                 onResetMatch = viewModel::resetMatch
             )
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -96,14 +104,7 @@ private fun HeaderRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Image(
-                        painter = painterResource(id = R.drawable.playce_wordmark_header),
-                        contentDescription = "PLAYCE",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .width(152.dp)
-                            .height(30.dp)
-                    )
+                    PlayceWordmark()
                     Text(
                         text = if (premiumUiState.isPremiumUnlocked) {
                             "Counter + premium tools unlocked"
@@ -142,19 +143,19 @@ private fun TimerCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
                 Text(
-                    text = "Match timer",
+                    text = "MATCH TIMER",
                     color = PlayceColors.TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.labelSmall
                 )
                 Text(
                     text = formatElapsed(elapsedSeconds),
-                    color = PlayceColors.TextPrimary,
+                    color = if (isRunning) PlayceColors.Accent else PlayceColors.TextPrimary,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -181,13 +182,13 @@ private fun ScoreboardCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Live score",
-                color = PlayceColors.TextPrimary,
-                style = MaterialTheme.typography.titleLarge
+                text = "LIVE SCORE",
+                color = PlayceColors.TextSecondary,
+                style = MaterialTheme.typography.labelSmall
             )
             ScoreHeaderRow()
             PlayerRow(
@@ -196,7 +197,8 @@ private fun ScoreboardCard(
                 games = state.playerA.games,
                 pointsLabel = state.pointLabelForA(),
                 onAddPoint = onPointA,
-                onUndo = { onUndoA() }
+                onUndo = { onUndoA() },
+                accentColor = PlayceColors.Accent
             )
             PlayerRow(
                 name = "Player B",
@@ -204,14 +206,25 @@ private fun ScoreboardCard(
                 games = state.playerB.games,
                 pointsLabel = state.pointLabelForB(),
                 onAddPoint = onPointB,
-                onUndo = { onUndoB() }
+                onUndo = { onUndoB() },
+                accentColor = PlayceColors.TextPrimary
             )
             if (state.completedSets.isNotEmpty()) {
-                Text(
-                    text = "Completed sets: " + state.completedSets.joinToString(" | ") { "${it.a}-${it.b}" },
-                    color = PlayceColors.TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(PlayceColors.SurfaceElevated)
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = state.completedSets.joinToString("  |  ") { "${it.a} – ${it.b}" },
+                        color = PlayceColors.TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }
@@ -240,42 +253,57 @@ private fun PlayerRow(
     games: Int,
     pointsLabel: String,
     onAddPoint: () -> Unit,
-    onUndo: () -> Unit
+    onUndo: () -> Unit,
+    accentColor: androidx.compose.ui.graphics.Color = PlayceColors.Accent
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = PlayceColors.Background),
-        modifier = Modifier.fillMaxWidth()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .border(1.dp, PlayceColors.Border, RoundedCornerShape(14.dp))
+            .background(PlayceColors.Background)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(accentColor)
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = name,
-                    color = PlayceColors.TextPrimary,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1.6f)
-                )
-                ScoreValueCell(sets.toString())
-                ScoreValueCell(games.toString())
-                ScoreValueCell(pointsLabel)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PrimaryButton(
-                    text = "+ Point",
-                    onClick = onAddPoint,
-                    modifier = Modifier.weight(1f)
-                )
-                PrimaryButton(
-                    text = "Undo",
-                    onClick = onUndo,
-                    style = PrimaryButtonStyle.Outline,
-                    modifier = Modifier.weight(1f)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = name,
+                        color = PlayceColors.TextPrimary,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1.6f)
+                    )
+                    ScoreValueCell(sets.toString())
+                    ScoreValueCell(games.toString())
+                    ScoreValueCell(pointsLabel)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    PrimaryButton(
+                        text = "+ Point",
+                        onClick = onAddPoint,
+                        modifier = Modifier.weight(1f)
+                    )
+                    PrimaryButton(
+                        text = "Undo",
+                        onClick = onUndo,
+                        style = PrimaryButtonStyle.Outline,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
@@ -286,21 +314,27 @@ private fun ActionRow(
     onResetGame: () -> Unit,
     onResetMatch: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        PrimaryButton(
-            text = "Reset Game",
-            onClick = onResetGame,
-            style = PrimaryButtonStyle.Outline,
-            modifier = Modifier.weight(1f)
-        )
-        PrimaryButton(
-            text = "New Match",
-            onClick = onResetMatch,
-            modifier = Modifier.weight(1f)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            PrimaryButton(
+                text = "Reset Game",
+                onClick = onResetGame,
+                style = PrimaryButtonStyle.Outline,
+                modifier = Modifier.weight(1f)
+            )
+            PrimaryButton(
+                text = "New Match",
+                onClick = onResetMatch,
+                style = PrimaryButtonStyle.Danger,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 
