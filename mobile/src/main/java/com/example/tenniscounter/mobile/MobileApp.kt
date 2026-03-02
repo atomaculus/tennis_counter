@@ -26,7 +26,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.tenniscounter.mobile.billing.PremiumBillingManager
 import com.example.tenniscounter.mobile.di.MobileServiceLocator
+import com.example.tenniscounter.mobile.sync.LiveScoreRepository
 import com.example.tenniscounter.mobile.ui.theme.PlayceColors
+import com.example.tenniscounter.mobile.ui.counter.LiveScoreScreen
 import com.example.tenniscounter.mobile.ui.counter.MobileCounterScreen
 import com.example.tenniscounter.mobile.ui.counter.MobileCounterViewModel
 import com.example.tenniscounter.mobile.ui.detail.MatchDetailScreen
@@ -108,12 +110,17 @@ fun MobileApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(COUNTER_ROUTE) {
-                val counterViewModel: MobileCounterViewModel = viewModel()
-                MobileCounterScreen(
-                    viewModel = counterViewModel,
-                    premiumUiState = premiumUiState,
-                    onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) }
-                )
+                val liveState = LiveScoreRepository.state.collectAsStateWithLifecycle().value
+                if (liveState != null) {
+                    LiveScoreScreen(liveState = liveState)
+                } else {
+                    val counterViewModel: MobileCounterViewModel = viewModel()
+                    MobileCounterScreen(
+                        viewModel = counterViewModel,
+                        premiumUiState = premiumUiState,
+                        onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) }
+                    )
+                }
             }
 
             composable(HISTORY_ROUTE) {
