@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -72,6 +73,7 @@ import com.example.tenniscounter.sync.PendingMatchStore
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.Wearable
+import com.example.tenniscounter.sound.PointSoundManager
 import com.example.tenniscounter.ui.FinishedMatchSummary
 import com.example.tenniscounter.ui.MatchState
 import com.example.tenniscounter.ui.TennisViewModel
@@ -289,6 +291,8 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
     val context = LocalContext.current
     val uiScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
+    val pointSound = remember { PointSoundManager() }
+    DisposableEffect(Unit) { onDispose { pointSound.release() } }
 
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
@@ -366,10 +370,12 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                     state = state,
                     onTapPointA = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        pointSound.playPlayerASound()
                         viewModel.addPointToPlayerA()
                     },
                     onTapPointB = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        pointSound.playPlayerBSound()
                         viewModel.addPointToPlayerB()
                     },
                     onLongPressPointA = { handleLongPress(true) },
