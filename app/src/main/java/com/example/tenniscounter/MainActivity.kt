@@ -74,6 +74,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.Wearable
 import com.example.tenniscounter.sound.PointSoundManager
+import com.example.tenniscounter.sync.LiveScoreBroadcaster
 import com.example.tenniscounter.ui.FinishedMatchSummary
 import com.example.tenniscounter.ui.MatchState
 import com.example.tenniscounter.ui.TennisViewModel
@@ -292,7 +293,32 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
     val uiScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     val pointSound = remember { PointSoundManager() }
-    DisposableEffect(Unit) { onDispose { pointSound.release() } }
+    val liveBroadcaster = remember { LiveScoreBroadcaster(context) }
+    var localNodeId by remember { mutableStateOf("") }
+    DisposableEffect(Unit) {
+        onDispose { pointSound.release() }
+    }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            try {
+                val node = Tasks.await(Wearable.getNodeClient(context).localNode)
+                localNodeId = node.id
+            } catch (e: Exception) {
+                Log.w(WEAR_DATA_LAYER_TAG, "Failed to get local node id", e)
+            }
+        }
+    }
+
+    // Helper to broadcast current state after any score change
+    fun broadcastCurrentState(lastScoredPlayer: String) {
+        if (localNodeId.isNotEmpty()) {
+            liveBroadcaster.broadcastState(
+                state = viewModel.matchState.value,
+                lastScoredPlayer = lastScoredPlayer,
+                scorerNodeId = localNodeId
+            )
+        }
+    }
 
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
@@ -372,11 +398,13 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         pointSound.playPlayerASound()
                         viewModel.addPointToPlayerA()
+                        broadcastCurrentState("A")
                     },
                     onTapPointB = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         pointSound.playPlayerBSound()
                         viewModel.addPointToPlayerB()
+                        broadcastCurrentState("B")
                     },
                     onLongPressPointA = { handleLongPress(true) },
                     onLongPressPointB = { handleLongPress(false) },
@@ -444,6 +472,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                     onNewMatch = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.startNewMatch()
+                        liveBroadcaster.clearLiveScore()
                         appScreen = AppScreen.Counter
                     },
                     saveTapSignal = saveTapSignal
@@ -463,6 +492,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                             if (viewModel.undoLastPointForPlayerA()) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                broadcastCurrentState("")
                             }
                             activeSheet = ActiveSheet.None
                         },
@@ -477,6 +507,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                             if (viewModel.undoLastPointForPlayerB()) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                broadcastCurrentState("")
                             }
                             activeSheet = ActiveSheet.None
                         },
@@ -490,11 +521,13 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         SheetAction("Reset current game") {
                             viewModel.resetGame()
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            broadcastCurrentState("")
                             activeSheet = ActiveSheet.None
                         },
                         SheetAction("Reset match") {
                             viewModel.resetMatch()
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            liveBroadcaster.clearLiveScore()
                             transientMessage = "Match reset"
                             activeSheet = ActiveSheet.None
                         },
@@ -509,6 +542,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         SheetAction("Finish") {
                             viewModel.finishMatch()
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            liveBroadcaster.clearLiveScore()
                             appScreen = AppScreen.MatchFinished
                             activeSheet = ActiveSheet.None
                         },
