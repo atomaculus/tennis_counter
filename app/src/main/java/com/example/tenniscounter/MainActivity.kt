@@ -524,7 +524,8 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                     onNewMatch = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.startNewMatch()
-                        liveBroadcaster.clearLiveScore()
+                        // Broadcast fresh 0-0 state so phone keeps showing LIVE
+                        broadcastCurrentState("")
                         appScreen = AppScreen.Counter
                     },
                     saveTapSignal = saveTapSignal
