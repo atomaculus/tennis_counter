@@ -1,6 +1,7 @@
 package com.example.tenniscounter
 
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
@@ -75,9 +76,12 @@ import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.Wearable
 import com.example.tenniscounter.sound.PointSoundManager
 import com.example.tenniscounter.sync.LiveScoreBroadcaster
+import com.example.tenniscounter.sync.LiveScoreObserver
 import com.example.tenniscounter.ui.FinishedMatchSummary
 import com.example.tenniscounter.ui.MatchState
+import com.example.tenniscounter.ui.SpectatorScreen
 import com.example.tenniscounter.ui.TennisViewModel
+import com.google.android.gms.wearable.DataMapItem
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -132,7 +136,8 @@ private enum class PlayceButtonVariant {
 
 private enum class AppScreen {
     Counter,
-    MatchFinished
+    MatchFinished,
+    Spectator
 }
 
 private enum class ActiveSheet {
@@ -320,9 +325,56 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
         }
     }
 
+    // --- Spectator observer ---
+    var spectatorObserver by remember { mutableStateOf<LiveScoreObserver?>(null) }
+    var hasActiveLiveMatch by remember { mutableStateOf(false) }
+
+    // Once we know our localNodeId, create the observer and check for existing live match
+    LaunchedEffect(localNodeId) {
+        if (localNodeId.isEmpty()) return@LaunchedEffect
+        val observer = LiveScoreObserver(context, localNodeId)
+        observer.startListening()
+        spectatorObserver = observer
+
+        // Check if there's already an active live DataItem from another scorer
+        withContext(Dispatchers.IO) {
+            try {
+                val dataItems = Tasks.await(
+                    Wearable.getDataClient(context)
+                        .getDataItems(Uri.parse("wear://*${LiveScoreBroadcaster.LIVE_PATH}"))
+                )
+                for (item in dataItems) {
+                    val dataMap = DataMapItem.fromDataItem(item).dataMap
+                    val isActive = dataMap.getBoolean("isMatchActive", false)
+                    val scorerNode = dataMap.getString("scorerNodeId", "") ?: ""
+                    if (isActive && scorerNode.isNotEmpty() && scorerNode != localNodeId) {
+                        hasActiveLiveMatch = true
+                        break
+                    }
+                }
+                dataItems.release()
+            } catch (e: Exception) {
+                Log.w(WEAR_DATA_LAYER_TAG, "Failed to check existing live DataItem", e)
+            }
+        }
+    }
+    DisposableEffect(spectatorObserver) {
+        onDispose { spectatorObserver?.stopListening() }
+    }
+
+    val spectatorState by (spectatorObserver?.state
+        ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
+
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
     var transientMessage by remember { mutableStateOf<String?>(null) }
+
+    // If spectator is watching and the match ends, go back to counter
+    LaunchedEffect(spectatorState) {
+        if (appScreen == AppScreen.Spectator && spectatorState == null) {
+            appScreen = AppScreen.Counter
+        }
+    }
     var saveTapSignal by remember { mutableIntStateOf(0) }
 
     var isPressedA by remember { mutableStateOf(false) }
@@ -476,6 +528,37 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                         appScreen = AppScreen.Counter
                     },
                     saveTapSignal = saveTapSignal
+                )
+            }
+
+            AppScreen.Spectator -> {
+                val currentSpectatorState = spectatorState
+                if (currentSpectatorState != null) {
+                    SpectatorScreen(
+                        liveState = currentSpectatorState,
+                        onExit = { appScreen = AppScreen.Counter }
+                    )
+                } else {
+                    // Match ended while in spectator mode — handled by LaunchedEffect above
+                }
+            }
+        }
+
+        // "Watch Live" floating banner when a match from another scorer is detected
+        if (appScreen == AppScreen.Counter && (hasActiveLiveMatch || spectatorState != null)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 8.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                PlayceButton(
+                    text = "Watch Live",
+                    variant = PlayceButtonVariant.Primary,
+                    onClick = {
+                        hasActiveLiveMatch = false
+                        appScreen = AppScreen.Spectator
+                    }
                 )
             }
         }
