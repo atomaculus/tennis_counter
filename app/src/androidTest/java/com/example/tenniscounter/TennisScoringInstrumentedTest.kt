@@ -4,6 +4,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.tenniscounter.ui.TennisViewModel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -45,5 +48,56 @@ class TennisScoringInstrumentedTest {
         assertEquals(1, state.completedSets.size)
         assertEquals(6, state.completedSets.first().a)
         assertEquals(0, state.completedSets.first().b)
+    }
+
+    @Test
+    fun undoLastPointForPlayerA_restoresStateAfterGameBoundary() {
+        val vm = TennisViewModel(ApplicationProvider.getApplicationContext())
+
+        repeat(4) { vm.addPointToPlayerA() }
+        vm.addPointToPlayerA()
+
+        val didUndo = vm.undoLastPointForPlayerA()
+        val state = vm.matchState.value
+
+        assertTrue(didUndo)
+        assertEquals(1, state.playerA.games)
+        assertEquals("0", state.pointLabelForA())
+        assertEquals("0", state.pointLabelForB())
+    }
+
+    @Test
+    fun resetGame_keepsGamesButClearsCurrentPoints() {
+        val vm = TennisViewModel(ApplicationProvider.getApplicationContext())
+
+        repeat(4) { vm.addPointToPlayerA() }
+        repeat(2) { vm.addPointToPlayerB() }
+
+        vm.resetGame()
+
+        val state = vm.matchState.value
+        assertEquals(1, state.playerA.games)
+        assertEquals(0, state.playerB.games)
+        assertEquals("0", state.pointLabelForA())
+        assertEquals("0", state.pointLabelForB())
+    }
+
+    @Test
+    fun startNewMatch_clearsFinishedSummaryAndSavedState() {
+        val vm = TennisViewModel(ApplicationProvider.getApplicationContext())
+
+        repeat(4) { vm.addPointToPlayerA() }
+        vm.finishMatch()
+        assertTrue(vm.saveFinishedMatch())
+
+        vm.startNewMatch()
+
+        val state = vm.matchState.value
+        assertNull(vm.finishedMatch.value)
+        assertFalse(vm.isFinishedMatchSaved.value)
+        assertEquals(0, state.playerA.games)
+        assertEquals(0, state.playerB.games)
+        assertEquals(0, state.playerA.sets)
+        assertEquals(0, state.playerB.sets)
     }
 }
