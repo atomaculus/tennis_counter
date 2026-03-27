@@ -58,30 +58,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.wear.compose.material.AutoCenteringParams
+import androidx.wear.compose.foundation.lazy.AutoCenteringParams
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
-import androidx.wear.compose.material.ScalingLazyColumn
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
-import androidx.wear.compose.material.rememberScalingLazyListState
 import com.example.tenniscounter.sync.PendingMatchMessage
 import com.example.tenniscounter.sync.PendingMatchStore
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMap
-import com.google.android.gms.wearable.Wearable
 import com.example.tenniscounter.sound.PointSoundManager
 import com.example.tenniscounter.sync.LiveScoreBroadcaster
 import com.example.tenniscounter.sync.LiveScoreObserver
+import com.example.tenniscounter.sync.WearLiveMatchState
 import com.example.tenniscounter.ui.FinishedMatchSummary
 import com.example.tenniscounter.ui.MatchState
 import com.example.tenniscounter.ui.SpectatorScreen
 import com.example.tenniscounter.ui.TennisViewModel
 import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.Wearable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -153,6 +154,11 @@ private enum class PhoneSendResult {
     NoConnectedPhone,
     Failed
 }
+
+private data class SpectatorUiState(
+    val hasActiveLiveMatch: Boolean,
+    val spectatorState: WearLiveMatchState?
+)
 
 data class SheetAction(
     val label: String,
@@ -325,44 +331,11 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
         }
     }
 
-    // --- Spectator observer ---
-    var spectatorObserver by remember { mutableStateOf<LiveScoreObserver?>(null) }
-    var hasActiveLiveMatch by remember { mutableStateOf(false) }
-
-    // Once we know our localNodeId, create the observer and check for existing live match
-    LaunchedEffect(localNodeId) {
-        if (localNodeId.isEmpty()) return@LaunchedEffect
-        val observer = LiveScoreObserver(context, localNodeId)
-        observer.startListening()
-        spectatorObserver = observer
-
-        // Check if there's already an active live DataItem from another scorer
-        withContext(Dispatchers.IO) {
-            try {
-                val dataItems = Tasks.await(
-                    Wearable.getDataClient(context)
-                        .getDataItems(Uri.parse("wear://*${LiveScoreBroadcaster.LIVE_PATH}"))
-                )
-                for (item in dataItems) {
-                    val dataMap = DataMapItem.fromDataItem(item).dataMap
-                    val isActive = dataMap.getBoolean("isMatchActive", false)
-                    val scorerNode = dataMap.getString("scorerNodeId", "")
-                    if (isActive && scorerNode.isNotEmpty() && scorerNode != localNodeId) {
-                        hasActiveLiveMatch = true
-                        break
-                    }
-                }
-                dataItems.release()
-            } catch (e: Exception) {
-                Log.w(WEAR_DATA_LAYER_TAG, "Failed to check existing live DataItem", e)
-            }
-        }
-    }
-    DisposableEffect(spectatorObserver) {
-        onDispose { spectatorObserver?.stopListening() }
-    }
-
-    val spectatorState = spectatorObserver?.state?.collectAsState()?.value
+    val spectatorUiState = rememberSpectatorUiState(
+        context = context,
+        localNodeId = localNodeId
+    )
+    val spectatorState = spectatorUiState.spectatorState
 
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
@@ -544,7 +517,9 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
         }
 
         // "Watch Live" floating banner when a match from another scorer is detected
-        if (appScreen == AppScreen.Counter && (hasActiveLiveMatch || spectatorState != null)) {
+        if (appScreen == AppScreen.Counter &&
+            (spectatorUiState.hasActiveLiveMatch || spectatorState != null)
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -555,7 +530,6 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                     text = "Watch Live",
                     variant = PlayceButtonVariant.Primary,
                     onClick = {
-                        hasActiveLiveMatch = false
                         appScreen = AppScreen.Spectator
                     }
                 )
@@ -666,6 +640,60 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
             )
         }
     }
+}
+
+@Composable
+private fun rememberSpectatorUiState(
+    context: Context,
+    localNodeId: String
+): SpectatorUiState {
+    var spectatorObserver by remember { mutableStateOf<LiveScoreObserver?>(null) }
+    var hasActiveLiveMatch by remember { mutableStateOf(false) }
+    val emptySpectatorState = remember { mutableStateOf<WearLiveMatchState?>(null) }
+
+    LaunchedEffect(context, localNodeId) {
+        spectatorObserver?.stopListening()
+        spectatorObserver = null
+        hasActiveLiveMatch = false
+
+        if (localNodeId.isEmpty()) return@LaunchedEffect
+
+        val observer = LiveScoreObserver(context, localNodeId)
+        observer.startListening()
+        spectatorObserver = observer
+
+        withContext(Dispatchers.IO) {
+            try {
+                val dataItems = Tasks.await(
+                    Wearable.getDataClient(context)
+                        .getDataItems(Uri.parse("wear://*${LiveScoreBroadcaster.LIVE_PATH}"))
+                )
+                for (item in dataItems) {
+                    val dataMap = DataMapItem.fromDataItem(item).dataMap
+                    val isActive = dataMap.getBoolean("isMatchActive", false)
+                    val scorerNode = dataMap.getString("scorerNodeId", "")
+                    if (isActive && scorerNode.isNotEmpty() && scorerNode != localNodeId) {
+                        hasActiveLiveMatch = true
+                        break
+                    }
+                }
+                dataItems.release()
+            } catch (e: Exception) {
+                Log.w(WEAR_DATA_LAYER_TAG, "Failed to check existing live DataItem", e)
+            }
+        }
+    }
+
+    DisposableEffect(spectatorObserver) {
+        onDispose { spectatorObserver?.stopListening() }
+    }
+
+    val spectatorState by (spectatorObserver?.state?.collectAsState() ?: emptySpectatorState)
+
+    return SpectatorUiState(
+        hasActiveLiveMatch = hasActiveLiveMatch,
+        spectatorState = spectatorState
+    )
 }
 
 @Composable
