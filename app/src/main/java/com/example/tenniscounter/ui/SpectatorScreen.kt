@@ -28,7 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,6 +49,7 @@ import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.rememberScalingLazyListState
 import com.example.tenniscounter.sound.PointSoundManager
 import com.example.tenniscounter.sync.WearLiveMatchState
+import java.util.Locale
 
 // Re-declare color references to avoid depending on private MainActivity objects
 private val BgColor = Color(0xFF000000)
@@ -71,7 +72,7 @@ fun SpectatorScreen(
     val pointSound = remember { PointSoundManager() }
     DisposableEffect(Unit) { onDispose { pointSound.release() } }
 
-    var prevTimestamp by remember { mutableStateOf(liveState.timestamp) }
+    var prevTimestamp by remember { mutableLongStateOf(liveState.timestamp) }
     LaunchedEffect(liveState.timestamp) {
         if (liveState.timestamp != prevTimestamp) {
             when (liveState.lastScoredPlayer) {
@@ -289,9 +290,9 @@ private fun SpectatorTimer(elapsedSeconds: Int) {
     val minutes = (elapsedSeconds % 3600) / 60
     val seconds = elapsedSeconds % 60
     val timeText = if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
+        String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, seconds)
     } else {
-        String.format("%02d:%02d", minutes, seconds)
+        String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
     }
 
     Text(
