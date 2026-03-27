@@ -20,6 +20,16 @@ Además, el estado actual de Wear ya incluye dos mejoras extra de UX durante el 
 
 Este archivo queda como referencia de la evolución de esas features; el foco actual del proyecto pasó a hardening, calidad de release y UX incremental.
 
+## Foco actual
+
+La siguiente etapa del proyecto ya no es agregar sync nueva, sino cerrar base de publicacion:
+
+- QA funcional guiado en telefono + reloj reales
+- validacion de release artifacts
+- politica de privacidad publica
+- Data safety consistente con la build real
+- screenshots y listing final de Play Store
+
 ## Resumen de Features
 
 1. **Sonidos en Wear**: beep al sumar punto (distinto para Jugador A vs B)
