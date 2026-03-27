@@ -1,5 +1,25 @@
 # Plan: Sonidos + Live Score + Reloj Espectador
 
+## Estado
+
+Las tres fases principales de este plan ya están implementadas en el repositorio:
+
+- sonidos diferenciados por jugador en Wear
+- live score en mobile
+- modo spectator en un segundo reloj
+
+Además, el estado actual de Wear ya incluye dos mejoras extra de UX durante el partido:
+
+1. **Indicador de sacador por game**
+   - resalta el botón del jugador que está sacando
+   - la alternancia sigue el orden completo del partido, también al cambiar de set
+
+2. **Indicador de lado de saque**
+   - halo/brillo lateral en la pantalla
+   - cambia izquierda/derecha según la paridad de puntos del game actual
+
+Este archivo queda como referencia de la evolución de esas features; el foco actual del proyecto pasó a hardening, calidad de release y UX incremental.
+
 ## Resumen de Features
 
 1. **Sonidos en Wear**: beep al sumar punto (distinto para Jugador A vs B)

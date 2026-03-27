@@ -15,6 +15,9 @@ Estado funcional actual:
   - Tap para sumar puntos.
   - Long press por jugador para undo contextual.
   - Long press simultáneo (A+B) para acciones admin (reset game/reset match).
+  - Indicador visual de sacador por game (resaltado del botón del jugador que saca).
+  - Indicador visual de lado de saque con halo lateral dinámico izquierda/derecha según puntos del game.
+  - La alternancia de saque sigue la secuencia completa del partido y no se reinicia al empezar un nuevo set.
 - Flujo manual de finalización:
   - Botón `END MATCH` + confirmación.
   - Pantalla final `MATCH FINISHED`.
@@ -76,6 +79,7 @@ Notas:
   - Handler de `SAVE MATCH`, envío Data Layer (`/match_finished`) y UI de estado de sync en `MATCH FINISHED`.
   - Theme/components PLAYCE para Wear (colores, cards/chips/buttons).
   - Score board responsivo (ajuste de tamaño por ancho disponible).
+  - Indicadores visuales de saque (servidor actual + lado de saque).
   - `MATCH FINISHED` con layout scrollable para pantallas pequeñas.
 - `app/src/main/java/com/example/tenniscounter/sync/PendingMatchStore.kt`
   - Persistencia local de pending message en Wear (`SharedPreferences`) para retry/ACK.
@@ -83,7 +87,7 @@ Notas:
 - `app/src/main/java/com/example/tenniscounter/sync/WearAckListenerService.kt`
   - Listener Wear para ACK desde mobile (`/match_finished_ack`) y limpieza de pending por `idempotencyKey`.
 - `app/src/main/java/com/example/tenniscounter/ui/TennisViewModel.kt`
-  - Lógica de score, timer, summary final y save local.
+  - Lógica de score, timer, summary final, save local y estado derivado de saque actual.
 - `app/src/main/java/com/example/tenniscounter/ui/TimerStateStore.kt`
   - Estado persistido del timer (`isRunning`, `startElapsedRealtime`, `accumulatedSeconds`) + migración de keys legacy.
 - `app/src/main/java/com/example/tenniscounter/timer/MatchTimerService.kt`

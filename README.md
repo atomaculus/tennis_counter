@@ -15,6 +15,7 @@ Every time I played tennis, keeping score meant stopping the game, arguing about
 ## Features
 
 - **Wear OS scorer** - tap-based point tracking directly on your smartwatch, no phone needed during play
+- **Serve guidance on wrist** - current server highlight plus dynamic left/right serve-side halo during each game
 - **Live sync** - phone receives live score updates from the watch via WatchConnectivity with ACK confirmation
 - **Match history** - all finished matches stored locally on your phone with Room database
 - **Share card** - generate and share a match summary card after each game
@@ -84,4 +85,4 @@ Crashlytics can be enabled with the corresponding Gradle flag. If used, place `g
 
 ## Status
 
-This project is production-oriented but still evolving. Current work focuses on improving reliability of watch-to-phone sync, match UX, and premium onboarding.
+This project is production-oriented but still evolving. Current work is focused on release hardening, match UX on Wear, and improving confidence around sync/timer behavior before a broader public release.

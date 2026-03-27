@@ -160,6 +160,12 @@ private data class SpectatorUiState(
     val spectatorState: WearLiveMatchState?
 )
 
+private data class ServeIndicatorState(
+    val serverLabel: String,
+    val isPlayerAServing: Boolean,
+    val serveOnLeftSide: Boolean
+)
+
 data class SheetAction(
     val label: String,
     val onClick: () -> Unit
@@ -708,70 +714,113 @@ private fun CounterScreen(
     onEndMatch: () -> Unit
 ) {
     val listState = rememberScalingLazyListState()
+    val serveIndicatorState = remember(state) {
+        ServeIndicatorState(
+            serverLabel = if (state.currentServerIsPlayerA()) "A SERVES" else "B SERVES",
+            isPlayerAServing = state.currentServerIsPlayerA(),
+            serveOnLeftSide = state.serveStartsOnLeftSide()
+        )
+    }
 
     Scaffold(
         modifier = Modifier.background(PlayceWearColors.Background),
         timeText = { TimeText() },
         positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
     ) {
-        ScalingLazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = PlayceWearSpacing.Sm),
-            state = listState,
-            autoCentering = AutoCenteringParams(itemIndex = 1),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
-        ) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
-                ) {
-                    CompactScore(label = "SETS", a = state.playerA.sets, b = state.playerB.sets)
-                    CompactScore(label = "GAMES", a = state.playerA.games, b = state.playerB.games)
+        Box(modifier = Modifier.fillMaxSize()) {
+            ServeSideHalo(serveOnLeftSide = serveIndicatorState.serveOnLeftSide)
+
+            ScalingLazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = PlayceWearSpacing.Sm),
+                state = listState,
+                autoCentering = AutoCenteringParams(itemIndex = 1),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
+            ) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
+                    ) {
+                        CompactScore(label = "SETS", a = state.playerA.sets, b = state.playerB.sets)
+                        CompactScore(label = "GAMES", a = state.playerA.games, b = state.playerB.games)
+                    }
                 }
-            }
 
-            item {
-                PointsBoard(
-                    pointA = state.pointLabelForA(),
-                    pointB = state.pointLabelForB()
-                )
-            }
-
-            item {
-                Row(
-                    modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AddPointGestureButton(
-                        label = "+A",
-                        onPressStateChange = onPressStateA,
-                        onTap = onTapPointA,
-                        onLongPress = onLongPressPointA
-                    )
-                    AddPointGestureButton(
-                        label = "+B",
-                        onPressStateChange = onPressStateB,
-                        onTap = onTapPointB,
-                        onLongPress = onLongPressPointB
+                item {
+                    PlayceChip(
+                        text = serveIndicatorState.serverLabel,
+                        accent = true
                     )
                 }
-            }
 
-            item {
-                TimerFooter(elapsedSeconds = state.elapsedSeconds)
-            }
+                item {
+                    PointsBoard(
+                        pointA = state.pointLabelForA(),
+                        pointB = state.pointLabelForB()
+                    )
+                }
 
-            item {
-                EndMatchButton(onClick = onEndMatch)
+                item {
+                    Row(
+                        modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AddPointGestureButton(
+                            label = "+A",
+                            onPressStateChange = onPressStateA,
+                            onTap = onTapPointA,
+                            onLongPress = onLongPressPointA,
+                            isServing = serveIndicatorState.isPlayerAServing
+                        )
+                        AddPointGestureButton(
+                            label = "+B",
+                            onPressStateChange = onPressStateB,
+                            onTap = onTapPointB,
+                            onLongPress = onLongPressPointB,
+                            isServing = !serveIndicatorState.isPlayerAServing
+                        )
+                    }
+                }
+
+                item {
+                    TimerFooter(elapsedSeconds = state.elapsedSeconds)
+                }
+
+                item {
+                    EndMatchButton(onClick = onEndMatch)
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ServeSideHalo(serveOnLeftSide: Boolean) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(vertical = 22.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .align(if (serveOnLeftSide) Alignment.CenterStart else Alignment.CenterEnd)
+                .padding(horizontal = 2.dp)
+                .size(width = 14.dp, height = 116.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(PlayceWearColors.Accent.copy(alpha = 0.18f))
+                .border(
+                    width = 1.dp,
+                    color = PlayceWearColors.Accent.copy(alpha = 0.32f),
+                    shape = RoundedCornerShape(999.dp)
+                )
+        )
     }
 }
 
@@ -1069,7 +1118,8 @@ private fun AddPointGestureButton(
     label: String,
     onPressStateChange: (Boolean) -> Unit,
     onTap: () -> Unit,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    isServing: Boolean
 ) {
     var isPressed by remember { mutableStateOf(false) }
     Box(
@@ -1077,7 +1127,15 @@ private fun AddPointGestureButton(
             .size(64.dp)
             .clip(CircleShape)
             .background(if (isPressed) PlayceWearColors.AccentPressed else PlayceWearColors.Accent)
-            .border(1.dp, PlayceWearColors.Accent.copy(alpha = 0.4f), CircleShape)
+            .border(
+                width = if (isServing) 3.dp else 1.dp,
+                color = if (isServing) {
+                    PlayceWearColors.TextPrimary.copy(alpha = 0.9f)
+                } else {
+                    PlayceWearColors.Accent.copy(alpha = 0.4f)
+                },
+                shape = CircleShape
+            )
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {

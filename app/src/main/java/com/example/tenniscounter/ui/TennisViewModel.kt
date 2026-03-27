@@ -35,10 +35,26 @@ data class MatchState(
     val playerB: PlayerScore = PlayerScore(),
     val completedSets: List<SetScore> = emptyList(),
     val elapsedSeconds: Int = 0,
-    val isRunning: Boolean = true
+    val isRunning: Boolean = true,
+    val initialServerIsPlayerA: Boolean = true
 ) {
     fun pointLabelForA(): String = toPointLabel(playerA.points, playerB.points)
     fun pointLabelForB(): String = toPointLabel(playerB.points, playerA.points)
+    fun currentServerIsPlayerA(): Boolean {
+        val completedGames = completedSets.sumOf { it.a + it.b }
+        val currentSetGames = playerA.games + playerB.games
+        val totalGamesPlayed = completedGames + currentSetGames
+        return if (totalGamesPlayed % 2 == 0) {
+            initialServerIsPlayerA
+        } else {
+            !initialServerIsPlayerA
+        }
+    }
+
+    fun serveStartsOnLeftSide(): Boolean {
+        val pointsInCurrentGame = playerA.points + playerB.points
+        return pointsInCurrentGame % 2 == 0
+    }
 
     private fun toPointLabel(playerPoints: Int, rivalPoints: Int): String {
         if (playerPoints >= 3 && rivalPoints >= 3) {

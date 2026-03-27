@@ -100,4 +100,31 @@ class TennisScoringInstrumentedTest {
         assertEquals(0, state.playerA.sets)
         assertEquals(0, state.playerB.sets)
     }
+
+    @Test
+    fun currentServer_alternatesByGameAcrossSetBoundaries() {
+        val vm = TennisViewModel(ApplicationProvider.getApplicationContext())
+
+        assertTrue(vm.matchState.value.currentServerIsPlayerA())
+
+        repeat(4) { vm.addPointToPlayerA() }
+        assertFalse(vm.matchState.value.currentServerIsPlayerA())
+
+        repeat(20) { vm.addPointToPlayerA() }
+        val state = vm.matchState.value
+
+        assertEquals(1, state.playerA.sets)
+        assertFalse(state.currentServerIsPlayerA())
+    }
+
+    @Test
+    fun serveSide_changesWithPointParityWithinGame() {
+        val vm = TennisViewModel(ApplicationProvider.getApplicationContext())
+
+        assertTrue(vm.matchState.value.serveStartsOnLeftSide())
+        vm.addPointToPlayerA()
+        assertFalse(vm.matchState.value.serveStartsOnLeftSide())
+        vm.addPointToPlayerB()
+        assertTrue(vm.matchState.value.serveStartsOnLeftSide())
+    }
 }
