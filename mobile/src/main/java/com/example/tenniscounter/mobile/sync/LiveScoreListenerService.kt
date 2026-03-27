@@ -32,13 +32,13 @@ class LiveScoreListenerService : WearableListenerService() {
                 playerBPoints = dataMap.getInt("playerB_points"),
                 playerBGames = dataMap.getInt("playerB_games"),
                 playerBSets = dataMap.getInt("playerB_sets"),
-                completedSets = dataMap.getString("completedSets", "") ?: "",
-                pointLabelA = dataMap.getString("pointLabelA", "0") ?: "0",
-                pointLabelB = dataMap.getString("pointLabelB", "0") ?: "0",
+                completedSets = dataMap.getString("completedSets", ""),
+                pointLabelA = dataMap.getString("pointLabelA", "0"),
+                pointLabelB = dataMap.getString("pointLabelB", "0"),
                 elapsedSeconds = dataMap.getInt("elapsedSeconds"),
                 isMatchActive = true,
-                lastScoredPlayer = dataMap.getString("lastScoredPlayer", "") ?: "",
-                scorerNodeId = dataMap.getString("scorerNodeId", "") ?: "",
+                lastScoredPlayer = dataMap.getString("lastScoredPlayer", ""),
+                scorerNodeId = dataMap.getString("scorerNodeId", ""),
                 timestamp = dataMap.getLong("timestamp")
             )
 

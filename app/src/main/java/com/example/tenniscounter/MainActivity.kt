@@ -346,7 +346,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                 for (item in dataItems) {
                     val dataMap = DataMapItem.fromDataItem(item).dataMap
                     val isActive = dataMap.getBoolean("isMatchActive", false)
-                    val scorerNode = dataMap.getString("scorerNodeId", "") ?: ""
+                    val scorerNode = dataMap.getString("scorerNodeId", "")
                     if (isActive && scorerNode.isNotEmpty() && scorerNode != localNodeId) {
                         hasActiveLiveMatch = true
                         break
@@ -362,8 +362,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
         onDispose { spectatorObserver?.stopListening() }
     }
 
-    val spectatorState by (spectatorObserver?.state
-        ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
+    val spectatorState = spectatorObserver?.state?.collectAsState()?.value
 
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
@@ -536,8 +535,7 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                 val currentSpectatorState = spectatorState
                 if (currentSpectatorState != null) {
                     SpectatorScreen(
-                        liveState = currentSpectatorState,
-                        onExit = { appScreen = AppScreen.Counter }
+                        liveState = currentSpectatorState
                     )
                 } else {
                     // Match ended while in spectator mode — handled by LaunchedEffect above

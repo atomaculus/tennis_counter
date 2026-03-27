@@ -97,6 +97,7 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
+    testImplementation("junit:junit:4.13.2")
 }
 
 tasks.register("prepareKotlinBuildScriptModel")

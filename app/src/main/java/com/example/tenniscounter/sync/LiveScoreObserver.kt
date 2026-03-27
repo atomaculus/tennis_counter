@@ -69,7 +69,7 @@ class LiveScoreObserver(
                 continue
             }
 
-            val scorerNode = dataMap.getString("scorerNodeId", "") ?: ""
+            val scorerNode = dataMap.getString("scorerNodeId", "")
             if (scorerNode == localNodeId) {
                 // This is my own broadcast — ignore for spectator mode
                 continue
@@ -82,12 +82,12 @@ class LiveScoreObserver(
                 playerBPoints = dataMap.getInt("playerB_points"),
                 playerBGames = dataMap.getInt("playerB_games"),
                 playerBSets = dataMap.getInt("playerB_sets"),
-                completedSets = dataMap.getString("completedSets", "") ?: "",
-                pointLabelA = dataMap.getString("pointLabelA", "0") ?: "0",
-                pointLabelB = dataMap.getString("pointLabelB", "0") ?: "0",
+                completedSets = dataMap.getString("completedSets", ""),
+                pointLabelA = dataMap.getString("pointLabelA", "0"),
+                pointLabelB = dataMap.getString("pointLabelB", "0"),
                 elapsedSeconds = dataMap.getInt("elapsedSeconds"),
                 isMatchActive = true,
-                lastScoredPlayer = dataMap.getString("lastScoredPlayer", "") ?: "",
+                lastScoredPlayer = dataMap.getString("lastScoredPlayer", ""),
                 scorerNodeId = scorerNode,
                 timestamp = dataMap.getLong("timestamp")
             )

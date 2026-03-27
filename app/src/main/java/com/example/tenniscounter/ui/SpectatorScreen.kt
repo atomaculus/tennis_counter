@@ -65,8 +65,7 @@ private val BorderColor = Color(0xFF2A2A2A)
  */
 @Composable
 fun SpectatorScreen(
-    liveState: WearLiveMatchState,
-    onExit: () -> Unit
+    liveState: WearLiveMatchState
 ) {
     val listState = rememberScalingLazyListState()
     val pointSound = remember { PointSoundManager() }
