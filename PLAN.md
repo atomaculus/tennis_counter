@@ -22,13 +22,28 @@ Este archivo queda como referencia de la evolución de esas features; el foco ac
 
 ## Foco actual
 
-La siguiente etapa del proyecto ya no es agregar sync nueva, sino cerrar base de publicacion:
+El proyecto completó una ronda mayor de mejoras para pasar de MVP a app publicable:
 
-- QA funcional guiado en telefono + reloj reales
-- validacion de release artifacts
-- politica de privacidad publica
-- Data safety consistente con la build real
-- screenshots y listing final de Play Store
+### Implementado
+- **Shared scoring engine** con tiebreak, super tiebreak, no-ad, formatos configurables (Best of 3/5/Fast4), 22 unit tests
+- **Phone → Watch config sync** (nombres de jugadores + formato de partido vía DataClient)
+- **Hardware button scoring** en el watch (STEM_1/STEM_2 con toggle on/off, protegido en ambient mode)
+- **Stats dashboard** (partidos jugados, tiempo total, promedios, duración max/min)
+- **Export CSV** del historial de partidos
+- **Onboarding** (3 páginas, solo primera vez)
+- **Light/dark theme** (sigue preferencia del sistema)
+- **In-app review** (después de 3 partidos completados)
+- **Home screen widget** (último resultado)
+- **R8/ProGuard** habilitado en ambos módulos
+- **Localización completa** EN/ES (~130 strings migrados a stringResource)
+- **Design system** extraído para Wear (PlayceWearDesignSystem)
+- **Service locator mejorado** con cache de DB singleton
+
+### Pendiente para publicación
+- Crear proyecto Firebase + agregar `google-services.json`
+- Signed release build con keystore de producción
+- Screenshots y video para Play Store listing
+- QA en dispositivos reales (sync, botones físicos, nombres largos)
 
 ## Resumen de Features
 

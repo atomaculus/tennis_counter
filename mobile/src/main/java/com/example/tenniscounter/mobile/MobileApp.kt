@@ -1,6 +1,7 @@
 package com.example.tenniscounter.mobile
 
 import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -10,7 +11,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalContext
@@ -35,9 +40,20 @@ import com.example.tenniscounter.mobile.ui.detail.MatchDetailScreen
 import com.example.tenniscounter.mobile.ui.detail.MatchDetailViewModel
 import com.example.tenniscounter.mobile.ui.history.HistoryScreen
 import com.example.tenniscounter.mobile.ui.history.HistoryViewModel
+import com.example.tenniscounter.mobile.export.MatchExporter
+import com.example.tenniscounter.mobile.review.InAppReviewManager
+import com.example.tenniscounter.mobile.sync.MatchConfigBroadcaster
+import com.example.tenniscounter.mobile.ui.counter.FormatPreset
+import com.example.tenniscounter.mobile.ui.stats.StatsScreen
+import com.example.tenniscounter.mobile.ui.stats.StatsViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
 
 private const val COUNTER_ROUTE = "counter"
 private const val HISTORY_ROUTE = "history"
+private const val STATS_ROUTE = "stats"
 private const val DETAIL_ROUTE = "detail/{matchId}"
 private const val DETAIL_ROUTE_PREFIX = "detail"
 
@@ -48,6 +64,7 @@ fun MobileApp() {
     val appContext = localContext.applicationContext
     val activity = localContext as? Activity
     val repository = remember(appContext) { MobileServiceLocator.matchRepository(appContext) }
+    val configBroadcaster = remember(appContext) { MatchConfigBroadcaster(appContext) }
     val premiumBillingManager = remember(appContext) { PremiumBillingManager(appContext) }
     val premiumUiState = premiumBillingManager.uiState.collectAsStateWithLifecycle().value
 
@@ -58,7 +75,7 @@ fun MobileApp() {
 
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = navBackStackEntry?.destination?.route
-    val showBottomBar = currentRoute == COUNTER_ROUTE || currentRoute == HISTORY_ROUTE
+    val showBottomBar = currentRoute == COUNTER_ROUTE || currentRoute == HISTORY_ROUTE || currentRoute == STATS_ROUTE
 
     Scaffold(
         bottomBar = {
@@ -70,7 +87,8 @@ fun MobileApp() {
                     data class NavItem(val route: String, val label: String, val iconRes: Int)
                     listOf(
                         NavItem(COUNTER_ROUTE, "Counter", R.drawable.ic_counter),
-                        NavItem(HISTORY_ROUTE, "History", R.drawable.ic_history)
+                        NavItem(HISTORY_ROUTE, "History", R.drawable.ic_history),
+                        NavItem(STATS_ROUTE, "Stats", R.drawable.ic_stats)
                     ).forEach { item ->
                         NavigationBarItem(
                             selected = currentRoute == item.route,
@@ -111,6 +129,19 @@ fun MobileApp() {
         ) {
             composable(COUNTER_ROUTE) {
                 val liveState = LiveScoreRepository.state.collectAsStateWithLifecycle().value
+
+                // Detect when a live watch match ends (state goes non-null → null)
+                var wasLive by remember { mutableStateOf(false) }
+                LaunchedEffect(liveState) {
+                    if (liveState != null) {
+                        wasLive = true
+                    } else if (wasLive) {
+                        // Match just ended on the watch
+                        wasLive = false
+                        activity?.let { InAppReviewManager.onMatchCompleted(it) }
+                    }
+                }
+
                 if (liveState != null) {
                     LiveScoreScreen(liveState = liveState)
                 } else {
@@ -118,7 +149,20 @@ fun MobileApp() {
                     MobileCounterScreen(
                         viewModel = counterViewModel,
                         premiumUiState = premiumUiState,
-                        onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) }
+                        onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
+                        onMatchCompleted = {
+                            activity?.let { InAppReviewManager.onMatchCompleted(it) }
+                        },
+                        onSendConfigToWatch = { nameA, nameB, preset ->
+                            configBroadcaster.sendConfig(
+                                playerAName = nameA.ifBlank { "Player A" },
+                                playerBName = nameB.ifBlank { "Player B" },
+                                setsToWin = preset.setsToWin,
+                                tiebreakAtSixAll = preset.tiebreakAtSixAll,
+                                superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
+                                noAdScoring = preset.noAdScoring
+                            )
+                        }
                     )
                 }
             }
@@ -147,6 +191,28 @@ fun MobileApp() {
                     onNewMatch = { onCreated ->
                         if (premiumUiState.isPremiumUnlocked) {
                             historyViewModel.createDefaultMatch(onCreated)
+                        }
+                    }
+                )
+            }
+
+            composable(STATS_ROUTE) {
+                val matchDao = remember(appContext) { MobileServiceLocator.matchDao(appContext) }
+                val statsViewModel: StatsViewModel = viewModel(
+                    factory = StatsViewModel.factory(matchDao)
+                )
+                val exportScope = rememberCoroutineScope()
+                StatsScreen(
+                    viewModel = statsViewModel,
+                    onExport = {
+                        exportScope.launch {
+                            val matches = withContext(Dispatchers.IO) {
+                                MobileServiceLocator.matchDao(appContext).getAllMatchesOnce()
+                            }
+                            val intent = MatchExporter.exportToCsv(appContext, matches)
+                            if (intent != null) {
+                                localContext.startActivity(Intent.createChooser(intent, "Export matches"))
+                            }
                         }
                     }
                 )

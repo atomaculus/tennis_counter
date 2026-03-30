@@ -26,4 +26,25 @@ interface MatchDao {
 
     @Update
     suspend fun update(match: MatchEntity)
+
+    @Query("SELECT COUNT(*) FROM matches")
+    suspend fun getMatchCount(): Int
+
+    @Query("SELECT AVG(durationSeconds) FROM matches")
+    suspend fun getAverageDuration(): Double?
+
+    @Query("SELECT MAX(durationSeconds) FROM matches")
+    suspend fun getLongestMatchDuration(): Long?
+
+    @Query("SELECT MIN(durationSeconds) FROM matches")
+    suspend fun getShortestMatchDuration(): Long?
+
+    @Query("SELECT SUM(durationSeconds) FROM matches")
+    suspend fun getTotalPlayTime(): Long?
+
+    @Query("SELECT * FROM matches ORDER BY createdAt DESC LIMIT 1")
+    suspend fun getLatestMatch(): MatchEntity?
+
+    @Query("SELECT * FROM matches ORDER BY createdAt DESC")
+    suspend fun getAllMatchesOnce(): List<MatchEntity>
 }

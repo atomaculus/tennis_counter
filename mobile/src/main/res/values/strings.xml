@@ -1,3 +1,117 @@
-﻿<resources>
+<resources>
     <string name="app_name">PLAYCE</string>
+
+    <!-- Navigation -->
+    <string name="tab_counter">Counter</string>
+    <string name="tab_history">History</string>
+
+    <!-- Counter screen -->
+    <string name="label_match_timer">MATCH TIMER</string>
+    <string name="label_live_score">LIVE SCORE</string>
+    <string name="label_sets">Sets</string>
+    <string name="label_games">Games</string>
+    <string name="label_pts">Pts</string>
+    <string name="btn_pause">Pause</string>
+    <string name="btn_resume">Resume</string>
+    <string name="btn_add_point">+ Point</string>
+    <string name="btn_undo">Undo</string>
+    <string name="btn_reset_game">Reset Game</string>
+    <string name="btn_new_match">New Match</string>
+    <string name="premium_tools_unlocked">Counter + premium tools unlocked</string>
+    <string name="free_counter_label">Free live counter on mobile</string>
+
+    <!-- Live score -->
+    <string name="watching_live">Watching live from watch</string>
+    <string name="label_live">LIVE</string>
+
+    <!-- History screen -->
+    <string name="history_title">Your match highlights</string>
+    <string name="history_free_mode">Free mode on watch. Unlock Premium to save and view your matches on phone.</string>
+    <string name="history_empty_title">No Playces yet</string>
+    <string name="history_empty_message">Capture your next match highlight and build your history here.</string>
+    <string name="history_empty_cta">Create your first Playce</string>
+
+    <!-- Premium -->
+    <string name="premium_badge">Premium</string>
+    <string name="premium_title">PLAYCE Premium</string>
+    <string name="premium_description">Unlock match save, history, detail and share card on mobile.</string>
+    <string name="premium_price">One-time purchase: %s</string>
+    <string name="premium_opening">Opening purchase…</string>
+    <string name="btn_unlock_premium">Unlock Premium</string>
+    <string name="btn_use_free">Use free counter</string>
+    <string name="btn_restore_purchase">Restore purchase</string>
+
+    <!-- Detail screen -->
+    <string name="btn_back">Back</string>
+    <string name="premium_required">Premium required</string>
+    <string name="premium_detail_upsell">Unlock Premium to view match details, add photos and share your Playce card.</string>
+    <string name="section_score_recap">Score recap</string>
+    <string name="section_metadata">Metadata</string>
+    <string name="btn_share_playce">Share your Playce</string>
+    <string name="btn_add_photo">Add photo</string>
+    <string name="match_not_found">Match not found</string>
+    <string name="label_duration">Duration %s</string>
+
+    <!-- Tiebreak -->
+    <string name="label_tiebreak">TIEBREAK</string>
+
+    <!-- Match format -->
+    <string name="format_standard">Standard (Best of 3)</string>
+    <string name="format_grand_slam">Grand Slam (Best of 5)</string>
+    <string name="format_fast">Fast4 (No-ad + Super TB)</string>
+
+    <!-- Stats screen -->
+    <string name="stats_title">Your Stats</string>
+    <string name="stats_loading">Loading…</string>
+    <string name="stats_empty_title">No stats yet</string>
+    <string name="stats_empty_message">Play your first match to start tracking your stats.</string>
+    <string name="stats_matches_played">Matches Played</string>
+    <string name="stats_total_time">Total Play Time</string>
+    <string name="stats_avg_duration">Avg Duration</string>
+    <string name="stats_longest">Longest Match</string>
+    <string name="stats_shortest">Shortest Match</string>
+    <string name="stats_export_title">Export History</string>
+    <string name="stats_export_subtitle">Download all your matches as CSV</string>
+    <string name="stats_export_btn">Export CSV</string>
+
+    <!-- Match setup -->
+    <string name="setup_title">MATCH SETUP</string>
+    <string name="setup_subtitle_expanded">Configure your match</string>
+    <string name="setup_subtitle_collapsed">Tap to configure names &amp; format</string>
+    <string name="setup_player_names">PLAYER NAMES</string>
+    <string name="setup_player_a_hint">Player A</string>
+    <string name="setup_player_b_hint">Player B</string>
+    <string name="setup_match_format">MATCH FORMAT</string>
+    <string name="setup_btn_apply">Apply</string>
+    <string name="setup_btn_send_watch">Send to Watch</string>
+    <string name="setup_btn_sent">Sent!</string>
+    <string name="setup_sent_message">Config sent to watch. Start the match on your watch when ready.</string>
+    <string name="format_label_standard">Standard</string>
+    <string name="format_label_grand_slam">Grand Slam</string>
+    <string name="format_label_fast4">Fast4</string>
+    <string name="format_sub_standard">Best of 3</string>
+    <string name="format_sub_grand_slam">Best of 5</string>
+    <string name="format_sub_fast4">No-Ad + STB</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">Score your matches</string>
+    <string name="onboarding_desc_1">Tap to add points with full tennis scoring: deuce, advantage, tiebreaks, and configurable formats.</string>
+    <string name="onboarding_title_2">Play from your watch</string>
+    <string name="onboarding_desc_2">Use your Wear OS watch as a courtside scorer. Your phone syncs automatically.</string>
+    <string name="onboarding_title_3">Track your history</string>
+    <string name="onboarding_desc_3">Every match is saved. Review your stats, share results, and see your progress over time.</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_start">Get Started</string>
+
+    <!-- Tabs -->
+    <string name="tab_stats">Stats</string>
+
+    <!-- Share card -->
+    <string name="share_match_result">MATCH RESULT</string>
+
+    <!-- Metadata -->
+    <string name="label_photo">Photo: %s</string>
+    <string name="label_no_photo">No photo selected</string>
+    <string name="label_id">ID: %d</string>
 </resources>

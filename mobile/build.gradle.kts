@@ -46,7 +46,8 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -79,6 +80,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.compose.ui:ui:1.6.8")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
@@ -93,6 +95,7 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("com.google.android.gms:play-services-wearable:18.2.0")
     implementation("com.android.billingclient:billing-ktx:6.2.1")
+    implementation("com.google.android.play:review-ktx:2.0.1")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 

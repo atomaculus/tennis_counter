@@ -1,3 +1,62 @@
 <resources>
     <string name="app_name">PLAYCE</string>
+
+    <!-- Score labels -->
+    <string name="label_sets">SETS</string>
+    <string name="label_games">GAMES</string>
+    <string name="label_timer">TIMER</string>
+
+    <!-- Buttons -->
+    <string name="btn_end_match">END MATCH</string>
+    <string name="btn_save_match">SAVE MATCH</string>
+    <string name="btn_new_match">NEW MATCH</string>
+    <string name="btn_watch_live">Watch Live</string>
+    <string name="btn_finish">Finish</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- Sheet actions -->
+    <string name="sheet_admin">Admin</string>
+    <string name="sheet_end_match_confirm">End match?</string>
+    <string name="action_reset_game">Reset current game</string>
+    <string name="action_reset_match">Reset match</string>
+    <string name="action_undo_point">Undo last point (%s)</string>
+
+    <!-- Serve indicator -->
+    <string name="serve_indicator">%s SERVES</string>
+
+    <!-- Status messages -->
+    <string name="status_saved">Saved OK</string>
+    <string name="status_already_saved">Already saved</string>
+    <string name="status_phone_not_connected">Phone not connected</string>
+    <string name="status_saved_send_failed">Saved OK, send failed</string>
+    <string name="status_match_reset">Match reset</string>
+    <string name="status_retry_in">Retry in %ds</string>
+    <string name="status_syncing">Syncing…</string>
+    <string name="status_synced">Synced ✓</string>
+    <string name="status_sent">SENT</string>
+    <string name="status_retry">RETRY</string>
+
+    <!-- Match finished -->
+    <string name="title_match_finished">MATCH FINISHED</string>
+    <string name="label_no_summary">No summary</string>
+    <string name="label_duration">Duration %s</string>
+
+    <!-- Tiebreak -->
+    <string name="label_tiebreak">TIEBREAK</string>
+
+    <!-- Hardware buttons -->
+    <string name="hw_buttons_on">Buttons: ON (tap to disable)</string>
+    <string name="hw_buttons_off">Buttons: OFF (tap to enable)</string>
+    <string name="hw_buttons_enabled_msg">HW buttons ON: Top=+A, Bottom=+B</string>
+    <string name="hw_buttons_disabled_msg">HW buttons OFF</string>
+
+    <!-- Spectator -->
+    <string name="spectator_watching">WATCHING LIVE</string>
+
+    <!-- Undo short -->
+    <string name="action_undo_short">Undo (%s)</string>
+
+    <!-- Player defaults -->
+    <string name="default_player_a">Player A</string>
+    <string name="default_player_b">Player B</string>
 </resources>

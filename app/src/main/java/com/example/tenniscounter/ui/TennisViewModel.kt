@@ -9,6 +9,9 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tenniscounter.timer.MatchTimerService
+import com.playce.shared.scoring.MatchFormat
+import com.playce.shared.scoring.ScoringEngine
+import com.playce.shared.scoring.ScoringEngine.MatchScore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,55 +20,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private val POINT_LABELS = listOf("0", "15", "30", "40", "AD")
-
-data class SetScore(
-    val a: Int,
-    val b: Int
-)
-
-data class PlayerScore(
-    val points: Int = 0,
-    val games: Int = 0,
-    val sets: Int = 0
-)
+// Re-export shared types with aliases for backward compat with UI code
+typealias SetScore = ScoringEngine.SetScore
+typealias PlayerScore = ScoringEngine.PlayerScore
 
 data class MatchState(
-    val playerA: PlayerScore = PlayerScore(),
-    val playerB: PlayerScore = PlayerScore(),
-    val completedSets: List<SetScore> = emptyList(),
+    val score: MatchScore = MatchScore(),
     val elapsedSeconds: Int = 0,
     val isRunning: Boolean = true,
-    val initialServerIsPlayerA: Boolean = true
+    val playerAName: String = "Player A",
+    val playerBName: String = "Player B"
 ) {
-    fun pointLabelForA(): String = toPointLabel(playerA.points, playerB.points)
-    fun pointLabelForB(): String = toPointLabel(playerB.points, playerA.points)
-    fun currentServerIsPlayerA(): Boolean {
-        val completedGames = completedSets.sumOf { it.a + it.b }
-        val currentSetGames = playerA.games + playerB.games
-        val totalGamesPlayed = completedGames + currentSetGames
-        return if (totalGamesPlayed % 2 == 0) {
-            initialServerIsPlayerA
-        } else {
-            !initialServerIsPlayerA
-        }
-    }
+    // Convenience accessors for backward compatibility with UI
+    val playerA: PlayerScore get() = score.playerA
+    val playerB: PlayerScore get() = score.playerB
+    val completedSets: List<SetScore> get() = score.completedSets
+    val initialServerIsPlayerA: Boolean get() = score.initialServerIsPlayerA
+    val isTiebreak: Boolean get() = score.isTiebreak
+    val isMatchOver: Boolean get() = score.isMatchOver
 
-    fun serveStartsOnLeftSide(): Boolean {
-        val pointsInCurrentGame = playerA.points + playerB.points
-        return pointsInCurrentGame % 2 == 0
-    }
-
-    private fun toPointLabel(playerPoints: Int, rivalPoints: Int): String {
-        if (playerPoints >= 3 && rivalPoints >= 3) {
-            return when {
-                playerPoints == rivalPoints -> "40"
-                playerPoints == rivalPoints + 1 -> "AD"
-                else -> "40"
-            }
-        }
-        return POINT_LABELS.getOrElse(playerPoints.coerceIn(0, 4)) { "0" }
-    }
+    fun pointLabelForA(): String = score.pointLabelForA()
+    fun pointLabelForB(): String = score.pointLabelForB()
+    fun currentServerIsPlayerA(): Boolean = score.currentServerIsPlayerA()
+    fun serveStartsOnLeftSide(): Boolean = score.serveStartsOnLeftSide()
 }
 
 data class FinishedMatchSummary(
@@ -73,18 +50,6 @@ data class FinishedMatchSummary(
     val durationSeconds: Int,
     val setsScore: String,
     val setsDetail: String
-)
-
-private data class BaselineScore(
-    val playerA: PlayerScore,
-    val playerB: PlayerScore,
-    val completedSets: List<SetScore>
-)
-
-private data class ResolveResult(
-    val winner: PlayerScore,
-    val loser: PlayerScore,
-    val completedSet: Pair<Int, Int>? = null
 )
 
 class TennisViewModel(application: Application) : AndroidViewModel(application) {
@@ -102,8 +67,10 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     private val _isFinishedMatchSaved = MutableStateFlow(false)
     val isFinishedMatchSaved: StateFlow<Boolean> = _isFinishedMatchSaved.asStateFlow()
 
+    private val _matchFormat = MutableStateFlow(MatchFormat.STANDARD)
+    val matchFormat: StateFlow<MatchFormat> = _matchFormat.asStateFlow()
+
     private var timerJob: Job? = null
-    private var scoreBaseline = BaselineScore(PlayerScore(), PlayerScore(), emptyList())
     private val pointHistory = mutableListOf<Boolean>()
 
     init {
@@ -114,6 +81,24 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
                 startMatchTimerService()
             }
             startTicker()
+        }
+    }
+
+    fun setPlayerNames(nameA: String, nameB: String) {
+        _matchState.value = _matchState.value.copy(
+            playerAName = nameA.ifBlank { "Player A" },
+            playerBName = nameB.ifBlank { "Player B" }
+        )
+    }
+
+    fun setMatchFormat(format: MatchFormat) {
+        _matchFormat.value = format
+        // Apply to current score if match hasn't started
+        val state = _matchState.value
+        if (pointHistory.isEmpty()) {
+            _matchState.value = state.copy(
+                score = state.score.copy(format = format)
+            )
         }
     }
 
@@ -176,12 +161,12 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
 
     fun addPointToPlayerA() {
         pointHistory.add(true)
-        applyPointWon(isPlayerA = true)
+        applyPoint(isPlayerA = true)
     }
 
     fun addPointToPlayerB() {
         pointHistory.add(false)
-        applyPointWon(isPlayerA = false)
+        applyPoint(isPlayerA = false)
     }
 
     fun undoLastPointForPlayerA(): Boolean = undoLastPointForPlayer(true)
@@ -191,35 +176,32 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     fun resetGame() {
         pointHistory.clear()
         val state = _matchState.value
-        scoreBaseline = BaselineScore(
-            playerA = state.playerA.copy(points = 0),
-            playerB = state.playerB.copy(points = 0),
-            completedSets = state.completedSets
-        )
         _matchState.value = state.copy(
-            playerA = state.playerA.copy(points = 0),
-            playerB = state.playerB.copy(points = 0)
+            score = state.score.copy(
+                playerA = state.playerA.copy(points = 0),
+                playerB = state.playerB.copy(points = 0),
+                isTiebreak = false
+            )
         )
     }
 
     fun resetMatch() {
         pointHistory.clear()
-        scoreBaseline = BaselineScore(PlayerScore(), PlayerScore(), emptyList())
         viewModelScope.launch {
             TimerStateStore.start(appContext, SystemClock.elapsedRealtime())
             startMatchTimerService()
-            _matchState.value = MatchState()
+            _matchState.value = MatchState(
+                score = MatchScore(format = _matchFormat.value)
+            )
             updateTimerValue()
         }
     }
 
-    // Called from UI after end-match confirmation; this is the manual navigation trigger source.
     fun finishMatch() {
         _finishedMatch.value = buildFinishedSummary(_matchState.value)
         _isFinishedMatchSaved.value = false
     }
 
-    // Persists a minimal final-match record in DataStore. Duplicate saves are blocked by state + createdAt key.
     fun saveFinishedMatch(): Boolean {
         val summary = _finishedMatch.value ?: return false
         if (_isFinishedMatchSaved.value) return false
@@ -272,23 +254,10 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         ).joinToString("|")
     }
 
-    private fun applyPointWon(isPlayerA: Boolean) {
+    private fun applyPoint(isPlayerA: Boolean) {
         val state = _matchState.value
-        val currentA = state.playerA
-        val currentB = state.playerB
-        val sets = state.completedSets.toMutableList()
-
-        val (newA, newB) = if (isPlayerA) {
-            val resolved = resolvePointWon(currentA, currentB)
-            resolved.completedSet?.let { sets.add(SetScore(it.first, it.second)) }
-            resolved.winner to resolved.loser
-        } else {
-            val resolved = resolvePointWon(currentB, currentA)
-            resolved.completedSet?.let { sets.add(SetScore(it.second, it.first)) }
-            resolved.loser to resolved.winner
-        }
-
-        _matchState.value = state.copy(playerA = newA, playerB = newB, completedSets = sets)
+        val newScore = ScoringEngine.scorePoint(state.score, isPlayerA)
+        _matchState.value = state.copy(score = newScore)
     }
 
     private fun undoLastPointForPlayer(isPlayerA: Boolean): Boolean {
@@ -301,60 +270,12 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun rebuildScoreFromHistory() {
-        var scoreA = scoreBaseline.playerA
-        var scoreB = scoreBaseline.playerB
-        val sets = scoreBaseline.completedSets.toMutableList()
-
-        pointHistory.forEach { winnerIsA ->
-            if (winnerIsA) {
-                val resolved = resolvePointWon(scoreA, scoreB)
-                resolved.completedSet?.let { sets.add(SetScore(it.first, it.second)) }
-                scoreA = resolved.winner
-                scoreB = resolved.loser
-            } else {
-                val resolved = resolvePointWon(scoreB, scoreA)
-                resolved.completedSet?.let { sets.add(SetScore(it.second, it.first)) }
-                scoreA = resolved.loser
-                scoreB = resolved.winner
-            }
-        }
-
-        _matchState.value = _matchState.value.copy(
-            playerA = scoreA,
-            playerB = scoreB,
-            completedSets = sets
+        val newScore = ScoringEngine.replay(
+            pointHistory,
+            _matchFormat.value,
+            _matchState.value.score.initialServerIsPlayerA
         )
-    }
-
-    private fun resolvePointWon(winner: PlayerScore, loser: PlayerScore): ResolveResult {
-        val winnerPoints = winner.points + 1
-        val loserPoints = loser.points
-
-        val winnerTakesGame = winnerPoints >= 4 && winnerPoints - loserPoints >= 2
-
-        if (!winnerTakesGame) {
-            return ResolveResult(
-                winner = winner.copy(points = winnerPoints),
-                loser = loser
-            )
-        }
-
-        val winnerGames = winner.games + 1
-        val loserGames = loser.games
-        val winnerTakesSet = winnerGames >= 6 && winnerGames - loserGames >= 2
-
-        return if (winnerTakesSet) {
-            ResolveResult(
-                winner = winner.copy(points = 0, games = 0, sets = winner.sets + 1),
-                loser = loser.copy(points = 0, games = 0),
-                completedSet = winnerGames to loserGames
-            )
-        } else {
-            ResolveResult(
-                winner = winner.copy(points = 0, games = winnerGames),
-                loser = loser.copy(points = 0)
-            )
-        }
+        _matchState.value = _matchState.value.copy(score = newScore)
     }
 
     private fun formatDuration(totalSeconds: Int): String {

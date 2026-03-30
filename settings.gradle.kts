@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 rootProject.name = "tennis_counter"
 include(":app")
 include(":mobile")
+include(":shared")

@@ -74,6 +74,16 @@ import com.example.tenniscounter.sync.PendingMatchStore
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMap
 import com.example.tenniscounter.sound.PointSoundManager
+import com.example.tenniscounter.ui.components.PlayceWearColors
+import com.example.tenniscounter.ui.components.PlayceWearSpacing
+import com.example.tenniscounter.ui.components.PlayceWearShapes
+import com.example.tenniscounter.ui.components.PlayceButtonVariant
+import com.example.tenniscounter.ui.components.PlayceCard
+import com.example.tenniscounter.ui.components.PlayceChip
+import com.example.tenniscounter.ui.components.PlayceButton
+import com.example.tenniscounter.ui.components.TennisWearTheme
+import com.example.tenniscounter.ui.components.SheetAction
+import com.example.tenniscounter.sync.MatchConfigRepository
 import com.example.tenniscounter.sync.LiveScoreBroadcaster
 import com.example.tenniscounter.sync.LiveScoreObserver
 import com.example.tenniscounter.sync.WearLiveMatchState
@@ -88,52 +98,17 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private object PlayceWearColors {
-    val Background = Color(0xFF000000)
-    val Surface = Color(0xFF101010)
-    val SurfaceElevated = Color(0xFF171717)
-    val SurfacePressed = Color(0xFF202020)
-    val Border = Color(0xFF2A2A2A)
-    val TextPrimary = Color(0xFFF5F5F5)
-    val TextSecondary = Color(0xFFB6B6B6)
-    val Accent = Color(0xFFB8FF2C)
-    val AccentPressed = Color(0xFFA6E828)
-    val AccentSoft = Color(0x2218FF8C)
-    val Scrim = Color(0xCC000000)
-    val Danger = Color(0xFFFF6B6B)
-}
-
-private object PlayceWearSpacing {
-    val Xs: Dp = 4.dp
-    val Sm: Dp = 8.dp
-    val Md: Dp = 10.dp
-    val Lg: Dp = 12.dp
-    val Xl: Dp = 16.dp
-}
-
-private object PlayceWearShapes {
-    val Chip = RoundedCornerShape(12.dp)
-    val Card = RoundedCornerShape(16.dp)
-    val Sheet = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
-    val Pill = RoundedCornerShape(999.dp)
-}
-
 private const val WEAR_DATA_LAYER_TAG = "WearDataLayer"
 private const val ACK_WAIT_RETRY_MS = 10_000L
 private const val RETRY_TRIGGER_THROTTLE_MS = 1_500L
 private val retryScope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-private enum class PlayceButtonVariant {
-    Primary,
-    Secondary,
-    Danger
-}
 
 private enum class AppScreen {
     Counter,
@@ -166,17 +141,41 @@ private data class ServeIndicatorState(
     val serveOnLeftSide: Boolean
 )
 
-data class SheetAction(
-    val label: String,
-    val onClick: () -> Unit
-)
+/**
+ * Represents a physical button press event from the watch hardware.
+ * STEM_1 = top button → Player A point
+ * STEM_2 = bottom button → Player B point
+ *
+ * Only active when [hardwareButtonsEnabled] is true (user opt-in).
+ * Does NOT intercept KEYCODE_HOME or KEYCODE_BACK — those always work normally.
+ */
+enum class HardwareButtonEvent {
+    STEM_1_PLAYER_A,
+    STEM_2_PLAYER_B
+}
 
 class MainActivity : ComponentActivity() {
+
+    /** Emits hardware button presses so composables can react. */
+    private val _hardwareButtonEvent = MutableStateFlow<HardwareButtonEvent?>(null)
+
+    /**
+     * Opt-in flag: hardware buttons only score points when this is true.
+     * Controlled from the UI via the Admin sheet toggle.
+     */
+    var hardwareButtonsEnabled: Boolean = false
+
+    /** True when the screen is interactive (not ambient/off). */
+    private var isScreenInteractive: Boolean = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             TennisWearTheme {
-                TennisCounterApp()
+                TennisCounterApp(
+                    hardwareButtonFlow = _hardwareButtonEvent,
+                    onHardwareButtonsToggled = { enabled -> hardwareButtonsEnabled = enabled }
+                )
             }
         }
     }
@@ -184,125 +183,48 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         triggerPendingRetry(applicationContext, "onStart")
+        isScreenInteractive = true
     }
 
     override fun onResume() {
         super.onResume()
         triggerPendingRetry(applicationContext, "onResume")
+        isScreenInteractive = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Screen off / ambient mode → disable button scoring to prevent accidental presses
+        isScreenInteractive = false
+    }
+
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        // Only intercept STEM buttons, never HOME or BACK
+        if (!hardwareButtonsEnabled || !isScreenInteractive) {
+            return super.onKeyDown(keyCode, event)
+        }
+
+        return when (keyCode) {
+            android.view.KeyEvent.KEYCODE_STEM_1 -> {
+                _hardwareButtonEvent.value = HardwareButtonEvent.STEM_1_PLAYER_A
+                true
+            }
+            android.view.KeyEvent.KEYCODE_STEM_2 -> {
+                _hardwareButtonEvent.value = HardwareButtonEvent.STEM_2_PLAYER_B
+                true
+            }
+            // KEYCODE_HOME and KEYCODE_BACK always pass through to the system
+            else -> super.onKeyDown(keyCode, event)
+        }
     }
 }
 
 @Composable
-fun TennisWearTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colors = Colors(
-            primary = PlayceWearColors.Accent,
-            secondary = PlayceWearColors.SurfaceElevated,
-            background = PlayceWearColors.Background,
-            onBackground = PlayceWearColors.TextPrimary,
-            onPrimary = PlayceWearColors.Background
-        ),
-        content = content
-    )
-}
-
-@Composable
-private fun PlayceCard(
-    modifier: Modifier = Modifier,
-    accentBorder: Boolean = false,
-    content: @Composable () -> Unit
+private fun TennisCounterApp(
+    viewModel: TennisViewModel = viewModel(),
+    hardwareButtonFlow: MutableStateFlow<HardwareButtonEvent?> = MutableStateFlow(null),
+    onHardwareButtonsToggled: (Boolean) -> Unit = {}
 ) {
-    Box(
-        modifier = modifier
-            .clip(PlayceWearShapes.Card)
-            .background(PlayceWearColors.Surface)
-            .border(
-                width = 1.dp,
-                color = if (accentBorder) PlayceWearColors.AccentSoft else PlayceWearColors.Border,
-                shape = PlayceWearShapes.Card
-            )
-            .padding(PlayceWearSpacing.Lg)
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun PlayceChip(
-    text: String,
-    modifier: Modifier = Modifier,
-    accent: Boolean = false
-) {
-    Box(
-        modifier = modifier
-            .clip(PlayceWearShapes.Chip)
-            .background(if (accent) PlayceWearColors.AccentSoft else PlayceWearColors.SurfaceElevated)
-            .border(
-                width = 1.dp,
-                color = if (accent) PlayceWearColors.Accent.copy(alpha = 0.25f) else PlayceWearColors.Border,
-                shape = PlayceWearShapes.Chip
-            )
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = if (accent) PlayceWearColors.Accent else PlayceWearColors.TextSecondary,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-    }
-}
-
-@Composable
-private fun PlayceButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    variant: PlayceButtonVariant = PlayceButtonVariant.Secondary
-) {
-    val background = when (variant) {
-        PlayceButtonVariant.Primary -> PlayceWearColors.Accent
-        PlayceButtonVariant.Secondary -> PlayceWearColors.SurfaceElevated
-        PlayceButtonVariant.Danger -> PlayceWearColors.Danger.copy(alpha = 0.18f)
-    }
-    val content = when (variant) {
-        PlayceButtonVariant.Primary -> PlayceWearColors.Background
-        PlayceButtonVariant.Secondary -> PlayceWearColors.TextPrimary
-        PlayceButtonVariant.Danger -> PlayceWearColors.Danger
-    }
-
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = when (variant) {
-                    PlayceButtonVariant.Primary -> PlayceWearColors.Accent.copy(alpha = 0.35f)
-                    PlayceButtonVariant.Secondary -> PlayceWearColors.Border
-                    PlayceButtonVariant.Danger -> PlayceWearColors.Danger.copy(alpha = 0.28f)
-                },
-                shape = PlayceWearShapes.Pill
-            ),
-        colors = ButtonDefaults.buttonColors(
-            backgroundColor = if (enabled) background else PlayceWearColors.Surface,
-            contentColor = if (enabled) content else PlayceWearColors.TextSecondary
-        )
-    ) {
-        Text(
-            text = text,
-            fontWeight = FontWeight.Black,
-            fontSize = 11.sp,
-            color = if (enabled) content else PlayceWearColors.TextSecondary
-        )
-    }
-}
-
-@Composable
-private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
     val state by viewModel.matchState.collectAsState()
     val finishedSummary by viewModel.finishedMatch.collectAsState()
     val isSaved by viewModel.isFinishedMatchSaved.collectAsState()
@@ -337,6 +259,16 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
         }
     }
 
+    // Observe match config sent from the phone
+    val pendingConfig by MatchConfigRepository.pendingConfig.collectAsState()
+    LaunchedEffect(pendingConfig) {
+        val config = pendingConfig ?: return@LaunchedEffect
+        viewModel.setPlayerNames(config.playerAName, config.playerBName)
+        viewModel.setMatchFormat(config.format)
+        MatchConfigRepository.consume()
+        Log.d(WEAR_DATA_LAYER_TAG, "Applied config from phone: ${config.playerAName} vs ${config.playerBName}")
+    }
+
     val spectatorUiState = rememberSpectatorUiState(
         context = context,
         localNodeId = localNodeId
@@ -346,6 +278,35 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
     var transientMessage by remember { mutableStateOf<String?>(null) }
+    var hwButtonsEnabled by remember { mutableStateOf(false) }
+
+    // Handle physical watch button presses (STEM_1 = Player A, STEM_2 = Player B)
+    // Only processes when: opt-in enabled, match running, screen on, no sheet open, on Counter screen
+    val hardwareButtonEvent by hardwareButtonFlow.collectAsState()
+    LaunchedEffect(hardwareButtonEvent) {
+        val event = hardwareButtonEvent ?: return@LaunchedEffect
+        val canScore = hwButtonsEnabled &&
+            !state.isMatchOver &&
+            appScreen == AppScreen.Counter &&
+            activeSheet == ActiveSheet.None
+        if (canScore) {
+            when (event) {
+                HardwareButtonEvent.STEM_1_PLAYER_A -> {
+                    viewModel.addPointToPlayerA()
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    pointSound.playPlayerASound()
+                    broadcastCurrentState("A")
+                }
+                HardwareButtonEvent.STEM_2_PLAYER_B -> {
+                    viewModel.addPointToPlayerB()
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    pointSound.playPlayerBSound()
+                    broadcastCurrentState("B")
+                }
+            }
+        }
+        hardwareButtonFlow.value = null // consume the event
+    }
 
     // If spectator is watching and the match ends, go back to counter
     LaunchedEffect(spectatorState) {
@@ -548,9 +509,9 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
 
             when (activeSheet) {
                 ActiveSheet.PlayerA -> {
-                    title = "Player A"
+                    title = state.playerAName.take(12)
                     actions = listOf(
-                        SheetAction("Undo last point (Player A)") {
+                        SheetAction("Undo (${state.playerAName.take(8)})") {
                             if (viewModel.undoLastPointForPlayerA()) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -563,9 +524,9 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                 }
 
                 ActiveSheet.PlayerB -> {
-                    title = "Player B"
+                    title = state.playerBName.take(12)
                     actions = listOf(
-                        SheetAction("Undo last point (Player B)") {
+                        SheetAction("Undo (${state.playerBName.take(8)})") {
                             if (viewModel.undoLastPointForPlayerB()) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -579,7 +540,21 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
 
                 ActiveSheet.Admin -> {
                     title = "Admin"
+                    val buttonToggleLabel = if (hwButtonsEnabled)
+                        "Buttons: ON (tap to disable)"
+                    else
+                        "Buttons: OFF (tap to enable)"
                     actions = listOf(
+                        SheetAction(buttonToggleLabel) {
+                            hwButtonsEnabled = !hwButtonsEnabled
+                            onHardwareButtonsToggled(hwButtonsEnabled)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            transientMessage = if (hwButtonsEnabled)
+                                "HW buttons ON: Top=+A, Bottom=+B"
+                            else
+                                "HW buttons OFF"
+                            activeSheet = ActiveSheet.None
+                        },
                         SheetAction("Reset current game") {
                             viewModel.resetGame()
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -605,6 +580,9 @@ private fun TennisCounterApp(viewModel: TennisViewModel = viewModel()) {
                             viewModel.finishMatch()
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             liveBroadcaster.clearLiveScore()
+                            // Auto-disable hardware buttons when match ends
+                            hwButtonsEnabled = false
+                            onHardwareButtonsToggled(false)
                             appScreen = AppScreen.MatchFinished
                             activeSheet = ActiveSheet.None
                         },
@@ -716,7 +694,7 @@ private fun CounterScreen(
     val listState = rememberScalingLazyListState()
     val serveIndicatorState = remember(state) {
         ServeIndicatorState(
-            serverLabel = if (state.currentServerIsPlayerA()) "A SERVES" else "B SERVES",
+            serverLabel = if (state.currentServerIsPlayerA()) "${state.playerAName.take(6).uppercase()} SERVES" else "${state.playerBName.take(6).uppercase()} SERVES",
             isPlayerAServing = state.currentServerIsPlayerA(),
             serveOnLeftSide = state.serveStartsOnLeftSide()
         )
@@ -773,14 +751,14 @@ private fun CounterScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AddPointGestureButton(
-                            label = "+A",
+                            label = "+${state.playerAName.take(1).uppercase()}",
                             onPressStateChange = onPressStateA,
                             onTap = onTapPointA,
                             onLongPress = onLongPressPointA,
                             isServing = serveIndicatorState.isPlayerAServing
                         )
                         AddPointGestureButton(
-                            label = "+B",
+                            label = "+${state.playerBName.take(1).uppercase()}",
                             onPressStateChange = onPressStateB,
                             onTap = onTapPointB,
                             onLongPress = onLongPressPointB,

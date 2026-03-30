@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.example.tenniscounter.mobile.R
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -92,7 +94,7 @@ fun MatchDetailScreen(
                 horizontalArrangement = Arrangement.Start
             ) {
                 TextButton(onClick = onBack) {
-                    Text("Back", color = PlayceColors.TextPrimary)
+                    Text(stringResource(R.string.btn_back), color = PlayceColors.TextPrimary)
                 }
             }
         }
@@ -106,7 +108,7 @@ fun MatchDetailScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Match not found", color = PlayceColors.TextPrimary)
+                Text(stringResource(R.string.match_not_found), color = PlayceColors.TextPrimary)
             }
             return@Scaffold
         }
@@ -197,18 +199,18 @@ private fun LockedDetailContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Premium required",
+            text = stringResource(R.string.premium_required),
             color = PlayceColors.TextPrimary,
             style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
         )
         Text(
-            text = "Unlock Premium to view match details, add photos and share your Playce card.",
+            text = stringResource(R.string.premium_detail_upsell),
             color = PlayceColors.TextSecondary,
             style = androidx.compose.material3.MaterialTheme.typography.bodyLarge
         )
         premiumUiState.productPriceLabel?.let { price ->
             Text(
-                text = "One-time purchase: $price",
+                text = stringResource(R.string.premium_price, price),
                 color = PlayceColors.TextPrimary,
                 style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
             )
@@ -221,13 +223,13 @@ private fun LockedDetailContent(
             )
         }
         PrimaryButton(
-            text = if (premiumUiState.isPurchaseInProgress) "Opening purchase..." else "Unlock Premium",
+            text = if (premiumUiState.isPurchaseInProgress) stringResource(R.string.premium_opening) else stringResource(R.string.btn_unlock_premium),
             onClick = onUnlockPremium,
             enabled = !premiumUiState.isPurchaseInProgress,
             modifier = Modifier.fillMaxWidth()
         )
         PrimaryButton(
-            text = "Restore purchase",
+            text = stringResource(R.string.btn_restore_purchase),
             onClick = onRestorePurchases,
             style = PrimaryButtonStyle.Outline,
             enabled = premiumUiState.isBillingReady,
@@ -261,7 +263,7 @@ private fun DetailContent(
             Text(
                 text = listOf(
                     formatDate(match.createdAt),
-                    "Duration ${formatDuration(match.durationSeconds)}"
+                    stringResource(R.string.label_duration, formatDuration(match.durationSeconds))
                 ).joinToString("  |  "),
                 color = PlayceColors.TextSecondary,
                 style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
@@ -304,12 +306,12 @@ private fun DetailContent(
             ) {
                 SectionHeader("Metadata")
                 Text(
-                    text = "Photo: ${match.photoUri ?: "No photo selected"}",
+                    text = stringResource(R.string.label_photo, match.photoUri ?: stringResource(R.string.label_no_photo)),
                     color = PlayceColors.TextSecondary,
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "ID: ${match.id}",
+                    text = stringResource(R.string.label_id, match.id),
                     color = PlayceColors.TextSecondary,
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
                 )
@@ -317,13 +319,13 @@ private fun DetailContent(
         }
 
         PrimaryButton(
-            text = "Share your Playce",
+            text = stringResource(R.string.btn_share_playce),
             onClick = onShare,
             modifier = Modifier.fillMaxWidth()
         )
 
         PrimaryButton(
-            text = "Add photo",
+            text = stringResource(R.string.btn_add_photo),
             onClick = onAddPhoto,
             style = PrimaryButtonStyle.Outline,
             modifier = Modifier.fillMaxWidth()

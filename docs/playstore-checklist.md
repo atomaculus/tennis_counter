@@ -1,6 +1,6 @@
 # PLAYCE - Play Store release checklist
 
-Last updated: March 27, 2026
+Last updated: March 30, 2026
 
 This file is the release gate for the current codebase. Use it before publishing any new version to Google Play.
 
@@ -19,6 +19,7 @@ This file is the release gate for the current codebase. Use it before publishing
 Run these commands from repository root:
 
 ```powershell
+.\gradlew.bat :shared:test
 .\gradlew.bat :app:lintDebug :mobile:lintDebug
 .\gradlew.bat :mobile:testDebugUnitTest
 .\gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :mobile:assembleDebug
@@ -27,15 +28,13 @@ Run these commands from repository root:
 
 Expected result:
 - no failing lint tasks
-- no failing unit tests
+- no failing unit tests (including 22 shared scoring engine tests)
 - release artifacts generated successfully
 
-Current repo baseline validated locally on March 27, 2026:
-- `:app:assembleRelease` passed
-- `:mobile:assembleRelease` passed
-- `:app:lintDebug` passed
-- `:mobile:lintDebug` passed
-- `:mobile:testDebugUnitTest` passed
+Current repo baseline validated locally on March 30, 2026:
+- `:shared:test` passed (22 tests)
+- `:app:assembleDebug` passed
+- `:mobile:assembleDebug` passed
 
 Pending before a real store submission:
 - [ ] Re-run the full release command set on the final candidate commit.
@@ -66,17 +65,40 @@ Minimum required setup:
 - one real Wear OS watch used as scorer
 - optional second Wear OS watch for spectator mode
 
+Companion document:
+- follow [docs/manual-qa-guide.md](/C:/Users/atoma/OneDrive/Desktop/Proyectos/Tenis%20counter/docs/manual-qa-guide.md) for the full step-by-step runbook and bug report template
+
 ### 4.1 Wear scoring core
 
 - [ ] Start a fresh match and confirm the timer auto-starts.
 - [ ] Validate point progression: `0 -> 15 -> 30 -> 40 -> game`.
 - [ ] Validate deuce and advantage both directions.
+- [ ] Validate tiebreak triggers at 6-6 with correct point-by-point scoring (first to 7, win by 2).
+- [ ] Validate super tiebreak in final set (if configured): first to 10, win by 2.
 - [ ] Validate game rollover updates games and keeps set logic correct.
 - [ ] Validate set rollover and confirm the serve sequence continues into the next set.
 - [ ] Validate long press undo on both players.
 - [ ] Validate admin actions: `reset game`, `reset match`, `new match`.
 - [ ] Validate current server button highlight.
 - [ ] Validate left/right serve-side halo changes with even/odd point count.
+
+### 4.1b Hardware button scoring (watch)
+
+- [ ] Enable hardware buttons via the toggle chip on the watch.
+- [ ] Validate STEM_1 (top button) adds point to Player A.
+- [ ] Validate STEM_2 (bottom button) adds point to Player B.
+- [ ] Validate buttons are ignored when screen is off (ambient mode).
+- [ ] Validate buttons are ignored when match is finished.
+- [ ] Validate HOME button still exits the app normally.
+- [ ] Disable hardware buttons and confirm taps are the only input.
+
+### 4.1c Phone → Watch config sync
+
+- [ ] Set player names on phone and tap "Send to Watch".
+- [ ] Confirm watch receives names and displays them on the scoring buttons.
+- [ ] Set match format (Standard/Grand Slam/Fast4) and send to watch.
+- [ ] Test with long player names (15+ chars) — verify watch UI truncates gracefully.
+- [ ] Test sending config while watch app is closed — confirm config loads on next open.
 
 ### 4.2 Wear timer persistence
 
@@ -100,6 +122,14 @@ Minimum required setup:
 - [ ] Confirm share card renders and can be shared to another app.
 - [ ] Confirm the mobile free experience still works without Premium.
 - [ ] Confirm premium unlock purchase and restore flows on a test account.
+- [ ] Confirm onboarding shows on first launch and does not show again.
+- [ ] Confirm Stats tab displays correct data after playing matches.
+- [ ] Confirm CSV export generates a valid file and share intent works.
+- [ ] Confirm home screen widget shows last match result and opens the app on tap.
+- [ ] Confirm light theme renders correctly when system is in light mode.
+- [ ] Confirm in-app review prompt appears after 3 completed matches.
+- [ ] Confirm Match Setup card sends config to watch successfully.
+- [ ] Confirm all UI strings display in Spanish when device language is Spanish.
 
 ### 4.5 Spectator mode
 

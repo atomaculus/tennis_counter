@@ -24,9 +24,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.example.tenniscounter.mobile.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,9 +50,22 @@ import com.example.tenniscounter.mobile.ui.theme.PlayceTheme
 fun MobileCounterScreen(
     viewModel: MobileCounterViewModel,
     premiumUiState: PremiumUiState,
-    onUnlockPremium: () -> Unit
+    onUnlockPremium: () -> Unit,
+    onSendConfigToWatch: ((String, String, FormatPreset) -> Unit)? = null,
+    onMatchCompleted: (() -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Trigger review prompt when local match ends
+    var wasMatchActive by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isMatchOver) {
+        if (!state.isMatchOver) {
+            wasMatchActive = true
+        } else if (wasMatchActive) {
+            wasMatchActive = false
+            onMatchCompleted?.invoke()
+        }
+    }
 
     Scaffold(
         containerColor = PlayceColors.Background
@@ -63,6 +82,32 @@ fun MobileCounterScreen(
             HeaderRow(
                 premiumUiState = premiumUiState,
                 onUnlockPremium = onUnlockPremium
+            )
+            MatchSetupCard(
+                onApplyConfig = { nameA, nameB, preset ->
+                    viewModel.setPlayerNames(nameA, nameB)
+                    viewModel.setMatchFormat(
+                        com.playce.shared.scoring.MatchFormat(
+                            setsToWin = preset.setsToWin,
+                            tiebreakAtSixAll = preset.tiebreakAtSixAll,
+                            superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
+                            noAdScoring = preset.noAdScoring
+                        )
+                    )
+                },
+                onSendToWatch = { nameA, nameB, preset ->
+                    // Also apply locally
+                    viewModel.setPlayerNames(nameA, nameB)
+                    viewModel.setMatchFormat(
+                        com.playce.shared.scoring.MatchFormat(
+                            setsToWin = preset.setsToWin,
+                            tiebreakAtSixAll = preset.tiebreakAtSixAll,
+                            superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
+                            noAdScoring = preset.noAdScoring
+                        )
+                    )
+                    onSendConfigToWatch?.invoke(nameA, nameB, preset)
+                }
             )
             TimerCard(
                 elapsedSeconds = state.elapsedSeconds,
@@ -107,9 +152,9 @@ private fun HeaderRow(
                     PlayceWordmark()
                     Text(
                         text = if (premiumUiState.isPremiumUnlocked) {
-                            "Counter + premium tools unlocked"
+                            stringResource(R.string.premium_tools_unlocked)
                         } else {
-                            "Free live counter on mobile"
+                            stringResource(R.string.free_counter_label)
                         },
                         color = PlayceColors.TextSecondary,
                         style = MaterialTheme.typography.bodyMedium
@@ -119,7 +164,7 @@ private fun HeaderRow(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (!premiumUiState.isPremiumUnlocked) {
                     PrimaryButton(
-                        text = "Premium",
+                        text = stringResource(R.string.premium_badge),
                         onClick = onUnlockPremium,
                         style = PrimaryButtonStyle.Solid,
                         modifier = Modifier.fillMaxWidth()
@@ -149,7 +194,7 @@ private fun TimerCard(
         ) {
             Column {
                 Text(
-                    text = "MATCH TIMER",
+                    text = stringResource(R.string.label_match_timer),
                     color = PlayceColors.TextSecondary,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -161,7 +206,7 @@ private fun TimerCard(
                 )
             }
             PrimaryButton(
-                text = if (isRunning) "Pause" else "Resume",
+                text = if (isRunning) stringResource(R.string.btn_pause) else stringResource(R.string.btn_resume),
                 onClick = onToggleTimer,
                 style = PrimaryButtonStyle.Outline
             )
@@ -186,13 +231,13 @@ private fun ScoreboardCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "LIVE SCORE",
+                text = stringResource(R.string.label_live_score),
                 color = PlayceColors.TextSecondary,
                 style = MaterialTheme.typography.labelSmall
             )
             ScoreHeaderRow()
             PlayerRow(
-                name = "Player A",
+                name = state.playerAName,
                 sets = state.playerA.sets,
                 games = state.playerA.games,
                 pointsLabel = state.pointLabelForA(),
@@ -201,7 +246,7 @@ private fun ScoreboardCard(
                 accentColor = PlayceColors.Accent
             )
             PlayerRow(
-                name = "Player B",
+                name = state.playerBName,
                 sets = state.playerB.sets,
                 games = state.playerB.games,
                 pointsLabel = state.pointLabelForB(),
@@ -240,9 +285,9 @@ private fun ScoreHeaderRow() {
             text = "",
             modifier = Modifier.weight(1.6f)
         )
-        ScoreHeaderCell("Sets")
-        ScoreHeaderCell("Games")
-        ScoreHeaderCell("Pts")
+        ScoreHeaderCell(stringResource(R.string.label_sets))
+        ScoreHeaderCell(stringResource(R.string.label_games))
+        ScoreHeaderCell(stringResource(R.string.label_pts))
     }
 }
 
@@ -293,12 +338,12 @@ private fun PlayerRow(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     PrimaryButton(
-                        text = "+ Point",
+                        text = stringResource(R.string.btn_add_point),
                         onClick = onAddPoint,
                         modifier = Modifier.weight(1f)
                     )
                     PrimaryButton(
-                        text = "Undo",
+                        text = stringResource(R.string.btn_undo),
                         onClick = onUndo,
                         style = PrimaryButtonStyle.Outline,
                         modifier = Modifier.weight(1f)
@@ -323,13 +368,13 @@ private fun ActionRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             PrimaryButton(
-                text = "Reset Game",
+                text = stringResource(R.string.btn_reset_game),
                 onClick = onResetGame,
                 style = PrimaryButtonStyle.Outline,
                 modifier = Modifier.weight(1f)
             )
             PrimaryButton(
-                text = "New Match",
+                text = stringResource(R.string.btn_new_match),
                 onClick = onResetMatch,
                 style = PrimaryButtonStyle.Danger,
                 modifier = Modifier.weight(1f)
@@ -386,9 +431,11 @@ private fun MobileCounterPreview() {
         ) {
             ScoreboardCard(
                 state = MobileCounterState(
-                    playerA = CounterPlayerScore(points = 4, games = 2, sets = 1),
-                    playerB = CounterPlayerScore(points = 3, games = 1, sets = 0),
-                    completedSets = listOf(CounterSetScore(6, 4))
+                    score = com.playce.shared.scoring.ScoringEngine.MatchScore(
+                        playerA = CounterPlayerScore(points = 4, games = 2, sets = 1),
+                        playerB = CounterPlayerScore(points = 3, games = 1, sets = 0),
+                        completedSets = listOf(CounterSetScore(6, 4))
+                    )
                 ),
                 onPointA = {},
                 onPointB = {},

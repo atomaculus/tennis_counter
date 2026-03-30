@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -47,6 +48,7 @@ import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import com.example.tenniscounter.R
 import com.example.tenniscounter.sound.PointSoundManager
 import com.example.tenniscounter.sync.WearLiveMatchState
 import java.util.Locale
@@ -175,7 +177,7 @@ private fun WatchingLiveBadge() {
                 .background(AccentColor)
         )
         Text(
-            text = "WATCHING LIVE",
+            text = stringResource(R.string.spectator_watching),
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             color = AccentColor

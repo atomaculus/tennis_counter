@@ -20,9 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.tenniscounter.mobile.R
 import com.example.tenniscounter.mobile.billing.PremiumUiState
 import com.example.tenniscounter.mobile.data.local.MatchEntity
 import com.example.tenniscounter.mobile.ui.components.MatchCard
@@ -111,13 +113,13 @@ private fun HistoryContent(
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             PlayceWordmark()
                             Text(
-                                text = "Your match highlights",
+                                text = stringResource(R.string.history_title),
                                 color = PlayceColors.TextSecondary,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
                         PrimaryButton(
-                            text = "Counter",
+                            text = stringResource(R.string.tab_counter),
                             onClick = onOpenCounter,
                             style = PrimaryButtonStyle.Outline
                         )
@@ -153,7 +155,7 @@ private fun PremiumLockedHistoryState(
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             PlayceWordmark()
             Text(
-                text = "Free mode on watch. Unlock Premium to save and view your matches on phone.",
+                text = stringResource(R.string.history_free_mode),
                 color = PlayceColors.TextSecondary,
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -168,18 +170,18 @@ private fun PremiumLockedHistoryState(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "PLAYCE Premium",
+                    text = stringResource(R.string.premium_title),
                     color = PlayceColors.TextPrimary,
                     style = MaterialTheme.typography.titleLarge
                 )
                 Text(
-                    text = "Unlock match save, history, detail and share card on mobile.",
+                    text = stringResource(R.string.premium_description),
                     color = PlayceColors.TextSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 premiumUiState.productPriceLabel?.let { price ->
                     Text(
-                        text = "One-time purchase: $price",
+                        text = stringResource(R.string.premium_price, price),
                         color = PlayceColors.TextPrimary,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -193,17 +195,17 @@ private fun PremiumLockedHistoryState(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 PrimaryButton(
-                    text = if (premiumUiState.isPurchaseInProgress) "Opening purchase..." else "Unlock Premium",
+                    text = if (premiumUiState.isPurchaseInProgress) stringResource(R.string.premium_opening) else "Unlock Premium",
                     onClick = onUnlockPremium,
                     enabled = !premiumUiState.isPurchaseInProgress
                 )
                 PrimaryButton(
-                    text = "Use free counter",
+                    text = stringResource(R.string.btn_use_free),
                     onClick = onOpenCounter,
                     style = PrimaryButtonStyle.Outline
                 )
                 PrimaryButton(
-                    text = "Restore purchase",
+                    text = stringResource(R.string.btn_restore_purchase),
                     onClick = onRestorePurchases,
                     style = PrimaryButtonStyle.Outline,
                     enabled = premiumUiState.isBillingReady
@@ -224,18 +226,18 @@ private fun EmptyHistoryState(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = "No Playces yet",
+                text = stringResource(R.string.history_empty_title),
                 color = PlayceColors.TextPrimary,
                 style = MaterialTheme.typography.headlineMedium
             )
             Text(
-                text = "Capture your next match highlight and build your history here.",
+                text = stringResource(R.string.history_empty_message),
                 color = PlayceColors.TextSecondary,
                 style = MaterialTheme.typography.bodyLarge
             )
         }
         PrimaryButton(
-            text = "Create your first Playce",
+            text = stringResource(R.string.history_empty_cta),
             onClick = onCreateMatch,
             style = PrimaryButtonStyle.Outline,
             modifier = Modifier

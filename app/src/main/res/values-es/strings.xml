@@ -1,0 +1,62 @@
+<resources>
+    <string name="app_name">PLAYCE</string>
+
+    <!-- Score labels -->
+    <string name="label_sets">SETS</string>
+    <string name="label_games">GAMES</string>
+    <string name="label_timer">TIEMPO</string>
+
+    <!-- Buttons -->
+    <string name="btn_end_match">FINALIZAR</string>
+    <string name="btn_save_match">GUARDAR</string>
+    <string name="btn_new_match">NUEVO PARTIDO</string>
+    <string name="btn_watch_live">Ver en vivo</string>
+    <string name="btn_finish">Terminar</string>
+    <string name="btn_cancel">Cancelar</string>
+
+    <!-- Sheet actions -->
+    <string name="sheet_admin">Admin</string>
+    <string name="sheet_end_match_confirm">¿Terminar partido?</string>
+    <string name="action_reset_game">Reiniciar game</string>
+    <string name="action_reset_match">Reiniciar partido</string>
+    <string name="action_undo_point">Deshacer punto (%s)</string>
+
+    <!-- Serve indicator -->
+    <string name="serve_indicator">%s SACA</string>
+
+    <!-- Status messages -->
+    <string name="status_saved">Guardado</string>
+    <string name="status_already_saved">Ya guardado</string>
+    <string name="status_phone_not_connected">Teléfono no conectado</string>
+    <string name="status_saved_send_failed">Guardado, envío falló</string>
+    <string name="status_match_reset">Partido reiniciado</string>
+    <string name="status_retry_in">Reintento en %ds</string>
+    <string name="status_syncing">Sincronizando…</string>
+    <string name="status_synced">Sincronizado ✓</string>
+    <string name="status_sent">ENVIADO</string>
+    <string name="status_retry">REINTENTAR</string>
+
+    <!-- Match finished -->
+    <string name="title_match_finished">PARTIDO TERMINADO</string>
+    <string name="label_no_summary">Sin resumen</string>
+    <string name="label_duration">Duración %s</string>
+
+    <!-- Tiebreak -->
+    <string name="label_tiebreak">TIEBREAK</string>
+
+    <!-- Hardware buttons -->
+    <string name="hw_buttons_on">Botones: ON (tocá para desactivar)</string>
+    <string name="hw_buttons_off">Botones: OFF (tocá para activar)</string>
+    <string name="hw_buttons_enabled_msg">Botones ON: Arriba=+A, Abajo=+B</string>
+    <string name="hw_buttons_disabled_msg">Botones OFF</string>
+
+    <!-- Spectator -->
+    <string name="spectator_watching">VIENDO EN VIVO</string>
+
+    <!-- Undo short -->
+    <string name="action_undo_short">Deshacer (%s)</string>
+
+    <!-- Player defaults -->
+    <string name="default_player_a">Jugador A</string>
+    <string name="default_player_b">Jugador B</string>
+</resources>

@@ -39,11 +39,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.tenniscounter.mobile.R
 import com.example.tenniscounter.mobile.sound.PointSoundManager
 import com.example.tenniscounter.mobile.sync.LiveMatchState
 import com.example.tenniscounter.mobile.ui.components.PlayceWordmark
@@ -108,7 +110,7 @@ private fun LiveHeader() {
                 Column {
                     PlayceWordmark()
                     Text(
-                        text = "Watching live from watch",
+                        text = stringResource(R.string.watching_live),
                         color = PlayceColors.TextSecondary,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -148,7 +150,7 @@ private fun LiveBadge() {
                 .background(PlayceColors.Accent)
         )
         Text(
-            text = "LIVE",
+            text = stringResource(R.string.label_live),
             color = PlayceColors.Accent,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold
@@ -171,7 +173,7 @@ private fun LiveTimerCard(elapsedSeconds: Int) {
         ) {
             Column {
                 Text(
-                    text = "MATCH TIMER",
+                    text = stringResource(R.string.label_match_timer),
                     color = PlayceColors.TextSecondary,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -197,20 +199,20 @@ private fun LiveScoreboardCard(liveState: LiveMatchState) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "LIVE SCORE",
+                text = stringResource(R.string.label_live_score),
                 color = PlayceColors.TextSecondary,
                 style = MaterialTheme.typography.labelSmall
             )
             LiveScoreHeaderRow()
             LivePlayerRow(
-                name = "Player A",
+                name = stringResource(R.string.setup_player_a_hint),
                 sets = liveState.playerASets,
                 games = liveState.playerAGames,
                 pointsLabel = liveState.pointLabelA,
                 accentColor = PlayceColors.Accent
             )
             LivePlayerRow(
-                name = "Player B",
+                name = stringResource(R.string.setup_player_b_hint),
                 sets = liveState.playerBSets,
                 games = liveState.playerBGames,
                 pointsLabel = liveState.pointLabelB,
@@ -248,9 +250,9 @@ private fun LiveScoreHeaderRow() {
             text = "",
             modifier = Modifier.weight(1.6f)
         )
-        LiveScoreHeaderCell("Sets")
-        LiveScoreHeaderCell("Games")
-        LiveScoreHeaderCell("Pts")
+        LiveScoreHeaderCell(stringResource(R.string.label_sets))
+        LiveScoreHeaderCell(stringResource(R.string.label_games))
+        LiveScoreHeaderCell(stringResource(R.string.label_pts))
     }
 }
 
