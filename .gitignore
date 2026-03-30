@@ -12,6 +12,9 @@ local.properties
 .DS_Store
 Thumbs.db
 
+# Firebase
+google-services.json
+
 # Keystore / signing
 keystore.properties
 keys/

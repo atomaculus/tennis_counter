@@ -98,6 +98,7 @@ dependencies {
     implementation("com.google.android.play:review-ktx:2.0.1")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
 
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
     testImplementation("junit:junit:4.13.2")
