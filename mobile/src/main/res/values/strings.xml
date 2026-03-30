@@ -11,11 +11,14 @@
     <string name="label_sets">Sets</string>
     <string name="label_games">Games</string>
     <string name="label_pts">Pts</string>
+    <string name="btn_start">Start</string>
     <string name="btn_pause">Pause</string>
     <string name="btn_resume">Resume</string>
     <string name="btn_add_point">+ Point</string>
     <string name="btn_undo">Undo</string>
     <string name="btn_reset_game">Reset Game</string>
+    <string name="btn_end_match">End Match</string>
+    <string name="btn_save_match">Save Match</string>
     <string name="btn_new_match">New Match</string>
     <string name="premium_tools_unlocked">Counter + premium tools unlocked</string>
     <string name="free_counter_label">Free live counter on mobile</string>

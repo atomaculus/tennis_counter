@@ -17,12 +17,23 @@ import kotlinx.coroutines.launch
 typealias CounterSetScore = ScoringEngine.SetScore
 typealias CounterPlayerScore = ScoringEngine.PlayerScore
 
+data class MobileFinishedSummary(
+    val createdAt: Long,
+    val durationSeconds: Int,
+    val setsScore: String,
+    val setsDetail: String,
+    val playerAName: String,
+    val playerBName: String
+)
+
 data class MobileCounterState(
     val score: MatchScore = MatchScore(),
     val elapsedSeconds: Int = 0,
-    val isTimerRunning: Boolean = true,
+    val isTimerRunning: Boolean = false,
+    val hasTimerStarted: Boolean = false,
     val playerAName: String = "Player A",
-    val playerBName: String = "Player B"
+    val playerBName: String = "Player B",
+    val finishedSummary: MobileFinishedSummary? = null
 ) {
     // Convenience accessors for backward compatibility with UI
     val playerA: CounterPlayerScore get() = score.playerA
@@ -103,6 +114,49 @@ class MobileCounterViewModel : ViewModel() {
         )
     }
 
+    fun finishMatch() {
+        val current = _state.value
+        // Stop timer
+        if (current.isTimerRunning) {
+            accumulatedSeconds = current.elapsedSeconds
+        }
+
+        val hasSets = current.playerA.sets > 0 || current.playerB.sets > 0
+        val setsScore = if (hasSets) {
+            "${current.playerA.sets}-${current.playerB.sets}"
+        } else {
+            "${current.playerA.games}-${current.playerB.games}"
+        }
+        val completed = current.completedSets.joinToString(" ") { "${it.a}-${it.b}" }
+        val detail = when {
+            completed.isBlank() && !hasSets -> "Games: ${current.playerA.games}-${current.playerB.games}"
+            completed.isBlank() -> "G ${current.playerA.games}-${current.playerB.games}"
+            else -> "$completed | G ${current.playerA.games}-${current.playerB.games}"
+        }
+
+        val summary = MobileFinishedSummary(
+            createdAt = System.currentTimeMillis(),
+            durationSeconds = current.elapsedSeconds,
+            setsScore = setsScore,
+            setsDetail = detail,
+            playerAName = current.playerAName,
+            playerBName = current.playerBName
+        )
+        _state.value = current.copy(
+            isTimerRunning = false,
+            finishedSummary = summary
+        )
+    }
+
+    fun startNewMatch() {
+        pointHistory.clear()
+        accumulatedSeconds = 0
+        timerStartElapsedRealtime = SystemClock.elapsedRealtime()
+        _state.value = MobileCounterState(
+            score = MatchScore(format = _matchFormat.value)
+        )
+    }
+
     fun toggleTimer() {
         val current = _state.value
         if (current.isTimerRunning) {
@@ -110,7 +164,7 @@ class MobileCounterViewModel : ViewModel() {
             _state.value = current.copy(isTimerRunning = false)
         } else {
             timerStartElapsedRealtime = SystemClock.elapsedRealtime()
-            _state.value = current.copy(isTimerRunning = true)
+            _state.value = current.copy(isTimerRunning = true, hasTimerStarted = true)
         }
     }
 

@@ -43,22 +43,19 @@ val LightPlayceColors = PlayceColorPalette(
 val LocalPlayceColors = compositionLocalOf { DarkPlayceColors }
 
 /**
- * Backward-compatible static accessor.
- * All existing code references PlayceColors.Background etc.
- * This delegates to the CompositionLocal so it works in both themes.
+ * Backward-compatible accessor that delegates to the CompositionLocal,
+ * so all existing PlayceColors.X references react to light/dark theme.
  *
- * IMPORTANT: This object can only be used inside @Composable functions
- * where LocalPlayceColors is provided. For non-composable contexts,
- * use the dark palette directly.
+ * Must be called inside @Composable functions.
  */
 object PlayceColors {
-    val Background: Color get() = DarkPlayceColors.Background
-    val Surface: Color get() = DarkPlayceColors.Surface
-    val SurfaceElevated: Color get() = DarkPlayceColors.SurfaceElevated
-    val Border: Color get() = DarkPlayceColors.Border
-    val TextPrimary: Color get() = DarkPlayceColors.TextPrimary
-    val TextSecondary: Color get() = DarkPlayceColors.TextSecondary
-    val Accent: Color get() = DarkPlayceColors.Accent
-    val AccentMuted: Color get() = DarkPlayceColors.AccentMuted
-    val Danger: Color get() = DarkPlayceColors.Danger
+    val Background: Color @Composable get() = LocalPlayceColors.current.Background
+    val Surface: Color @Composable get() = LocalPlayceColors.current.Surface
+    val SurfaceElevated: Color @Composable get() = LocalPlayceColors.current.SurfaceElevated
+    val Border: Color @Composable get() = LocalPlayceColors.current.Border
+    val TextPrimary: Color @Composable get() = LocalPlayceColors.current.TextPrimary
+    val TextSecondary: Color @Composable get() = LocalPlayceColors.current.TextSecondary
+    val Accent: Color @Composable get() = LocalPlayceColors.current.Accent
+    val AccentMuted: Color @Composable get() = LocalPlayceColors.current.AccentMuted
+    val Danger: Color @Composable get() = LocalPlayceColors.current.Danger
 }

@@ -52,7 +52,8 @@ fun MobileCounterScreen(
     premiumUiState: PremiumUiState,
     onUnlockPremium: () -> Unit,
     onSendConfigToWatch: ((String, String, FormatPreset) -> Unit)? = null,
-    onMatchCompleted: (() -> Unit)? = null
+    onMatchCompleted: (() -> Unit)? = null,
+    onSaveMatch: ((MobileFinishedSummary) -> Unit)? = null
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -67,65 +68,81 @@ fun MobileCounterScreen(
         }
     }
 
+    val finishedSummary = state.finishedSummary
+
     Scaffold(
         containerColor = PlayceColors.Background
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(PlayceColors.Background)
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            HeaderRow(
-                premiumUiState = premiumUiState,
-                onUnlockPremium = onUnlockPremium
-            )
-            MatchSetupCard(
-                onApplyConfig = { nameA, nameB, preset ->
-                    viewModel.setPlayerNames(nameA, nameB)
-                    viewModel.setMatchFormat(
-                        com.playce.shared.scoring.MatchFormat(
-                            setsToWin = preset.setsToWin,
-                            tiebreakAtSixAll = preset.tiebreakAtSixAll,
-                            superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
-                            noAdScoring = preset.noAdScoring
-                        )
-                    )
-                },
-                onSendToWatch = { nameA, nameB, preset ->
-                    // Also apply locally
-                    viewModel.setPlayerNames(nameA, nameB)
-                    viewModel.setMatchFormat(
-                        com.playce.shared.scoring.MatchFormat(
-                            setsToWin = preset.setsToWin,
-                            tiebreakAtSixAll = preset.tiebreakAtSixAll,
-                            superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
-                            noAdScoring = preset.noAdScoring
-                        )
-                    )
-                    onSendConfigToWatch?.invoke(nameA, nameB, preset)
+        if (finishedSummary != null) {
+            MobileMatchFinishedContent(
+                summary = finishedSummary,
+                innerPadding = innerPadding,
+                onSave = { onSaveMatch?.invoke(finishedSummary) },
+                onNewMatch = {
+                    viewModel.startNewMatch()
+                    onMatchCompleted?.invoke()
                 }
             )
-            TimerCard(
-                elapsedSeconds = state.elapsedSeconds,
-                isRunning = state.isTimerRunning,
-                onToggleTimer = viewModel::toggleTimer
-            )
-            ScoreboardCard(
-                state = state,
-                onPointA = viewModel::addPointToPlayerA,
-                onPointB = viewModel::addPointToPlayerB,
-                onUndoA = viewModel::undoLastPointForPlayerA,
-                onUndoB = viewModel::undoLastPointForPlayerB
-            )
-            ActionRow(
-                onResetGame = viewModel::resetGame,
-                onResetMatch = viewModel::resetMatch
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(PlayceColors.Background)
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                HeaderRow(
+                    premiumUiState = premiumUiState,
+                    onUnlockPremium = onUnlockPremium
+                )
+                MatchSetupCard(
+                    onApplyConfig = { nameA, nameB, preset ->
+                        viewModel.setPlayerNames(nameA, nameB)
+                        viewModel.setMatchFormat(
+                            com.playce.shared.scoring.MatchFormat(
+                                setsToWin = preset.setsToWin,
+                                tiebreakAtSixAll = preset.tiebreakAtSixAll,
+                                superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
+                                noAdScoring = preset.noAdScoring
+                            )
+                        )
+                    },
+                    onSendToWatch = { nameA, nameB, preset ->
+                        viewModel.setPlayerNames(nameA, nameB)
+                        viewModel.setMatchFormat(
+                            com.playce.shared.scoring.MatchFormat(
+                                setsToWin = preset.setsToWin,
+                                tiebreakAtSixAll = preset.tiebreakAtSixAll,
+                                superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
+                                noAdScoring = preset.noAdScoring
+                            )
+                        )
+                        onSendConfigToWatch?.invoke(nameA, nameB, preset)
+                    }
+                )
+                TimerCard(
+                    elapsedSeconds = state.elapsedSeconds,
+                    isRunning = state.isTimerRunning,
+                    hasStarted = state.hasTimerStarted,
+                    onToggleTimer = viewModel::toggleTimer
+                )
+                ScoreboardCard(
+                    state = state,
+                    onPointA = viewModel::addPointToPlayerA,
+                    onPointB = viewModel::addPointToPlayerB,
+                    onUndoA = viewModel::undoLastPointForPlayerA,
+                    onUndoB = viewModel::undoLastPointForPlayerB
+                )
+                ActionRow(
+                    onResetGame = viewModel::resetGame,
+                    onResetMatch = viewModel::resetMatch,
+                    onEndMatch = viewModel::finishMatch,
+                    hasStarted = state.hasTimerStarted
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }
@@ -179,6 +196,7 @@ private fun HeaderRow(
 private fun TimerCard(
     elapsedSeconds: Int,
     isRunning: Boolean,
+    hasStarted: Boolean,
     onToggleTimer: () -> Unit
 ) {
     Card(
@@ -205,10 +223,16 @@ private fun TimerCard(
                     fontWeight = FontWeight.Bold
                 )
             }
+            val buttonText = when {
+                isRunning -> stringResource(R.string.btn_pause)
+                hasStarted -> stringResource(R.string.btn_resume)
+                else -> stringResource(R.string.btn_start)
+            }
+            val buttonStyle = if (!hasStarted) PrimaryButtonStyle.Solid else PrimaryButtonStyle.Outline
             PrimaryButton(
-                text = if (isRunning) stringResource(R.string.btn_pause) else stringResource(R.string.btn_resume),
+                text = buttonText,
                 onClick = onToggleTimer,
-                style = PrimaryButtonStyle.Outline
+                style = buttonStyle
             )
         }
     }
@@ -357,12 +381,22 @@ private fun PlayerRow(
 @Composable
 private fun ActionRow(
     onResetGame: () -> Unit,
-    onResetMatch: () -> Unit
+    onResetMatch: () -> Unit,
+    onEndMatch: () -> Unit,
+    hasStarted: Boolean
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        if (hasStarted) {
+            PrimaryButton(
+                text = stringResource(R.string.btn_end_match),
+                onClick = onEndMatch,
+                style = PrimaryButtonStyle.Solid,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -378,6 +412,119 @@ private fun ActionRow(
                 onClick = onResetMatch,
                 style = PrimaryButtonStyle.Danger,
                 modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MobileMatchFinishedContent(
+    summary: MobileFinishedSummary,
+    innerPadding: androidx.compose.foundation.layout.PaddingValues,
+    onSave: () -> Unit,
+    onNewMatch: () -> Unit
+) {
+    var saved by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PlayceColors.Background)
+            .padding(innerPadding)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Match finished badge
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(PlayceColors.AccentMuted)
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.btn_end_match).uppercase(),
+                color = PlayceColors.Accent,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Player names row with score
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = summary.playerAName,
+                color = PlayceColors.Accent,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = summary.setsScore,
+                color = PlayceColors.TextPrimary,
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Black
+            )
+            Text(
+                text = summary.playerBName,
+                color = PlayceColors.TextSecondary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Detail card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = summary.setsDetail,
+                    color = PlayceColors.TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.label_duration, formatElapsed(summary.durationSeconds)),
+                    color = PlayceColors.TextPrimary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // Action buttons
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            PrimaryButton(
+                text = if (saved) "✓ Saved" else stringResource(R.string.btn_save_match),
+                onClick = {
+                    if (!saved) {
+                        onSave()
+                        saved = true
+                    }
+                },
+                style = if (saved) PrimaryButtonStyle.Outline else PrimaryButtonStyle.Solid,
+                modifier = Modifier.fillMaxWidth()
+            )
+            PrimaryButton(
+                text = stringResource(R.string.btn_new_match),
+                onClick = onNewMatch,
+                style = PrimaryButtonStyle.Danger,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

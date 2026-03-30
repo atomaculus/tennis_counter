@@ -85,6 +85,14 @@ object TimerStateStore {
         }
     }
 
+    suspend fun resume(context: Context, nowElapsedRealtime: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[IS_RUNNING_KEY] = true
+            prefs[START_ELAPSED_REALTIME_KEY] = nowElapsedRealtime
+            // Keep accumulated seconds — don't reset
+        }
+    }
+
     suspend fun resetStopped(context: Context) {
         context.dataStore.edit { prefs ->
             prefs[IS_RUNNING_KEY] = false

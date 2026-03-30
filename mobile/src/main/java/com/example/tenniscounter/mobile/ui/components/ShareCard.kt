@@ -51,6 +51,11 @@ fun ShareCard(
         data.setScoresText?.trim()?.split(Regex("\\s+"))?.joinToString("  ·  ").orEmpty()
     }
 
+    // Capture composable colors for use in non-composable lambdas (Canvas, buildAnnotatedString)
+    val accentColor = PlayceColors.Accent
+    val textPrimaryColor = PlayceColors.TextPrimary
+    val textSecondaryColor = PlayceColors.TextSecondary
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -100,7 +105,7 @@ fun ShareCard(
         // Subtle accent line
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawLine(
-                color = PlayceColors.Accent.copy(alpha = 0.25f),
+                color = accentColor.copy(alpha = 0.25f),
                 start = Offset(size.width * 0.08f, size.height * 0.18f),
                 end = Offset(size.width * 0.38f, size.height * 0.18f),
                 strokeWidth = 3f,
@@ -158,7 +163,7 @@ fun ShareCard(
                 // Thin accent divider
                 Canvas(modifier = Modifier.fillMaxWidth().height(1.dp)) {
                     drawLine(
-                        color = PlayceColors.Accent.copy(alpha = 0.2f),
+                        color = accentColor.copy(alpha = 0.2f),
                         start = Offset(0f, 0f),
                         end = Offset(size.width, 0f),
                         strokeWidth = 2f
@@ -189,14 +194,17 @@ fun ShareCard(
 
 @Composable
 private fun PlayceWordmarkSmall() {
+    val accentColor = PlayceColors.Accent
+    val textPrimaryColor = PlayceColors.TextPrimary
+    val textSecondaryColor = PlayceColors.TextSecondary
     val brandText = buildAnnotatedString {
-        withStyle(SpanStyle(color = PlayceColors.TextSecondary.copy(alpha = 0.6f))) {
+        withStyle(SpanStyle(color = textSecondaryColor.copy(alpha = 0.6f))) {
             append("Tracked with ")
         }
-        withStyle(SpanStyle(color = PlayceColors.TextPrimary.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)) {
+        withStyle(SpanStyle(color = textPrimaryColor.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)) {
             append("PLAY")
         }
-        withStyle(SpanStyle(color = PlayceColors.Accent.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)) {
+        withStyle(SpanStyle(color = accentColor.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)) {
             append("CE")
         }
     }

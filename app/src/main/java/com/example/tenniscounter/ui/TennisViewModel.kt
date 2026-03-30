@@ -27,7 +27,8 @@ typealias PlayerScore = ScoringEngine.PlayerScore
 data class MatchState(
     val score: MatchScore = MatchScore(),
     val elapsedSeconds: Int = 0,
-    val isRunning: Boolean = true,
+    val isRunning: Boolean = false,
+    val hasTimerStarted: Boolean = false,
     val playerAName: String = "Player A",
     val playerBName: String = "Player B"
 ) {
@@ -49,7 +50,9 @@ data class FinishedMatchSummary(
     val createdAt: Long,
     val durationSeconds: Int,
     val setsScore: String,
-    val setsDetail: String
+    val setsDetail: String,
+    val playerAName: String = "Player A",
+    val playerBName: String = "Player B"
 )
 
 class TennisViewModel(application: Application) : AndroidViewModel(application) {
@@ -142,20 +145,40 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
             val elapsed = timerSnapshot.elapsedSeconds(now)
             val isFresh = state.isFreshScoreboard()
 
-            if (isFresh && !timerSnapshot.isRunning && elapsed > 0) {
+            // Only reset if the scoreboard is fresh AND the user never tapped Start
+            // (i.e. leftover time from a previous app session, not a manual pause)
+            if (isFresh && !state.hasTimerStarted && !timerSnapshot.isRunning && elapsed > 0) {
                 Log.i(TIMER_TAG, "reset timer on fresh scoreboard after task removed")
                 TimerStateStore.resetStopped(appContext)
-                _matchState.value = state.copy(elapsedSeconds = 0, isRunning = false)
+                _matchState.value = state.copy(elapsedSeconds = 0, isRunning = false, hasTimerStarted = false)
             }
+            // Timer no longer auto-starts — user must tap Start manually
+        }
+    }
 
-            val refreshedSnapshot = TimerStateStore.read(appContext)
-            val refreshedElapsed = refreshedSnapshot.elapsedSeconds(now)
-            if (isFresh && !refreshedSnapshot.isRunning && refreshedElapsed == 0) {
-                Log.i(TIMER_TAG, "auto-start timer on entering match screen")
+    fun startTimer() {
+        viewModelScope.launch {
+            val now = SystemClock.elapsedRealtime()
+            val state = _matchState.value
+            if (state.hasTimerStarted) {
+                // Resume from where we left off
+                TimerStateStore.resume(appContext, now)
+            } else {
+                // Fresh start
                 TimerStateStore.start(appContext, now)
-                startMatchTimerService()
-                updateTimerValue()
             }
+            startMatchTimerService()
+            _matchState.value = state.copy(isRunning = true, hasTimerStarted = true)
+            updateTimerValue()
+        }
+    }
+
+    fun pauseTimer() {
+        viewModelScope.launch {
+            val now = SystemClock.elapsedRealtime()
+            TimerStateStore.consolidateAndStop(appContext, now)
+            _matchState.value = _matchState.value.copy(isRunning = false)
+            updateTimerValue()
         }
     }
 
@@ -188,8 +211,7 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     fun resetMatch() {
         pointHistory.clear()
         viewModelScope.launch {
-            TimerStateStore.start(appContext, SystemClock.elapsedRealtime())
-            startMatchTimerService()
+            TimerStateStore.resetStopped(appContext)
             _matchState.value = MatchState(
                 score = MatchScore(format = _matchFormat.value)
             )
@@ -232,16 +254,28 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun buildFinishedSummary(state: MatchState): FinishedMatchSummary {
-        val setsScore = "${state.playerA.sets}-${state.playerB.sets}"
+        val hasSets = state.playerA.sets > 0 || state.playerB.sets > 0
+        // If no complete sets, show games as the headline score
+        val setsScore = if (hasSets) {
+            "${state.playerA.sets}-${state.playerB.sets}"
+        } else {
+            "${state.playerA.games}-${state.playerB.games}"
+        }
         val completed = state.completedSets.joinToString(" ") { "${it.a}-${it.b}" }
         val liveSegment = "G ${state.playerA.games}-${state.playerB.games} P ${state.pointLabelForA()}-${state.pointLabelForB()}"
-        val detail = if (completed.isBlank()) liveSegment else "$completed | $liveSegment"
+        val detail = when {
+            completed.isBlank() && !hasSets -> "Games: ${state.playerA.games}-${state.playerB.games}"
+            completed.isBlank() -> liveSegment
+            else -> "$completed | $liveSegment"
+        }
 
         return FinishedMatchSummary(
             createdAt = System.currentTimeMillis(),
             durationSeconds = state.elapsedSeconds,
             setsScore = setsScore,
-            setsDetail = detail
+            setsDetail = detail,
+            playerAName = state.playerAName,
+            playerBName = state.playerBName
         )
     }
 

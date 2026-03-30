@@ -23,7 +23,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -364,17 +367,7 @@ private fun TennisCounterApp(
         }
     }
 
-    LaunchedEffect(
-        appScreen,
-        state.playerA.points,
-        state.playerA.games,
-        state.playerA.sets,
-        state.playerB.points,
-        state.playerB.games,
-        state.playerB.sets,
-        state.elapsedSeconds,
-        state.isRunning
-    ) {
+    LaunchedEffect(appScreen) {
         if (appScreen == AppScreen.Counter) {
             viewModel.onCounterScreenVisible()
         }
@@ -401,7 +394,9 @@ private fun TennisCounterApp(
                     onLongPressPointB = { handleLongPress(false) },
                     onPressStateA = { onPressStateChange(true, it) },
                     onPressStateB = { onPressStateChange(false, it) },
-                    onEndMatch = { activeSheet = ActiveSheet.EndMatchConfirm }
+                    onEndMatch = { activeSheet = ActiveSheet.EndMatchConfirm },
+                    onStartTimer = { viewModel.startTimer() },
+                    onPauseTimer = { viewModel.pauseTimer() }
                 )
             }
 
@@ -689,7 +684,9 @@ private fun CounterScreen(
     onLongPressPointB: () -> Unit,
     onPressStateA: (Boolean) -> Unit,
     onPressStateB: (Boolean) -> Unit,
-    onEndMatch: () -> Unit
+    onEndMatch: () -> Unit,
+    onStartTimer: () -> Unit,
+    onPauseTimer: () -> Unit
 ) {
     val listState = rememberScalingLazyListState()
     val serveIndicatorState = remember(state) {
@@ -768,7 +765,13 @@ private fun CounterScreen(
                 }
 
                 item {
-                    TimerFooter(elapsedSeconds = state.elapsedSeconds)
+                    TimerFooter(
+                        elapsedSeconds = state.elapsedSeconds,
+                        isRunning = state.isRunning,
+                        hasStarted = state.hasTimerStarted,
+                        onStart = onStartTimer,
+                        onPause = onPauseTimer
+                    )
                 }
 
                 item {
@@ -849,12 +852,30 @@ private fun MatchFinishedScreen(
                 verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
             ) {
                 PlayceChip(text = "MATCH FINISHED", accent = true)
-                Text(
-                    text = safeSummary.setsScore,
-                    fontSize = 46.sp,
-                    fontWeight = FontWeight.Black,
-                    color = PlayceWearColors.TextPrimary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = safeSummary.playerAName.take(8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PlayceWearColors.Accent
+                    )
+                    Text(
+                        text = safeSummary.setsScore,
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Black,
+                        color = PlayceWearColors.TextPrimary
+                    )
+                    Text(
+                        text = safeSummary.playerBName.take(8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PlayceWearColors.TextSecondary
+                    )
+                }
                 PlayceCard(
                     modifier = Modifier.fillMaxWidth(),
                     accentBorder = true
@@ -1142,9 +1163,18 @@ private fun AddPointGestureButton(
 }
 
 @Composable
-private fun TimerFooter(elapsedSeconds: Int) {
+private fun TimerFooter(
+    elapsedSeconds: Int,
+    isRunning: Boolean,
+    hasStarted: Boolean,
+    onStart: () -> Unit,
+    onPause: () -> Unit
+) {
     PlayceCard(accentBorder = false) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(
                 text = "TIMER",
                 fontSize = 9.sp,
@@ -1155,8 +1185,22 @@ private fun TimerFooter(elapsedSeconds: Int) {
                 text = formatTime(elapsedSeconds),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
-                color = PlayceWearColors.TextPrimary
+                color = if (isRunning) PlayceWearColors.TextPrimary else PlayceWearColors.TextSecondary
             )
+            Spacer(modifier = Modifier.height(4.dp))
+            if (isRunning) {
+                PlayceButton(
+                    text = "PAUSE",
+                    onClick = onPause,
+                    variant = PlayceButtonVariant.Secondary
+                )
+            } else {
+                PlayceButton(
+                    text = if (hasStarted) "RESUME" else "START",
+                    onClick = onStart,
+                    variant = PlayceButtonVariant.Primary
+                )
+            }
         }
     }
 }

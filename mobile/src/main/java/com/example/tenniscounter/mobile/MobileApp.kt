@@ -162,6 +162,21 @@ fun MobileApp() {
                                 superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
                                 noAdScoring = preset.noAdScoring
                             )
+                        },
+                        onSaveMatch = { summary ->
+                            val matchDao = MobileServiceLocator.matchDao(appContext)
+                            kotlinx.coroutines.MainScope().launch {
+                                withContext(Dispatchers.IO) {
+                                    val entity = com.example.tenniscounter.mobile.data.local.MatchEntity(
+                                        createdAt = summary.createdAt,
+                                        durationSeconds = summary.durationSeconds.toLong(),
+                                        finalScoreText = summary.setsScore,
+                                        setScoresText = summary.setsDetail,
+                                        idempotencyKey = "mobile_${summary.createdAt}"
+                                    )
+                                    matchDao.insertOrIgnore(entity)
+                                }
+                            }
                         }
                     )
                 }
