@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLAYCE | Privacy Policy</title>
+  <meta name="description" content="Privacy policy for PLAYCE, the Android and Wear OS tennis scoring app.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Sora:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="PLAYCE home">
+        <img src="./assets/playce-wordmark.png" alt="PLAYCE wordmark">
+      </a>
+      <div class="site-actions">
+        <a class="button button-secondary" href="./index.html">Back to site</a>
+      </div>
+    </header>
+
+    <main class="section faq-section">
+      <div class="section-intro reveal is-visible">
+        <p class="eyebrow">Policy</p>
+        <h2>Privacy Policy</h2>
+        <p>Last updated: March 27, 2026</p>
+      </div>
+
+      <article class="panel panel-wide reveal is-visible" style="grid-column: span 12; margin-top: 28px;">
+        <p>PLAYCE is an Android app composed of a Wear OS app used to track live tennis or padel scores and a phone companion app used for history, match details, live score display and sharing.</p>
+        <p>This policy describes how PLAYCE handles data in the current codebase.</p>
+
+        <h3>Data processed by the app</h3>
+        <p>PLAYCE can process match score data, match duration, timestamps used for local history and sync retries, technical sync identifiers such as <code>idempotencyKey</code>, and purchase state used to unlock Premium features through Google Play Billing.</p>
+
+        <h3>How the data is used</h3>
+        <p>The app uses this data to run the live score counter on Wear OS and mobile, sync match results between your watch and paired Android phone, store match history locally on your phone when Premium access is available, prevent duplicate inserts during sync, generate shareable match summary images when you explicitly share them, and restore or validate Premium entitlement.</p>
+
+        <h3>Data sharing</h3>
+        <p>PLAYCE does not operate its own backend for match storage. Data is shared only between your watch and paired Android phone through Google Play Services Wearable Data Layer, with Google Play Billing to process Premium purchases, and with another app only if you explicitly use Android's share sheet.</p>
+
+        <h3>Diagnostics</h3>
+        <p>Crash reporting is optional in this project and controlled by the Gradle property <code>enableCrashlytics</code>. If it is disabled, Firebase Crashlytics is not active in the shipped build. If enabled, diagnostic information such as crash traces, app version, device model and OS version may be collected through Firebase Crashlytics to improve stability.</p>
+
+        <h3>Local storage</h3>
+        <p>PLAYCE stores data locally on your devices: the phone stores match history in a local Room database and the watch stores pending sync state used for retry and acknowledgment handling. You can remove locally stored data by clearing app data or uninstalling the app.</p>
+
+        <h3>Data not requested directly by PLAYCE</h3>
+        <p>In the current implementation, PLAYCE does not directly require account creation, precise location, contacts, microphone or camera access.</p>
+
+        <h3>Contact</h3>
+        <p>Support email: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a></p>
+      </article>
+    </main>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>

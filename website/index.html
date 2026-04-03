@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLAYCE | Tennis Scoring for Wear OS and Android</title>
+  <meta
+    name="description"
+    content="PLAYCE is a native Android + Wear OS tennis scoring companion. Score from your wrist, sync to your phone, review history, track stats and share match cards."
+  >
+  <meta name="theme-color" content="#0b0f0a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Sora:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="PLAYCE home">
+        <img src="./assets/playce-wordmark.png" alt="PLAYCE wordmark">
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#product">Product</a>
+        <a href="#experience">Experience</a>
+        <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="site-actions">
+        <a class="button button-secondary" href="https://github.com/atomaculus/tennis_counter" target="_blank" rel="noreferrer">GitHub</a>
+        <a class="button button-primary" href="https://play.google.com/store" target="_blank" rel="noreferrer">Google Play</a>
+      </div>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav">
+        <span></span>
+        <span></span>
+      </button>
+    </header>
+
+    <div class="mobile-nav" id="mobile-nav" hidden>
+      <a href="#product">Product</a>
+      <a href="#experience">Experience</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/atomaculus/tennis_counter" target="_blank" rel="noreferrer">GitHub</a>
+      <a href="https://play.google.com/store" target="_blank" rel="noreferrer">Google Play</a>
+    </div>
+
+    <main id="top">
+      <section class="hero section">
+        <div class="hero-copy reveal">
+          <p class="eyebrow">Native Android + Wear OS</p>
+          <h1>Score every point from your wrist. Keep the full match on your phone.</h1>
+          <p class="hero-lead">
+            PLAYCE is a tennis scoring system built for real courtside use. Track live points on your Wear OS watch,
+            sync to Android instantly, then review history, stats, exports and share cards after the match.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="https://play.google.com/store" target="_blank" rel="noreferrer">Get the Android app</a>
+            <a class="button button-secondary" href="#features">See what it does</a>
+          </div>
+          <ul class="hero-metrics">
+            <li>
+              <strong>Wear-first</strong>
+              <span>Tap or use hardware buttons on court.</span>
+            </li>
+            <li>
+              <strong>Phone companion</strong>
+              <span>History, details, stats, CSV and share flow.</span>
+            </li>
+            <li>
+              <strong>Local-first</strong>
+              <span>No backend required for core scoring and sync.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="hero-stage reveal">
+          <div class="orb orb-a"></div>
+          <div class="orb orb-b"></div>
+          <div class="device-cluster">
+            <article class="device-card watch-card">
+              <div class="watch-face">
+                <div class="live-pill"><span></span>Live match</div>
+                <div class="score-grid">
+                  <div>
+                    <p class="player-name">Player A</p>
+                    <strong>40</strong>
+                  </div>
+                  <div>
+                    <p class="player-name">Player B</p>
+                    <strong>AD</strong>
+                  </div>
+                </div>
+                <div class="watch-meta">
+                  <span>Set 3</span>
+                  <span>6-4 3-6</span>
+                </div>
+              </div>
+              <p class="device-label">Wear OS scorer</p>
+            </article>
+
+            <article class="device-card phone-card">
+              <div class="phone-screen">
+                <div class="screen-topline">
+                  <p>LIVE FROM WATCH</p>
+                  <strong>01:23:44</strong>
+                </div>
+                <div class="phone-score">
+                  <div>
+                    <span>SETS</span>
+                    <strong>2</strong>
+                  </div>
+                  <div>
+                    <span>GAMES</span>
+                    <strong>6-4</strong>
+                  </div>
+                  <div>
+                    <span>POINTS</span>
+                    <strong>40-AD</strong>
+                  </div>
+                </div>
+                <div class="stats-strip">
+                  <article>
+                    <span>Matches</span>
+                    <strong>128</strong>
+                  </article>
+                  <article>
+                    <span>Avg duration</span>
+                    <strong>1h 18m</strong>
+                  </article>
+                </div>
+                <div class="share-preview">
+                  <span>Share card ready</span>
+                  <strong>6-4 3-6 7-6</strong>
+                </div>
+              </div>
+              <p class="device-label">Android companion</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="trust-band section">
+        <div class="trust-grid reveal">
+          <article>
+            <span class="trust-kicker">Real match logic</span>
+            <p>Full tennis scoring with deuce, advantage, sets, standard tiebreaks and configurable formats.</p>
+          </article>
+          <article>
+            <span class="trust-kicker">Reliable sync</span>
+            <p>Wearable Data Layer messaging with pending state, retries and ACK handling between watch and phone.</p>
+          </article>
+          <article>
+            <span class="trust-kicker">Built for publishing</span>
+            <p>Native Android app with release signing, premium unlock, local persistence and Play Store submission flow.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section product-grid" id="product">
+        <div class="section-intro reveal">
+          <p class="eyebrow">The product</p>
+          <h2>One scoring engine. Two devices. One clean match flow.</h2>
+          <p>
+            PLAYCE is structured around a simple idea: the watch is the input device during play, and the phone is the
+            companion display, archive and sharing hub afterwards.
+          </p>
+        </div>
+
+        <div class="bento-grid">
+          <article class="panel panel-wide reveal">
+            <p class="panel-tag">01 / On court</p>
+            <h3>Score without breaking focus.</h3>
+            <p>
+              Use the watch to track points, undo mistakes, monitor the server, follow tiebreak rotation and finish the
+              match with a manual save flow that keeps state visible.
+            </p>
+            <ul class="bullet-list">
+              <li>Tap scoring and long-press undo</li>
+              <li>Serve guidance and side indicators</li>
+              <li>Persistent match timer with lifecycle-safe handling</li>
+            </ul>
+          </article>
+
+          <article class="panel reveal">
+            <p class="panel-tag">02 / In your pocket</p>
+            <h3>Review the match on Android.</h3>
+            <p>History, detail screens, stats, CSV export, widget and share cards live on the phone companion app.</p>
+          </article>
+
+          <article class="panel reveal">
+            <p class="panel-tag">03 / Premium</p>
+            <h3>Freemium, not bloated.</h3>
+            <p>Free mobile counter by default, with a one-time premium unlock for save, history, detail and sharing.</p>
+          </article>
+
+          <article class="panel panel-media reveal">
+            <img src="./assets/feature-graphic-playce.png" alt="PLAYCE feature graphic">
+          </article>
+        </div>
+      </section>
+
+      <section class="section experience-section" id="experience">
+        <div class="experience-layout">
+          <div class="experience-copy reveal">
+            <p class="eyebrow">Experience</p>
+            <h2>Designed to feel calm at rest and decisive in motion.</h2>
+            <p>
+              The interface language is minimal and high-contrast because tennis scoring needs legibility first. Large
+              numerals, sharp section rhythm, restrained color and clear state transitions keep the app fast to read in
+              the middle of a point.
+            </p>
+          </div>
+
+          <div class="timeline reveal">
+            <article>
+              <span>Setup</span>
+              <h3>Send names and format from the phone.</h3>
+              <p>Configure player names and match format, then push it to the watch before play starts.</p>
+            </article>
+            <article>
+              <span>Play</span>
+              <h3>Track the match directly on the watch.</h3>
+              <p>The live score syncs to the phone while the watch remains the primary scorer.</p>
+            </article>
+            <article>
+              <span>Save</span>
+              <h3>Finish, retry if needed, and confirm sync.</h3>
+              <p>Pending match state is stored locally until the phone acknowledges receipt.</p>
+            </article>
+            <article>
+              <span>Review</span>
+              <h3>Browse history, stats and exports later.</h3>
+              <p>Once saved, the match becomes part of the Android-side archive and sharing flow.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section features-section" id="features">
+        <div class="section-intro reveal">
+          <p class="eyebrow">Feature set</p>
+          <h2>Built features, not placeholder promises.</h2>
+          <p>
+            This landing is aligned with the current codebase, so what you read here reflects what the app is actually
+            shipping toward.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card reveal">
+            <h3>Wear OS live scorer</h3>
+            <p>Tap-based scoring with optional hardware buttons and responsive score layouts for small circular screens.</p>
+          </article>
+          <article class="feature-card reveal">
+            <h3>Shared scoring engine</h3>
+            <p>Points, games, sets, deuce, advantage, tiebreaks, super tiebreak and configurable match formats.</p>
+          </article>
+          <article class="feature-card reveal">
+            <h3>Watch to phone sync</h3>
+            <p>Wearable Data Layer with idempotent result delivery, pending storage and acknowledgment cleanup.</p>
+          </article>
+          <article class="feature-card reveal">
+            <h3>Android history and detail</h3>
+            <p>Room-backed local archive with final score, set breakdown and dedicated match detail screens.</p>
+          </article>
+          <article class="feature-card reveal">
+            <h3>Stats, export and widget</h3>
+            <p>Match counts, duration summaries, CSV export and a home screen widget for the latest result.</p>
+          </article>
+          <article class="feature-card reveal">
+            <h3>Premium unlock</h3>
+            <p>Google Play Billing one-time purchase unlocks save, history, detail and share features on mobile.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section cta-section">
+        <div class="cta-card reveal">
+          <div>
+            <p class="eyebrow">Ready for release</p>
+            <h2>A sharper home for PLAYCE before the Play Store launch.</h2>
+            <p>
+              The Android app and Wear OS scorer are already organized around a clear product story. This website makes
+              that story visible without overstating the roadmap.
+            </p>
+          </div>
+          <div class="cta-actions">
+            <a class="button button-primary" href="https://play.google.com/store" target="_blank" rel="noreferrer">Open Google Play</a>
+            <a class="button button-secondary" href="https://github.com/atomaculus/tennis_counter" target="_blank" rel="noreferrer">View repository</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section faq-section" id="faq">
+        <div class="section-intro reveal">
+          <p class="eyebrow">FAQ</p>
+          <h2>Short answers for the obvious questions.</h2>
+        </div>
+
+        <div class="faq-list">
+          <details class="faq-item reveal">
+            <summary>Is this site isolated from the Android project?</summary>
+            <p>Yes. The web landing lives in its own `website/` directory, so it does not interfere with the Gradle modules.</p>
+          </details>
+          <details class="faq-item reveal">
+            <summary>Can this deploy cleanly on Vercel?</summary>
+            <p>Yes. It is a static site with local assets, so Vercel can serve it directly by using `website/` as the project root.</p>
+          </details>
+          <details class="faq-item reveal">
+            <summary>Does the site match the current app implementation?</summary>
+            <p>That is the goal. The copy avoids unsupported Apple-specific claims and reflects the Android + Wear OS product that exists in this repository.</p>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <img src="./assets/playce-wordmark.png" alt="PLAYCE wordmark">
+        <p>Native tennis scoring for Wear OS and Android.</p>
+      </div>
+      <div class="footer-links">
+        <a href="mailto:atiliogmaculus@gmail.com">Support</a>
+        <a href="./privacy.html">Privacy Policy</a>
+        <a href="https://github.com/atomaculus/tennis_counter" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+      <p class="footer-copy">© <span id="year"></span> PLAYCE. Built for the court.</p>
+    </footer>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
