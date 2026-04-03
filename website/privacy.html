@@ -28,7 +28,7 @@
       <div class="section-intro reveal is-visible">
         <p class="eyebrow">Policy</p>
         <h2>Privacy Policy</h2>
-        <p>Last updated: March 27, 2026</p>
+        <p>Last updated: April 3, 2026</p>
       </div>
 
       <article class="panel panel-wide reveal is-visible" style="grid-column: span 12; margin-top: 28px;">
@@ -44,8 +44,9 @@
         <h3>Data sharing</h3>
         <p>PLAYCE does not operate its own backend for match storage. Data is shared only between your watch and paired Android phone through Google Play Services Wearable Data Layer, with Google Play Billing to process Premium purchases, and with another app only if you explicitly use Android's share sheet.</p>
 
-        <h3>Diagnostics</h3>
-        <p>Crash reporting is optional in this project and controlled by the Gradle property <code>enableCrashlytics</code>. If it is disabled, Firebase Crashlytics is not active in the shipped build. If enabled, diagnostic information such as crash traces, app version, device model and OS version may be collected through Firebase Crashlytics to improve stability.</p>
+        <h3>Diagnostics and analytics</h3>
+        <p>PLAYCE currently includes Firebase services in both the Android phone app and the Wear OS app. Diagnostic information such as crash traces, app version, device model, operating system version and related technical metadata may be collected through Firebase Crashlytics to improve app stability and help diagnose failures.</p>
+        <p>Analytics events may also be processed through Firebase Analytics to understand general app usage and product performance.</p>
 
         <h3>Local storage</h3>
         <p>PLAYCE stores data locally on your devices: the phone stores match history in a local Room database and the watch stores pending sync state used for retry and acknowledgment handling. You can remove locally stored data by clearing app data or uninstalling the app.</p>

@@ -1,6 +1,6 @@
 # PLAYCE Privacy Policy
 
-Last updated: March 27, 2026
+Last updated: April 3, 2026
 
 PLAYCE is an Android app composed of:
 - a Wear OS app used to track live tennis or padel scores
@@ -38,12 +38,12 @@ Data is shared only in these cases:
 
 PLAYCE does not sell your data.
 
-## Diagnostics
+## Diagnostics and analytics
 
-Crash reporting is optional in this project and is controlled by the Gradle property `enableCrashlytics`.
+The current project includes Firebase services in both app modules.
 
-- If `enableCrashlytics=false`, Firebase Crashlytics is not activated in the shipped build.
-- If `enableCrashlytics=true`, diagnostic information such as crash traces, app version, device model, and OS version may be collected through Firebase Crashlytics to improve app stability.
+- Firebase Crashlytics may collect diagnostic information such as crash traces, app version, device model, OS version, and related technical metadata to improve app stability.
+- Firebase Analytics may process general usage information related to how the app is used and how product flows perform.
 
 Any public release must keep this policy aligned with the actual build configuration shipped to Google Play.
 
