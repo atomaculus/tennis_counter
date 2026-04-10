@@ -52,7 +52,7 @@ Every time I played tennis, keeping score meant stopping the game, arguing about
 | Sync | Wearable Data Layer API (DataClient + MessageClient) |
 | Billing | Google Play Billing Library v7 |
 | Review | Google Play In-App Review API |
-| Crash reporting | Firebase Crashlytics (optional, flag-controlled) |
+| Crash reporting | Firebase Crashlytics |
 | Build | Gradle KTS, R8/ProGuard minification, release keystore pipeline |
 
 ---
@@ -101,10 +101,10 @@ Create `keystore.properties` from the template and provide the real signing valu
 
 ## Crash reporting
 
-Crashlytics is optional and currently disabled by default in `gradle.properties`. If a release enables it, place `google-services.json` only in the modules that will report crashes and keep Play Console Data safety aligned with that build.
+Firebase Crashlytics and Analytics are part of the intended release track. Add the correct `google-services.json` files before building the final release artifacts and keep Play Console Data safety aligned with the shipped build.
 
 ---
 
 ## Status
 
-Production-ready with full scoring engine, phone-to-watch config sync, stats, export, widget, onboarding, and localized UI. Remaining steps before Play Store submission: Firebase setup (`google-services.json`), signed release build, screenshots, and real-device QA validation.
+Production-ready with full scoring engine, phone-to-watch config sync, stats, export, widget, onboarding, and localized UI. Remaining steps before Play Store submission: Firebase configuration (`google-services.json`), signed release build, screenshots, public legal URLs, and real-device QA validation.

@@ -44,19 +44,18 @@ Pending before a real store submission:
 ## 3. Crash reporting and diagnostics
 
 Current default repository state:
-- `enableCrashlytics=false` in `gradle.properties`
-- Crashlytics SDK dependency is present in both modules
-- Crashlytics plugins are only applied when `enableCrashlytics=true`
+- Firebase plugins are applied in both app modules.
+- Firebase Crashlytics and Firebase Analytics dependencies are present in both app modules.
+- `google-services.json` is still required before building the final Firebase-enabled release candidate.
 
-If the release will ship with Crashlytics enabled:
-- [ ] Set `enableCrashlytics=true`.
-- [ ] Add `google-services.json` only to the modules that will report crashes.
+Release decision for the current launch track:
+- Firebase Crashlytics and Firebase Analytics are intended to ship.
+
+Required before submission:
+- [ ] Add the correct `google-services.json` files for the release build.
 - [ ] Force a test crash on phone and verify it appears in Firebase Crashlytics.
-- [ ] Update Play Console Data safety to reflect diagnostic data collection.
-
-If the release will ship with Crashlytics disabled:
-- [ ] Keep `enableCrashlytics=false`.
-- [ ] Ensure Data safety does not declare diagnostic collection that is not active in the shipped build.
+- [ ] Confirm Firebase Analytics events are configured only as intended for the shipped build.
+- [ ] Update Play Console Data safety to reflect diagnostic and analytics collection in the actual release build.
 
 ## 4. Manual QA on real devices
 
@@ -140,6 +139,7 @@ Companion document:
 ## 5. Play Console readiness
 
 - [ ] Publish a final privacy policy URL accessible without login.
+- [ ] Publish a final Terms of Service URL accessible without login.
 - [ ] Review `docs/privacy-policy.md` and `docs/politica-privacidad-playce-es.md` against the exact release build.
 - [ ] Fill Play Console Data safety using `docs/play-data-safety.md`.
 - [ ] Prepare short description and full description in Spanish and English.
@@ -154,5 +154,6 @@ Do not submit if any of these are still unresolved:
 - release build fails
 - sync retry or ACK flow is flaky on real devices
 - privacy policy URL is not public
+- Terms URL is not public
 - Data safety form does not match the shipped build
 - versioning is not updated for the new upload

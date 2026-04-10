@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Replace with the final production domain before submitting to search tools.
+Sitemap: https://REPLACE_WITH_PRODUCTION_DOMAIN/sitemap.xml

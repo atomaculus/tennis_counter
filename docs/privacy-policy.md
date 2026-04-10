@@ -42,8 +42,8 @@ PLAYCE does not sell your data.
 
 The current project includes Firebase services in both app modules.
 
-- Firebase Crashlytics may collect diagnostic information such as crash traces, app version, device model, OS version, and related technical metadata to improve app stability.
-- Firebase Analytics may process general usage information related to how the app is used and how product flows perform.
+- Firebase Crashlytics collects diagnostic information such as crash traces, app version, device model, OS version, and related technical metadata to improve app stability.
+- Firebase Analytics processes general usage information related to how the app is used and how product flows perform.
 
 Any public release must keep this policy aligned with the actual build configuration shipped to Google Play.
 
