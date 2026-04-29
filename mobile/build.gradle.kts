@@ -79,6 +79,9 @@ android {
 
 dependencies {
     implementation(project(":shared"))
+    // Garmin Connect IQ Mobile SDK is distributed as a local .aar file.
+    // Drop the SDK .aar into mobile/libs/ (see mobile/libs/README.md).
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.compose.ui:ui:1.6.8")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")

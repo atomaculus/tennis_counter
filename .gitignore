@@ -23,3 +23,6 @@ keys/
 
 # Reports
 **/reports/
+
+# Garmin Connect IQ Mobile SDK (proprietary, manual drop in mobile/libs/)
+mobile/libs/*.aar
