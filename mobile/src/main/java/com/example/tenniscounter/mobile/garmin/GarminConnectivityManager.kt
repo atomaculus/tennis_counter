@@ -41,7 +41,8 @@ class GarminConnectivityManager(private val appContext: Context) {
     private val _connectionState = MutableStateFlow(GarminConnectionState())
     val connectionState: StateFlow<GarminConnectionState> = _connectionState.asStateFlow()
 
-    private val registeredDevices = mutableSetOf<Long>()
+    private val registeredDeviceEvents = mutableSetOf<Long>()
+    private val registeredAppEvents = mutableSetOf<Long>()
 
     private val sdkListener = object : ConnectIQ.ConnectIQListener {
         override fun onSdkReady() {
@@ -63,7 +64,8 @@ class GarminConnectivityManager(private val appContext: Context) {
         override fun onSdkShutDown() {
             Log.i(TAG, "Connect IQ SDK shut down")
             _connectionState.value = GarminConnectionState(sdkState = GarminSdkState.UNINITIALIZED)
-            registeredDevices.clear()
+            registeredDeviceEvents.clear()
+            registeredAppEvents.clear()
         }
     }
 
@@ -105,7 +107,8 @@ class GarminConnectivityManager(private val appContext: Context) {
     fun shutdown() {
         runCatching { connectIQ.shutdown(appContext) }
             .onFailure { Log.w(TAG, "Connect IQ SDK shutdown failed", it) }
-        registeredDevices.clear()
+        registeredDeviceEvents.clear()
+        registeredAppEvents.clear()
         _connectionState.value = GarminConnectionState(sdkState = GarminSdkState.UNINITIALIZED)
     }
 
@@ -153,20 +156,28 @@ class GarminConnectivityManager(private val appContext: Context) {
     }
 
     private fun registerDevice(device: IQDevice) {
-        if (!registeredDevices.add(device.deviceIdentifier)) return
-        runCatching {
-            connectIQ.registerForDeviceEvents(device, deviceEventListener)
-        }.onFailure {
-            Log.w(TAG, "registerForDeviceEvents failed for ${device.friendlyName}", it)
+        if (!registeredDeviceEvents.contains(device.deviceIdentifier)) {
+            runCatching {
+                connectIQ.registerForDeviceEvents(device, deviceEventListener)
+            }.onSuccess {
+                registeredDeviceEvents.add(device.deviceIdentifier)
+            }.onFailure {
+                Log.w(TAG, "registerForDeviceEvents failed for ${device.friendlyName}", it)
+            }
         }
-        runCatching {
-            connectIQ.registerForAppEvents(device, app, appEventListener)
-        }.onFailure {
-            when (it) {
-                is InvalidStateException,
-                is ServiceUnavailableException ->
-                    Log.w(TAG, "registerForAppEvents not ready for ${device.friendlyName}: ${it.message}")
-                else -> Log.w(TAG, "registerForAppEvents failed for ${device.friendlyName}", it)
+
+        if (!registeredAppEvents.contains(device.deviceIdentifier)) {
+            runCatching {
+                connectIQ.registerForAppEvents(device, app, appEventListener)
+            }.onSuccess {
+                registeredAppEvents.add(device.deviceIdentifier)
+            }.onFailure {
+                when (it) {
+                    is InvalidStateException,
+                    is ServiceUnavailableException ->
+                        Log.w(TAG, "registerForAppEvents not ready for ${device.friendlyName}: ${it.message}")
+                    else -> Log.w(TAG, "registerForAppEvents failed for ${device.friendlyName}", it)
+                }
             }
         }
     }
