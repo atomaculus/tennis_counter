@@ -69,6 +69,7 @@ class GarminConnectivityManager(private val appContext: Context) {
 
     private val deviceEventListener = ConnectIQ.IQDeviceEventListener { device, status ->
         Log.d(TAG, "Device ${device.friendlyName} status=$status")
+        registerDevice(device)
         refreshDeviceList()
     }
 
@@ -172,6 +173,9 @@ class GarminConnectivityManager(private val appContext: Context) {
 
     private fun refreshDeviceList() {
         val known = runCatching { connectIQ.knownDevices ?: emptyList() }.getOrElse { emptyList() }
+        for (device in known) {
+            registerDevice(device)
+        }
         val infos = known.map { GarminDeviceInfo(it.deviceIdentifier, it.friendlyName, it.status) }
         val connectedCount = infos.count { it.status == IQDevice.IQDeviceStatus.CONNECTED }
         _connectionState.value = _connectionState.value.copy(

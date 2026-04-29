@@ -1,36 +1,34 @@
 # Garmin Connect IQ Mobile SDK
 
-Drop the official Garmin Connect IQ Mobile SDK `.aar` file in this folder.
+This project no longer requires manually dropping the Garmin Connect IQ Mobile SDK
+`.aar` into `mobile/libs`.
 
-The Gradle build picks up any `*.aar` placed here:
+The Android companion resolves the SDK directly from Maven Central:
 
 ```kotlin
-implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
+implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0@aar")
 ```
 
-## Where to get it
+## Source
 
-The SDK is **not** distributed via Maven Central. Download it from Garmin's
-developer portal:
+Garmin documents that the Android SDK is available via Maven Central, and the
+official Android sample repo uses the same dependency form.
+
+References:
 
 - https://developer.garmin.com/connect-iq/sdk/
-- Look for "Connect IQ Mobile SDK" / "Companion App SDK" for Android
+- https://github.com/garmin/connectiq-android-sdk
 
-The expected artifact is something like
-`connectiq-companion-app-sdk-X.Y.Z.aar` (file name does not matter — the
-Gradle rule matches `*.aar`).
+## Why this folder still exists
 
-## Why this isn't checked in
+The folder is kept only as a placeholder for historical context and to avoid
+breaking local tooling that expects `mobile/libs` to exist.
 
-The SDK has its own license and is not redistributable through this repo.
-Each developer must download it once and place it here locally. CI
-workflows that build `:mobile` should pull it from a private artifact
-storage at provisioning time.
+## Build
 
-## After dropping the .aar
-
-```
+```bash
 ./gradlew :mobile:assembleDebug
 ```
 
-should compile without any change to source code.
+If dependency resolution fails, verify that `mavenCentral()` is enabled in the
+root Gradle repository configuration and that the environment has network access.
