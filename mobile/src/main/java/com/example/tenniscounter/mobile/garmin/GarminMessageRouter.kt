@@ -11,6 +11,7 @@ class GarminMessageRouter(private val appContext: Context) {
     private val finishedMatchHandler = GarminFinishedMatchHandler(appContext)
 
     fun route(device: IQDevice, app: IQApp, envelope: Map<String, Any?>) {
+        Log.d(TAG, "Routing Garmin envelope from ${device.friendlyName}: $envelope")
         val path = GarminPayloadCodec.getString(envelope, GarminConstants.ENVELOPE_PATH)
         if (path.isBlank()) {
             Log.w(TAG, "Envelope without path from ${device.friendlyName}")
@@ -21,6 +22,10 @@ class GarminMessageRouter(private val appContext: Context) {
             Log.w(TAG, "Envelope payload missing or wrong type for path=$path")
             return
         }
+        Log.d(
+            TAG,
+            "Decoded Garmin envelope path=$path payloadKeys=${payload.keys.joinToString()} app=$app"
+        )
 
         when (path) {
             GarminConstants.PATH_LIVE_SCORE -> {

@@ -33,7 +33,7 @@ class GarminFinishedMatchHandler(private val appContext: Context) {
         Log.i(
             TAG,
             "Decoded Garmin finished payload createdAt=$createdAt durationSeconds=$durationSeconds " +
-                "finalScoreText=$finalScoreText idempotencyKey=$idempotencyKey"
+                "finalScoreText=$finalScoreText idempotencyKey=$idempotencyKey payloadKeys=${payload.keys.joinToString()}"
         )
 
         if (createdAt <= 0L || durationSeconds < 0L || finalScoreText.isBlank()) {

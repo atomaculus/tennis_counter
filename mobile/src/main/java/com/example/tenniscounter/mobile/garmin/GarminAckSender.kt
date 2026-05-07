@@ -22,6 +22,11 @@ class GarminAckSender(private val appContext: Context) {
             put(GarminConstants.ENVELOPE_IDEMPOTENCY_KEY, idempotencyKey)
             put(GarminConstants.ENVELOPE_TIMESTAMP, System.currentTimeMillis())
         }
+        Log.i(
+            TAG,
+            "Sending Garmin ACK to ${device.friendlyName} appId=${GarminConstants.APP_ID} " +
+                "idempotencyKey=$idempotencyKey status=$status envelope=$envelope"
+        )
 
         val connectIQ = MobileServiceLocator
             .garminConnectivityManager(appContext)

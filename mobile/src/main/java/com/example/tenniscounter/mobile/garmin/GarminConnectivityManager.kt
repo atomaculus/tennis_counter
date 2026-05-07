@@ -46,7 +46,7 @@ class GarminConnectivityManager(private val appContext: Context) {
 
     private val sdkListener = object : ConnectIQ.ConnectIQListener {
         override fun onSdkReady() {
-            Log.i(TAG, "Connect IQ SDK ready")
+            Log.i(TAG, "Connect IQ SDK ready for appId=${GarminConstants.APP_ID}")
             _connectionState.value = _connectionState.value.copy(sdkState = GarminSdkState.READY)
             attachToKnownDevices()
         }
@@ -81,6 +81,10 @@ class GarminConnectivityManager(private val appContext: Context) {
             return@IQApplicationEventListener
         }
         for (item in message) {
+            Log.d(
+                TAG,
+                "App event from ${device.friendlyName}: itemType=${item?.javaClass?.name} raw=$item"
+            )
             val envelope = GarminPayloadCodec.asEnvelope(item)
             if (envelope == null) {
                 Log.w(TAG, "Unrecognized message item type=${item?.javaClass?.simpleName}")
@@ -95,6 +99,7 @@ class GarminConnectivityManager(private val appContext: Context) {
             _connectionState.value.sdkState == GarminSdkState.READY) {
             return
         }
+        Log.i(TAG, "Initializing Connect IQ SDK for appId=${GarminConstants.APP_ID}")
         _connectionState.value = _connectionState.value.copy(sdkState = GarminSdkState.INITIALIZING)
         runCatching {
             connectIQ.initialize(appContext, true, sdkListener)
@@ -149,6 +154,12 @@ class GarminConnectivityManager(private val appContext: Context) {
                 Log.w(TAG, "knownDevices threw", it)
                 emptyList()
             }
+        Log.i(
+            TAG,
+            "Known Garmin devices count=${known.size} values=${
+                known.joinToString { "${it.friendlyName}:${it.deviceIdentifier}:${it.status}" }
+            }"
+        )
         for (device in known) {
             registerDevice(device)
         }
@@ -161,6 +172,7 @@ class GarminConnectivityManager(private val appContext: Context) {
                 connectIQ.registerForDeviceEvents(device, deviceEventListener)
             }.onSuccess {
                 registeredDeviceEvents.add(device.deviceIdentifier)
+                Log.i(TAG, "registerForDeviceEvents OK for ${device.friendlyName} (${device.deviceIdentifier})")
             }.onFailure {
                 Log.w(TAG, "registerForDeviceEvents failed for ${device.friendlyName}", it)
             }
@@ -171,6 +183,10 @@ class GarminConnectivityManager(private val appContext: Context) {
                 connectIQ.registerForAppEvents(device, app, appEventListener)
             }.onSuccess {
                 registeredAppEvents.add(device.deviceIdentifier)
+                Log.i(
+                    TAG,
+                    "registerForAppEvents OK for ${device.friendlyName} (${device.deviceIdentifier}) appId=${GarminConstants.APP_ID}"
+                )
             }.onFailure {
                 when (it) {
                     is InvalidStateException,
@@ -189,6 +205,7 @@ class GarminConnectivityManager(private val appContext: Context) {
         }
         val infos = known.map { GarminDeviceInfo(it.deviceIdentifier, it.friendlyName, it.status) }
         val connectedCount = infos.count { it.status == IQDevice.IQDeviceStatus.CONNECTED }
+        Log.d(TAG, "refreshDeviceList connected=$connectedCount known=${infos.size}")
         _connectionState.value = _connectionState.value.copy(
             knownDevices = infos,
             connectedDeviceCount = connectedCount
