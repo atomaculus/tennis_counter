@@ -2,7 +2,7 @@ package com.example.tenniscounter.mobile.garmin
 
 object GarminConstants {
     // Must match playce_garmin/manifest.xml exactly or Connect IQ app events never bind.
-    const val APP_ID = "8b6c4f1b7e3c4a1f9d2e6b8c0f3a7d11"
+    const val APP_ID = "c4f18a72b93e4d6fa1c8e5b2079d3a44"
 
     const val PATH_MATCH_CONFIG = "/playce/match-config"
     const val PATH_LIVE_SCORE = "/playce/live"

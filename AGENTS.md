@@ -48,7 +48,8 @@ Estado funcional actual:
   - Wear `MATCH FINISHED` conserva CTAs (`SAVE MATCH` / `NEW MATCH`) + estado de sync visible como pill discreto.
 - Companion Garmin Connect IQ activo en `:mobile`:
   - `:mobile` acepta los mismos paths semánticos (`/playce/match-config`, `/playce/live`, `/match_finished`, `/match_finished_ack`) tanto desde Wear OS como desde Garmin sin duplicar lógica de scoring/persistencia.
-  - El reloj Garmin corre la app del repo hermano `playce_garmin` (App ID `a1b2c3d4e5f6478899aabbccddeeff00`).
+  - El reloj Garmin corre la app del repo hermano `playce_garmin`.
+  - App ID Connect IQ actual alineado con `playce_garmin/manifest.xml`: `c4f18a72b93e4d6fa1c8e5b2079d3a44`.
   - El envío de match-config desde el teléfono dispara Wear y Garmin en paralelo (cada watch ignora si no le corresponde).
   - Wear OS sigue funcionando intacto incluso si Garmin Connect Mobile no está instalado.
 
@@ -109,8 +110,6 @@ Notas:
   - Foreground con logo `A` verde centrado/reescalado.
 
 ### Mobile (Garmin bridge)
-- `mobile/libs/`
-  - Carpeta donde se deja el `.aar` del Connect IQ Mobile SDK (no versionado). Ver `mobile/libs/README.md`.
 - `mobile/src/main/java/com/example/tenniscounter/mobile/MobileApplication.kt`
   - `Application` que inicializa `GarminConnectivityManager` en `onCreate`. Registrado en el manifest como `android:name=".MobileApplication"`.
 - `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminConstants.kt`
@@ -272,7 +271,7 @@ Claves de payload:
 Las claves coinciden 1:1 con las que ya usa Wear OS sobre `DataMap`, por eso el `LiveScoreRepository` y `MatchRepository` se reutilizan sin tocar.
 
 App ID Connect IQ:
-- `a1b2c3d4e5f6478899aabbccddeeff00` (en `GarminConstants.APP_ID` y en `playce_garmin/manifest.xml`).
+- `c4f18a72b93e4d6fa1c8e5b2079d3a44` (alineado entre `GarminConstants.APP_ID` y `playce_garmin/manifest.xml`).
 
 Comportamiento de retry:
 - El watch Garmin reintenta `/match_finished` cada 8s hasta recibir un ACK con el mismo `idempotencyKey`.
@@ -281,17 +280,15 @@ Comportamiento de retry:
 Reglas de no-romper-Wear:
 - No tocar `WearMatchListenerService`, `LiveScoreListenerService`, `MatchConfigBroadcaster`, `LiveScoreRepository`. El bridge Garmin reutiliza, no reemplaza.
 - En `MobileApp.onSendConfigToWatch` se invoca el broadcaster Wear y el sender Garmin en paralelo. No agregar lógica de selección.
-- Si el SDK Garmin falla al inicializar (sin GCM, sin permisos, sin .aar), el badge muestra el estado y el resto de la app debe seguir funcionando intacta.
+- Si el SDK Garmin falla al inicializar (sin GCM o sin permisos), el badge muestra el estado y el resto de la app debe seguir funcionando intacta.
+
+Dependencia Android actual del SDK Garmin:
+- `mobile/build.gradle.kts` usa `implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0@aar")`.
 
 Permisos Android requeridos por el SDK Garmin:
 - `BLUETOOTH` y `BLUETOOTH_ADMIN` (legacy hasta Android 11).
 - `BLUETOOTH_CONNECT` (Android 12+, runtime, solicitado en `MainActivity`).
 - `<queries><package android:name="com.garmin.android.apps.connectmobile" /></queries>` para que la app pueda detectar Garmin Connect Mobile en Android 11+.
-
-Distribución del SDK:
-- El `.aar` del Connect IQ Mobile SDK NO está en Maven Central.
-- Se distribuye desde https://developer.garmin.com/connect-iq/sdk/ y se coloca en `mobile/libs/`.
-- `mobile/build.gradle.kts` lo recoge con `implementation(fileTree(...,"*.aar"))` — cualquier nombre de archivo .aar funciona.
 
 ---
 
