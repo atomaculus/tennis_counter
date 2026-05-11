@@ -44,6 +44,40 @@ El proyecto completó una ronda mayor de mejoras para pasar de MVP a app publica
 - Signed release build con keystore de producción
 - Screenshots y video para Play Store listing
 - QA en dispositivos reales (sync, botones físicos, nombres largos)
+- Validación end-to-end del bridge Garmin con reloj físico + Garmin Connect Mobile
+
+### Garmin Connect IQ companion bridge (abril 2026)
+
+`:mobile` ahora actúa como companion para dos ecosistemas en paralelo: Wear OS y Garmin Connect IQ. La parte Garmin del reloj vive en el repo hermano [`playce_garmin`](https://github.com/atomaculus/playce_garmin); este repo solo agrega el receptor Android.
+
+Lo que se construyó en `:mobile`:
+
+- Paquete nuevo `com.example.tenniscounter.mobile.garmin`:
+  - `GarminConnectivityManager` inicializa el SDK (`ConnectIQ`), descubre dispositivos y mantiene un `StateFlow<GarminConnectionState>`.
+  - `GarminMessageRouter` + `GarminLiveScoreHandler` + `GarminFinishedMatchHandler` rutan los envelopes recibidos.
+  - `GarminAckSender` y `GarminMatchConfigSender` mandan ACK e config respectivamente.
+  - `GarminPayloadCodec` normaliza tipos numéricos (Number puede llegar como Long o Double).
+  - `GarminConstants` centraliza App ID y claves de payload.
+- `MobileApplication` nuevo que inicializa el SDK en `onCreate`.
+- `GarminConnectionBadge` (UI) muestra el estado de conexión arriba a la derecha del Counter route.
+- `MobileApp.onSendConfigToWatch` envía la config a Wear OS y a Garmin en paralelo.
+- `MainActivity` solicita `BLUETOOTH_CONNECT` en runtime (Android 12+).
+- `AndroidManifest.xml` agrega permisos Bluetooth, `<queries>` para Garmin Connect Mobile y registra `MobileApplication`.
+
+Lo que NO se modificó (para no romper Wear OS):
+
+- Servicios Wear (`WearMatchListenerService`, `LiveScoreListenerService`).
+- `MatchConfigBroadcaster`, `LiveScoreRepository`, `MatchRepository`.
+- Módulo `:app` (Wear OS).
+- Módulo `:shared`.
+- Toda la UI existente salvo el badge superpuesto.
+
+Distribución del SDK:
+
+- El `.aar` del Connect IQ Mobile SDK no está en Maven Central. Se descarga manualmente de https://developer.garmin.com/connect-iq/sdk/ y se coloca en `mobile/libs/` (ver `mobile/libs/README.md`).
+- `mobile/build.gradle.kts` toma cualquier `*.aar` en esa carpeta.
+
+Ver `AGENTS.md` sección 4.b para el contrato de payloads y reglas operativas del bridge.
 
 ## Resumen de Features
 

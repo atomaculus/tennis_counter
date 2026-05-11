@@ -2,6 +2,7 @@ package com.example.tenniscounter.mobile
 
 import android.app.Activity
 import android.content.Intent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -17,7 +18,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -43,6 +46,7 @@ import com.example.tenniscounter.mobile.ui.history.HistoryViewModel
 import com.example.tenniscounter.mobile.export.MatchExporter
 import com.example.tenniscounter.mobile.review.InAppReviewManager
 import com.example.tenniscounter.mobile.sync.MatchConfigBroadcaster
+import com.example.tenniscounter.mobile.ui.components.GarminConnectionBadge
 import com.example.tenniscounter.mobile.ui.counter.FormatPreset
 import com.example.tenniscounter.mobile.ui.stats.StatsScreen
 import com.example.tenniscounter.mobile.ui.stats.StatsViewModel
@@ -65,6 +69,7 @@ fun MobileApp() {
     val activity = localContext as? Activity
     val repository = remember(appContext) { MobileServiceLocator.matchRepository(appContext) }
     val configBroadcaster = remember(appContext) { MatchConfigBroadcaster(appContext) }
+    val garminConfigSender = remember(appContext) { MobileServiceLocator.garminMatchConfigSender(appContext) }
     val premiumBillingManager = remember(appContext) { PremiumBillingManager(appContext) }
     val premiumUiState = premiumBillingManager.uiState.collectAsStateWithLifecycle().value
 
@@ -142,6 +147,7 @@ fun MobileApp() {
                     }
                 }
 
+                Box(modifier = Modifier.fillMaxSize()) {
                 if (liveState != null) {
                     LiveScoreScreen(liveState = liveState)
                 } else {
@@ -154,9 +160,21 @@ fun MobileApp() {
                             activity?.let { InAppReviewManager.onMatchCompleted(it) }
                         },
                         onSendConfigToWatch = { nameA, nameB, preset ->
+                            val resolvedA = nameA.ifBlank { "Player A" }
+                            val resolvedB = nameB.ifBlank { "Player B" }
+                            // Wear OS path (existing, untouched)
                             configBroadcaster.sendConfig(
-                                playerAName = nameA.ifBlank { "Player A" },
-                                playerBName = nameB.ifBlank { "Player B" },
+                                playerAName = resolvedA,
+                                playerBName = resolvedB,
+                                setsToWin = preset.setsToWin,
+                                tiebreakAtSixAll = preset.tiebreakAtSixAll,
+                                superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
+                                noAdScoring = preset.noAdScoring
+                            )
+                            // Garmin path (parallel, no-op if no Garmin device connected)
+                            garminConfigSender.sendConfig(
+                                playerAName = resolvedA,
+                                playerBName = resolvedB,
                                 setsToWin = preset.setsToWin,
                                 tiebreakAtSixAll = preset.tiebreakAtSixAll,
                                 superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
@@ -178,6 +196,12 @@ fun MobileApp() {
                                 }
                             }
                         }
+                    )
+                }
+                    GarminConnectionBadge(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 8.dp, end = 8.dp)
                     )
                 }
             }

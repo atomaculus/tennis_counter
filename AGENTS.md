@@ -6,7 +6,8 @@ Guía operativa para Codex y cualquier otro agente de IA que trabaje en este rep
 
 `tennis_counter` es una app Android multi-módulo para:
 - **Wear OS** (`:app`): contador de tenis, cierre de partido y envío de resultado al teléfono.
-- **Mobile** (`:mobile`): historial local de partidos, detalle y share de imagen, con recepción de eventos desde Wear.
+- **Mobile** (`:mobile`): historial local de partidos, detalle y share de imagen, con recepción de eventos desde Wear y desde Garmin Connect IQ en paralelo.
+- **Garmin Connect IQ** (repo hermano `playce_garmin`): port del scorer al ecosistema Garmin (Monkey C). El módulo `:mobile` actúa como companion para ambos relojes simultáneamente.
 
 Estado funcional actual:
 - Marcador de tenis con lógica de points/games/sets (incluye deuce/advantage).
@@ -45,6 +46,12 @@ Estado funcional actual:
   - Mobile `MainActivity` usa theme `NoActionBar` para evitar barra superior nativa duplicada.
   - Wear score responsivo (sin overlap en `30-15`, `40-30`, `AD-40`).
   - Wear `MATCH FINISHED` conserva CTAs (`SAVE MATCH` / `NEW MATCH`) + estado de sync visible como pill discreto.
+- Companion Garmin Connect IQ activo en `:mobile`:
+  - `:mobile` acepta los mismos paths semánticos (`/playce/match-config`, `/playce/live`, `/match_finished`, `/match_finished_ack`) tanto desde Wear OS como desde Garmin sin duplicar lógica de scoring/persistencia.
+  - El reloj Garmin corre la app del repo hermano `playce_garmin`.
+  - App ID Connect IQ actual alineado con `playce_garmin/manifest.xml`: `c4f18a72b93e4d6fa1c8e5b2079d3a44`.
+  - El envío de match-config desde el teléfono dispara Wear y Garmin en paralelo (cada watch ignora si no le corresponde).
+  - Wear OS sigue funcionando intacto incluso si Garmin Connect Mobile no está instalado.
 
 ---
 
@@ -101,6 +108,32 @@ Notas:
   - Fondo negro del adaptive icon.
 - `app/src/main/res/drawable/ic_launcher_foreground.png`
   - Foreground con logo `A` verde centrado/reescalado.
+
+### Mobile (Garmin bridge)
+- `mobile/src/main/java/com/example/tenniscounter/mobile/MobileApplication.kt`
+  - `Application` que inicializa `GarminConnectivityManager` en `onCreate`. Registrado en el manifest como `android:name=".MobileApplication"`.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminConstants.kt`
+  - App ID Connect IQ + paths + claves de payload + valores ACK (`inserted`/`duplicate`/`premium_locked`).
+- `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminPayloadCodec.kt`
+  - Helpers `getInt/getLong/getBoolean/getString` que normalizan el `Map<String, Any?>` que llega del SDK (Number puede venir como Long o Double).
+- `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminConnectivityManager.kt`
+  - Singleton del SDK. Inicializa `ConnectIQ` con `IQConnectType.WIRELESS`, expone `StateFlow<GarminConnectionState>` con `sdkState`/`knownDevices`/`connectedDeviceCount`, registra `IQDeviceEventListener` y `IQApplicationEventListener` por device.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminMessageRouter.kt`
+  - Recibe el envelope `Map<String, Any?>` y dispatcha por `path`.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminLiveScoreHandler.kt`
+  - Convierte payload de `/playce/live` a `LiveMatchState` y empuja a `LiveScoreRepository.update()` (mismo repo que usa Wear).
+- `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminFinishedMatchHandler.kt`
+  - Replica la lógica de `WearMatchListenerService`: gate premium, `MatchRepository.insertIfNotExists`, ACK con status (`inserted`/`duplicate`/`premium_locked`).
+- `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminAckSender.kt`
+  - Envía envelope `/match_finished_ack` por Connect IQ.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/garmin/GarminMatchConfigSender.kt`
+  - Envía `/playce/match-config` por Connect IQ a todos los Garmin conectados (paralelo a `MatchConfigBroadcaster`).
+- `mobile/src/main/java/com/example/tenniscounter/mobile/ui/components/GarminConnectionBadge.kt`
+  - Chip discreto en la esquina superior del Counter route con el estado del SDK Garmin.
+- `mobile/src/main/java/com/example/tenniscounter/mobile/MainActivity.kt`
+  - Solicita permiso runtime `BLUETOOTH_CONNECT` (Android 12+) y re-inicializa el manager si lo concede.
+- `mobile/src/main/AndroidManifest.xml`
+  - Agrega permisos `BLUETOOTH`/`BLUETOOTH_ADMIN`/`BLUETOOTH_CONNECT`, `<queries>` para `com.garmin.android.apps.connectmobile`, y registra `MobileApplication`.
 
 ### Mobile
 - `mobile/src/main/java/com/example/tenniscounter/mobile/sync/WearMatchListenerService.kt`
@@ -200,6 +233,62 @@ Retry/pendiente en Wear (alto nivel):
   - `attemptCount`
   - `nextRetryAtMillis`
   - `targetNodeId` (opcional)
+
+---
+
+## 4.b. Contrato de Sincronización Garmin Connect IQ <-> Mobile
+
+El bridge Garmin usa los **mismos paths semánticos** que Wear OS pero el transporte cambia: cada mensaje viaja como un envelope serializable a través de `Communications.transmit` (en Monkey C) y `ConnectIQ.sendMessage` (en Android), encapsulado en un `Map<String, Any?>`.
+
+Envelope:
+
+```
+{
+  "path": "/playce/live"             // ruta semántica
+  "kind": "live_score"               // tipo lógico (match_config | live_score | finished_match | finished_match_ack)
+  "payload": { ... }                 // datos específicos del path
+  "idempotencyKey": null | "..."     // solo en finished_match / ack
+  "timestamp": <Long>                // milisegundos
+}
+```
+
+Paths y dirección:
+
+| Path | Dirección | Kind |
+|---|---|---|
+| `/playce/match-config` | phone → watch | `match_config` |
+| `/playce/live` | watch → phone | `live_score` |
+| `/match_finished` | watch → phone | `finished_match` |
+| `/match_finished_ack` | phone → watch | `finished_match_ack` |
+
+Claves de payload:
+
+- **match-config**: `playerAName`, `playerBName`, `setsToWin`, `tiebreakAtSixAll`, `tiebreakPoints`, `superTiebreakInFinalSet`, `noAdScoring`, `timestamp`.
+- **live**: `playerA_points`, `playerA_games`, `playerA_sets`, `playerB_*`, `completedSets`, `pointLabelA`, `pointLabelB`, `elapsedSeconds`, `isMatchActive`, `lastScoredPlayer`, `scorerNodeId`, `timestamp`.
+- **finished**: `createdAt`, `durationSeconds`, `finalScoreText`, `setScoresText`, `idempotencyKey`, `playerAName`, `playerBName`.
+- **ack**: `idempotencyKey`, `status` (`inserted` / `duplicate` / `premium_locked`).
+
+Las claves coinciden 1:1 con las que ya usa Wear OS sobre `DataMap`, por eso el `LiveScoreRepository` y `MatchRepository` se reutilizan sin tocar.
+
+App ID Connect IQ:
+- `c4f18a72b93e4d6fa1c8e5b2079d3a44` (alineado entre `GarminConstants.APP_ID` y `playce_garmin/manifest.xml`).
+
+Comportamiento de retry:
+- El watch Garmin reintenta `/match_finished` cada 8s hasta recibir un ACK con el mismo `idempotencyKey`.
+- `MatchRepository.insertIfNotExists` ya es idempotente por `idempotencyKey`, así que reintentos repetidos no producen duplicados.
+
+Reglas de no-romper-Wear:
+- No tocar `WearMatchListenerService`, `LiveScoreListenerService`, `MatchConfigBroadcaster`, `LiveScoreRepository`. El bridge Garmin reutiliza, no reemplaza.
+- En `MobileApp.onSendConfigToWatch` se invoca el broadcaster Wear y el sender Garmin en paralelo. No agregar lógica de selección.
+- Si el SDK Garmin falla al inicializar (sin GCM o sin permisos), el badge muestra el estado y el resto de la app debe seguir funcionando intacta.
+
+Dependencia Android actual del SDK Garmin:
+- `mobile/build.gradle.kts` usa `implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0@aar")`.
+
+Permisos Android requeridos por el SDK Garmin:
+- `BLUETOOTH` y `BLUETOOTH_ADMIN` (legacy hasta Android 11).
+- `BLUETOOTH_CONNECT` (Android 12+, runtime, solicitado en `MainActivity`).
+- `<queries><package android:name="com.garmin.android.apps.connectmobile" /></queries>` para que la app pueda detectar Garmin Connect Mobile en Android 11+.
 
 ---
 
@@ -332,6 +421,11 @@ Casos de diagnóstico:
 - Para cambios de timer Wear:
   - respetar comportamiento `stop on task removed`.
   - no introducir resets silenciosos fuera de reglas UX definidas.
+- Para cambios en el bridge Garmin (`mobile/.../garmin/*`):
+  - mantener los nombres de claves de payload alineados con el repo `playce_garmin` (`PlayceGarminContracts.mc`); divergir rompe la comunicación silenciosamente.
+  - NO crear listeners Wear adicionales para los mismos paths — el bridge Garmin tiene su propio transporte y comparte solo los repositorios (`LiveScoreRepository`, `MatchRepository`).
+  - cualquier nuevo path Garmin debe agregarse en `GarminConstants` y rutearse en `GarminMessageRouter`, no inline.
+  - el SDK Connect IQ debe inicializarse exclusivamente desde `MobileApplication.onCreate` o en respuesta al permiso runtime concedido.
 
 ---
 

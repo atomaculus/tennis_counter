@@ -79,6 +79,7 @@ android {
 
 dependencies {
     implementation(project(":shared"))
+    implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0@aar")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.compose.ui:ui:1.6.8")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
