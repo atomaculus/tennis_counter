@@ -23,17 +23,14 @@ class MainActivity : ComponentActivity() {
     private val bluetoothPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             Log.i(TAG, "BLUETOOTH_CONNECT permission granted=$granted")
-            // The Garmin SDK was already initialized in Application.onCreate.
-            // If the user just granted the permission, re-initialize so the SDK
-            // can finally talk to Garmin Connect Mobile.
             if (granted) {
-                MobileServiceLocator.garminConnectivityManager(applicationContext).initialize()
+                MobileServiceLocator.garminConnectivityManager(applicationContext).initialize(this)
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ensureBluetoothConnectPermission()
+        maybeInitializeGarmin()
         setContent {
             PlayceTheme {
                 var showOnboarding by remember {
@@ -52,14 +49,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun ensureBluetoothConnectPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-        val permission = Manifest.permission.BLUETOOTH_CONNECT
-        if (ContextCompat.checkSelfPermission(this, permission) ==
-            PackageManager.PERMISSION_GRANTED) {
-            return
+    override fun onStart() {
+        super.onStart()
+        maybeInitializeGarmin()
+    }
+
+    private fun maybeInitializeGarmin() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val permission = Manifest.permission.BLUETOOTH_CONNECT
+            if (ContextCompat.checkSelfPermission(this, permission) !=
+                PackageManager.PERMISSION_GRANTED) {
+                bluetoothPermissionLauncher.launch(permission)
+                return
+            }
         }
-        bluetoothPermissionLauncher.launch(permission)
+        MobileServiceLocator.garminConnectivityManager(applicationContext).initialize(this)
     }
 
     private companion object {

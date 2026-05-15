@@ -1,5 +1,6 @@
 package com.example.tenniscounter.mobile.garmin
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import com.garmin.android.connectiq.ConnectIQ
@@ -94,15 +95,17 @@ class GarminConnectivityManager(private val appContext: Context) {
         }
     }
 
-    fun initialize() {
+    fun initialize(hostContext: Context? = null) {
         if (_connectionState.value.sdkState == GarminSdkState.INITIALIZING ||
             _connectionState.value.sdkState == GarminSdkState.READY) {
             return
         }
+        val initContext = hostContext ?: appContext
+        val showSdkErrors = hostContext is Activity && !hostContext.isFinishing && !hostContext.isDestroyed
         Log.i(TAG, "Initializing Connect IQ SDK for appId=${GarminConstants.APP_ID}")
         _connectionState.value = _connectionState.value.copy(sdkState = GarminSdkState.INITIALIZING)
         runCatching {
-            connectIQ.initialize(appContext, true, sdkListener)
+            connectIQ.initialize(initContext, showSdkErrors, sdkListener)
         }.onFailure {
             Log.e(TAG, "Connect IQ SDK initialize() threw", it)
             _connectionState.value = _connectionState.value.copy(sdkState = GarminSdkState.ERROR)
