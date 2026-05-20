@@ -1,3 +1,4 @@
+// ---- Mobile nav toggle ----
 const menuToggle = document.querySelector(".menu-toggle");
 const mobileNav = document.getElementById("mobile-nav");
 
@@ -16,22 +17,17 @@ if (menuToggle && mobileNav) {
   });
 }
 
-document.getElementById("year").textContent = String(new Date().getFullYear());
+// ---- Year in footer ----
+const yearEl = document.getElementById("year");
+if (yearEl) {
+  yearEl.textContent = String(new Date().getFullYear());
+}
 
+// ---- Reveal-on-scroll animations ----
 const observer = new IntersectionObserver(
   (entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.classList.add("is-visible");
         observer.unobserve(entry.target);
-      }
-    });
-  },
-  {
-    threshold: 0.18,
-  }
-);
-
-document.querySelectorAll(".reveal").forEach((element) => {
-  observer.observe(element);
-});
+      
