@@ -27,110 +27,29 @@
   >
   <link rel="stylesheet" href="./styles.css">
   <style>
-    /* Bilingual visibility — EN default, ES via html[lang="es"] */
     [data-lang="es"] { display: none; }
     html[lang="es"] [data-lang="en"] { display: none; }
     html[lang="es"] [data-lang="es"] { display: revert; }
-
-    /* Language toggle */
-    .lang-toggle {
-      display: inline-flex;
-      align-items: center;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 4px;
-      gap: 2px;
-      background: rgba(181, 255, 84, 0.04);
-    }
-    .lang-pill {
-      font-family: "Space Grotesk", sans-serif;
-      font-weight: 700;
-      font-size: 0.74rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      padding: 6px 12px;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: background 180ms ease, color 180ms ease;
-    }
+    .lang-toggle { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 4px; gap: 2px; background: rgba(181, 255, 84, 0.04); }
+    .lang-pill { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: background 180ms ease, color 180ms ease; }
     .lang-pill:hover { color: var(--text); }
-    .lang-pill[aria-pressed="true"] {
-      background: var(--accent);
-      color: var(--accent-ink);
-    }
-
-    /* Store button icon spacing */
-    .store-icon {
-      width: 16px;
-      height: 16px;
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
-
-    /* Pricing section */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-      margin-top: 32px;
-    }
-    @media (max-width: 720px) {
-      .pricing-grid { grid-template-columns: 1fr; }
-    }
-    .price-card {
-      padding: 28px;
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      background: linear-gradient(180deg, rgba(18, 27, 19, 0.92), rgba(10, 16, 11, 0.92));
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .price-card .price-platform {
-      font-family: "Space Grotesk", sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 0.78rem;
-      color: var(--accent);
-    }
-    .price-card .price-amount {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 3.2rem;
-      line-height: 1;
-      letter-spacing: -0.04em;
-    }
-    .price-card .price-amount small {
-      font-size: 1rem;
-      color: var(--muted);
-      letter-spacing: 0;
-      font-weight: 500;
-      margin-left: 6px;
-    }
-    .price-card p {
-      color: var(--muted);
-      line-height: 1.6;
-      margin: 0;
-      font-size: 0.95rem;
-    }
-    .price-card .button {
-      margin-top: auto;
-      align-self: flex-start;
-    }
-
-    /* Inline lang-aware footer copy fix */
+    .lang-pill[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+    .store-icon { width: 16px; height: 16px; margin-right: 8px; flex-shrink: 0; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 32px; }
+    @media (max-width: 720px) { .pricing-grid { grid-template-columns: 1fr; } }
+    .price-card { padding: 28px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, rgba(18, 27, 19, 0.92), rgba(10, 16, 11, 0.92)); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; }
+    .price-card .price-platform { font-family: "Space Grotesk", sans-serif; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.78rem; color: var(--accent); }
+    .price-card .price-amount { font-family: "Space Grotesk", sans-serif; font-size: 3.2rem; line-height: 1; letter-spacing: -0.04em; }
+    .price-card .price-amount small { font-size: 1rem; color: var(--muted); letter-spacing: 0; font-weight: 500; margin-left: 6px; }
+    .price-card p { color: var(--muted); line-height: 1.6; margin: 0; font-size: 0.95rem; }
+    .price-card .button { margin-top: auto; align-self: flex-start; }
     .footer-tag { color: var(--muted); }
   </style>
 </head>
 <body>
   <div class="page-shell">
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="PLAYCE home">
-        <img src="./assets/playce-wordmark.png" alt="PLAYCE wordmark">
-      </a>
+      <a class="brand" href="#top" aria-label="PLAYCE home"><img src="./assets/playce-wordmark.png" alt="PLAYCE wordmark"></a>
       <nav class="site-nav" aria-label="Primary">
         <a href="#product"><span data-lang="en">Product</span><span data-lang="es">Producto</span></a>
         <a href="#experience"><span data-lang="en">Experience</span><span data-lang="es">Experiencia</span></a>
@@ -143,19 +62,10 @@
           <button class="lang-pill" type="button" data-set-lang="en" aria-pressed="true">EN</button>
           <button class="lang-pill" type="button" data-set-lang="es" aria-pressed="false">ES</button>
         </div>
-        <a class="button button-secondary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer">
-          <svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-          App Store
-        </a>
-        <a class="button button-primary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer">
-          <svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg>
-          Google Play
-        </a>
+        <a class="button button-secondary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>App Store</a>
+        <a class="button button-primary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg>Google Play</a>
       </div>
-      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav">
-        <span></span>
-        <span></span>
-      </button>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span></button>
     </header>
 
     <div class="mobile-nav" id="mobile-nav" hidden>
@@ -171,51 +81,22 @@
     <main id="top">
       <section class="hero section">
         <div class="hero-copy reveal">
-          <p class="eyebrow">
-            <span data-lang="en">iPhone + Apple Watch · Android + Wear OS · Garmin</span>
-            <span data-lang="es">iPhone + Apple Watch · Android + Wear OS · Garmin</span>
-          </p>
+          <p class="eyebrow"><span data-lang="en">iPhone + Apple Watch · Android + Wear OS · Garmin</span><span data-lang="es">iPhone + Apple Watch · Android + Wear OS · Garmin</span></p>
           <h1 data-lang="en">Score every point from your wrist. Keep the full match on your phone.</h1>
           <h1 data-lang="es">Marcá cada punto desde la muñeca. Guardá el partido completo en el teléfono.</h1>
-          <p class="hero-lead" data-lang="en">
-            PLAYCE is a tennis and padel scoring system built for real courtside use. Track live points on your watch — Apple Watch, Wear OS or Garmin — sync to iPhone or Android instantly, then review history, stats, exports and share cards after the match.
-          </p>
-          <p class="hero-lead" data-lang="es">
-            PLAYCE es un sistema de marcador de tenis y pádel pensado para usarse en la cancha. Llevá los puntos en vivo desde tu reloj — Apple Watch, Wear OS o Garmin — sincronizá al instante con tu iPhone o Android, y después revisá historial, stats, exports y tarjetas para compartir el resultado.
-          </p>
+          <p class="hero-lead" data-lang="en">PLAYCE is a tennis and padel scoring system built for real courtside use. Track live points on your watch — Apple Watch, Wear OS or Garmin — sync to iPhone or Android instantly, then review history, stats, exports and share cards after the match.</p>
+          <p class="hero-lead" data-lang="es">PLAYCE es un sistema de marcador de tenis y pádel pensado para usarse en la cancha. Llevá los puntos en vivo desde tu reloj — Apple Watch, Wear OS o Garmin — sincronizá al instante con tu iPhone o Android, y después revisá historial, stats, exports y tarjetas para compartir el resultado.</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer">
-              <svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
-              <span data-lang="en">Download on App Store</span><span data-lang="es">Descargar en App Store</span>
-            </a>
-            <a class="button button-primary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer">
-              <svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg>
-              <span data-lang="en">Get it on Google Play</span><span data-lang="es">Conseguilo en Google Play</span>
-            </a>
+            <a class="button button-primary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span data-lang="en">Download on App Store</span><span data-lang="es">Descargar en App Store</span></a>
+            <a class="button button-primary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg><span data-lang="en">Get it on Google Play</span><span data-lang="es">Conseguilo en Google Play</span></a>
             <a class="button button-secondary" href="#features"><span data-lang="en">See what it does</span><span data-lang="es">Ver qué hace</span></a>
           </div>
           <ul class="hero-metrics">
-            <li>
-              <strong data-lang="en">Watch-first</strong>
-              <strong data-lang="es">Primero el reloj</strong>
-              <span data-lang="en">Tap, undo or use hardware buttons mid-point.</span>
-              <span data-lang="es">Tap, undo o botones físicos en pleno punto.</span>
-            </li>
-            <li>
-              <strong data-lang="en">Pay once</strong>
-              <strong data-lang="es">Pagás una sola vez</strong>
-              <span data-lang="en">No subscription. USD 3.99 on iOS, USD 3.33 on Android.</span>
-              <span data-lang="es">Sin suscripción. USD 3.99 en iOS, USD 3.33 en Android.</span>
-            </li>
-            <li>
-              <strong data-lang="en">Local-first</strong>
-              <strong data-lang="es">Local-first</strong>
-              <span data-lang="en">No backend for scoring or history. Your data stays on your devices.</span>
-              <span data-lang="es">Sin backend para scoring ni historial. Tus datos quedan en tus dispositivos.</span>
-            </li>
+            <li><strong data-lang="en">Watch-first</strong><strong data-lang="es">Primero el reloj</strong><span data-lang="en">Tap, undo or use hardware buttons mid-point.</span><span data-lang="es">Tap, undo o botones físicos en pleno punto.</span></li>
+            <li><strong data-lang="en">Pay once</strong><strong data-lang="es">Pagás una sola vez</strong><span data-lang="en">No subscription. USD 3.99 on iOS, USD 3.33 on Android.</span><span data-lang="es">Sin suscripción. USD 3.99 en iOS, USD 3.33 en Android.</span></li>
+            <li><strong data-lang="en">Local-first</strong><strong data-lang="es">Local-first</strong><span data-lang="en">No backend for scoring or history. Your data stays on your devices.</span><span data-lang="es">Sin backend para scoring ni historial. Tus datos quedan en tus dispositivos.</span></li>
           </ul>
         </div>
-
         <div class="hero-stage reveal">
           <div class="orb orb-a"></div>
           <div class="orb orb-b"></div>
@@ -224,57 +105,26 @@
               <div class="watch-face">
                 <div class="live-pill"><span></span><span data-lang="en">Live match</span><span data-lang="es">Partido en vivo</span></div>
                 <div class="score-grid">
-                  <div>
-                    <p class="player-name">Player A</p>
-                    <strong>40</strong>
-                  </div>
-                  <div>
-                    <p class="player-name">Player B</p>
-                    <strong>AD</strong>
-                  </div>
+                  <div><p class="player-name">Player A</p><strong>40</strong></div>
+                  <div><p class="player-name">Player B</p><strong>AD</strong></div>
                 </div>
-                <div class="watch-meta">
-                  <span>Set 3</span>
-                  <span>6-4 3-6</span>
-                </div>
+                <div class="watch-meta"><span>Set 3</span><span>6-4 3-6</span></div>
               </div>
               <p class="device-label"><span data-lang="en">Watch scorer</span><span data-lang="es">Scorer en reloj</span></p>
             </article>
-
             <article class="device-card phone-card">
               <div class="phone-screen">
-                <div class="screen-topline">
-                  <p><span data-lang="en">Live from watch</span><span data-lang="es">En vivo desde el reloj</span></p>
-                  <strong>01:23:44</strong>
-                </div>
+                <div class="screen-topline"><p><span data-lang="en">Live from watch</span><span data-lang="es">En vivo desde el reloj</span></p><strong>01:23:44</strong></div>
                 <div class="phone-score">
-                  <div>
-                    <span>SETS</span>
-                    <strong>2</strong>
-                  </div>
-                  <div>
-                    <span>GAMES</span>
-                    <strong>6-4</strong>
-                  </div>
-                  <div>
-                    <span>POINTS</span>
-                    <strong>40-AD</strong>
-                  </div>
+                  <div><span>SETS</span><strong>2</strong></div>
+                  <div><span>GAMES</span><strong>6-4</strong></div>
+                  <div><span>POINTS</span><strong>40-AD</strong></div>
                 </div>
                 <div class="stats-strip">
-                  <article>
-                    <span data-lang="en">Matches</span><span data-lang="es">Partidos</span>
-                    <strong>128</strong>
-                  </article>
-                  <article>
-                    <span data-lang="en">Avg duration</span><span data-lang="es">Duración media</span>
-                    <strong>1h 18m</strong>
-                  </article>
+                  <article><span data-lang="en">Matches</span><span data-lang="es">Partidos</span><strong>128</strong></article>
+                  <article><span data-lang="en">Avg duration</span><span data-lang="es">Duración media</span><strong>1h 18m</strong></article>
                 </div>
-                <div class="share-preview">
-                  <span data-lang="en">Share card ready</span><span data-lang="es">Tarjeta lista para compartir</span>
-                  <strong>6-4 3-6 7-6</strong>
-                </div>
+                <div class="share-preview"><span data-lang="en">Share card ready</span><span data-lang="es">Tarjeta lista para compartir</span><strong>6-4 3-6 7-6</strong></div>
               </div>
               <p class="device-label"><span data-lang="en">Phone companion</span><span data-lang="es">Companion en el teléfono</span></p>
             </article>
@@ -284,24 +134,9 @@
 
       <section class="trust-band section">
         <div class="trust-grid reveal">
-          <article>
-            <span class="trust-kicker" data-lang="en">Real match logic</span>
-            <span class="trust-kicker" data-lang="es">Lógica de partido real</span>
-            <p data-lang="en">Full tennis scoring with deuce, advantage, sets, standard tiebreaks and configurable formats including Fast4 and Grand Slam.</p>
-            <p data-lang="es">Scoring de tenis completo con deuce, ventaja, sets, tiebreaks estándar y formatos configurables como Fast4 y Grand Slam.</p>
-          </article>
-          <article>
-            <span class="trust-kicker" data-lang="en">Reliable sync</span>
-            <span class="trust-kicker" data-lang="es">Sync confiable</span>
-            <p data-lang="en">Wearable Data Layer (Wear OS), WatchConnectivity (Apple Watch) and Connect IQ (Garmin) — all with pending state, retries and ACK confirmation.</p>
-            <p data-lang="es">Wearable Data Layer (Wear OS), WatchConnectivity (Apple Watch) y Connect IQ (Garmin) — todos con estado pendiente, reintentos y confirmación ACK.</p>
-          </article>
-          <article>
-            <span class="trust-kicker" data-lang="en">No subscription</span>
-            <span class="trust-kicker" data-lang="es">Sin suscripción</span>
-            <p data-lang="en">Premium is a one-time unlock. No monthly fees, no trial countdown, no surprises.</p>
-            <p data-lang="es">Premium es un desbloqueo único. Sin cuotas mensuales, sin trial, sin sorpresas.</p>
-          </article>
+          <article><span class="trust-kicker" data-lang="en">Real match logic</span><span class="trust-kicker" data-lang="es">Lógica de partido real</span><p data-lang="en">Full tennis scoring with deuce, advantage, sets, standard tiebreaks and configurable formats including Fast4 and Grand Slam.</p><p data-lang="es">Scoring de tenis completo con deuce, ventaja, sets, tiebreaks estándar y formatos configurables como Fast4 y Grand Slam.</p></article>
+          <article><span class="trust-kicker" data-lang="en">Reliable sync</span><span class="trust-kicker" data-lang="es">Sync confiable</span><p data-lang="en">Wearable Data Layer (Wear OS), WatchConnectivity (Apple Watch) and Connect IQ (Garmin) — all with pending state, retries and ACK confirmation.</p><p data-lang="es">Wearable Data Layer (Wear OS), WatchConnectivity (Apple Watch) y Connect IQ (Garmin) — todos con estado pendiente, reintentos y confirmación ACK.</p></article>
+          <article><span class="trust-kicker" data-lang="en">No subscription</span><span class="trust-kicker" data-lang="es">Sin suscripción</span><p data-lang="en">Premium is a one-time unlock. No monthly fees, no trial countdown, no surprises.</p><p data-lang="es">Premium es un desbloqueo único. Sin cuotas mensuales, sin trial, sin sorpresas.</p></article>
         </div>
       </section>
 
@@ -310,16 +145,174 @@
           <p class="eyebrow"><span data-lang="en">The product</span><span data-lang="es">El producto</span></p>
           <h2 data-lang="en">One scoring engine. Five devices. One clean match flow.</h2>
           <h2 data-lang="es">Un solo motor de score. Cinco dispositivos. Un flujo limpio.</h2>
-          <p data-lang="en">
-            PLAYCE is structured around a simple idea: the watch is the input device during play, and the phone is the companion display, archive and sharing hub afterwards. The same logic runs across Apple Watch, Wear OS and Garmin.
-          </p>
-          <p data-lang="es">
-            PLAYCE está estructurado alrededor de una idea simple: el reloj es el dispositivo de entrada durante el juego, y el teléfono es el companion para mostrar, archivar y compartir después. La misma lógica corre en Apple Watch, Wear OS y Garmin.
-          </p>
+          <p data-lang="en">PLAYCE is structured around a simple idea: the watch is the input device during play, and the phone is the companion display, archive and sharing hub afterwards. The same logic runs across Apple Watch, Wear OS and Garmin.</p>
+          <p data-lang="es">PLAYCE está estructurado alrededor de una idea simple: el reloj es el dispositivo de entrada durante el juego, y el teléfono es el companion para mostrar, archivar y compartir después. La misma lógica corre en Apple Watch, Wear OS y Garmin.</p>
         </div>
-
         <div class="bento-grid">
           <article class="panel panel-wide reveal">
             <p class="panel-tag">01 / <span data-lang="en">On court</span><span data-lang="es">En la cancha</span></p>
             <h3 data-lang="en">Score without breaking focus.</h3>
-         
+            <h3 data-lang="es">Marcá sin perder el foco.</h3>
+            <p data-lang="en">Use the watch to track points, undo mistakes, monitor the server, follow tiebreak rotation and finish the match with a manual save flow that keeps state visible.</p>
+            <p data-lang="es">Usá el reloj para sumar puntos, deshacer errores, ver quién saca, seguir la rotación de tiebreak y cerrar el partido con un guardado manual que mantiene el estado visible.</p>
+            <ul class="bullet-list">
+              <li data-lang="en">Tap scoring and long-press undo</li>
+              <li data-lang="es">Tap para sumar y long-press para deshacer</li>
+              <li data-lang="en">Serve guidance and side indicators</li>
+              <li data-lang="es">Indicador de sacador y lado de saque</li>
+              <li data-lang="en">Persistent match timer that survives backgrounding</li>
+              <li data-lang="es">Timer del partido persistente aunque cierres la app</li>
+            </ul>
+          </article>
+          <article class="panel reveal">
+            <p class="panel-tag">02 / <span data-lang="en">In your pocket</span><span data-lang="es">En tu bolsillo</span></p>
+            <h3 data-lang="en">Review the match on your phone.</h3>
+            <h3 data-lang="es">Revisá el partido en el teléfono.</h3>
+            <p data-lang="en">History, detail screens, stats, CSV export, share cards and (on Android) home screen widget — all on iPhone or Android.</p>
+            <p data-lang="es">Historial, pantalla de detalle, stats, exportación a CSV, tarjetas para compartir y (en Android) widget en la pantalla de inicio — todo en iPhone o Android.</p>
+          </article>
+          <article class="panel reveal">
+            <p class="panel-tag">03 / <span data-lang="en">Premium</span><span data-lang="es">Premium</span></p>
+            <h3 data-lang="en">Pay once. Use forever.</h3>
+            <h3 data-lang="es">Pagás una vez. Lo usás para siempre.</h3>
+            <p data-lang="en">Free scoring counter by default, with a one-time unlock for save, history, detail, stats and sharing. No subscription, no trial, no upsell.</p>
+            <p data-lang="es">Contador gratis por default, con desbloqueo único para guardar, historial, detalle, stats y compartir. Sin suscripción, sin trial, sin upsell.</p>
+          </article>
+          <article class="panel panel-media panel-composition reveal">
+            <div class="composition-shell" aria-hidden="true">
+              <div class="composition-scoreboard">
+                <div class="composition-label">Match snapshot</div>
+                <div class="composition-main-score">
+                  <div><span>SETS</span><strong>2</strong></div>
+                  <div><span>FINAL</span><strong>6-4 3-6 7-6</strong></div>
+                </div>
+                <div class="composition-rally">
+                  <p>Current point flow</p>
+                  <div class="rally-bars"><span class="is-hot"></span><span></span><span class="is-hot"></span><span class="is-hot"></span><span></span><span class="is-hot"></span><span></span><span class="is-hot"></span></div>
+                </div>
+              </div>
+              <div class="composition-phone-stack">
+                <div class="composition-mini-card"><div class="composition-label">Sync status</div><strong>Synced</strong><p>Watch -> phone acknowledgment completed.</p></div>
+                <div class="composition-mini-card composition-chart-card"><div class="composition-label">Match history</div><div class="chart-bars"><span style="height: 48%"></span><span style="height: 72%"></span><span style="height: 56%"></span><span style="height: 88%"></span><span style="height: 64%"></span></div></div>
+              </div>
+              <div class="composition-rail"><div class="composition-dot"></div><p>On watch</p><p>On phone</p><p>Saved</p><p>Shared</p></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section experience-section" id="experience">
+        <div class="experience-layout">
+          <div class="experience-copy reveal">
+            <p class="eyebrow"><span data-lang="en">Experience</span><span data-lang="es">Experiencia</span></p>
+            <h2 data-lang="en">Calm at rest. Decisive in motion.</h2>
+            <h2 data-lang="es">Tranquilo en reposo. Decisivo en movimiento.</h2>
+            <p data-lang="en">The interface is minimal and high-contrast because tennis and padel scoring needs legibility first. Large numerals, sharp section rhythm, restrained color and clear state transitions keep the app fast to read mid-point.</p>
+            <p data-lang="es">La interfaz es minimal y de alto contraste porque marcar un partido de tenis o pádel exige legibilidad primero. Números grandes, ritmo claro entre secciones, color restringido y transiciones de estado nítidas — la app se lee al toque incluso en mitad de un punto.</p>
+          </div>
+          <div class="timeline reveal">
+            <article><span data-lang="en">Setup</span><span data-lang="es">Setup</span><h3 data-lang="en">Send names and format from the phone.</h3><h3 data-lang="es">Mandá nombres y formato desde el teléfono.</h3><p data-lang="en">Configure player names and match format on your phone, then push it to the watch before play starts.</p><p data-lang="es">Configurá los nombres y el formato del partido en el teléfono, después mandalo al reloj antes de empezar.</p></article>
+            <article><span data-lang="en">Play</span><span data-lang="es">Jugá</span><h3 data-lang="en">Track the match directly on the watch.</h3><h3 data-lang="es">Marcá el partido directo desde el reloj.</h3><p data-lang="en">The live score syncs to the phone while the watch remains the primary scorer.</p><p data-lang="es">El score en vivo se sincroniza al teléfono mientras el reloj sigue siendo el scorer principal.</p></article>
+            <article><span data-lang="en">Save</span><span data-lang="es">Guardá</span><h3 data-lang="en">Finish, retry if needed, confirm sync.</h3><h3 data-lang="es">Cerrá, reintentá si hace falta, confirmá el sync.</h3><p data-lang="en">Pending match state is stored locally on the watch until the phone acknowledges receipt.</p><p data-lang="es">El partido pendiente queda guardado localmente en el reloj hasta que el teléfono confirma la recepción.</p></article>
+            <article><span data-lang="en">Review</span><span data-lang="es">Revisá</span><h3 data-lang="en">Browse history, stats and exports later.</h3><h3 data-lang="es">Mirá historial, stats y exports después.</h3><p data-lang="en">Once saved, the match becomes part of the phone-side archive and sharing flow.</p><p data-lang="es">Una vez guardado, el partido pasa al historial del teléfono y al flujo para compartir.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section features-section" id="features">
+        <div class="section-intro reveal">
+          <p class="eyebrow"><span data-lang="en">Feature set</span><span data-lang="es">Funciones</span></p>
+          <h2 data-lang="en">Built features, not placeholder promises.</h2>
+          <h2 data-lang="es">Funciones reales, no promesas vacías.</h2>
+          <p data-lang="en">Everything you read here reflects what the app actually ships today across iOS, Android, Wear OS, Apple Watch and Garmin.</p>
+          <p data-lang="es">Todo lo que leés acá refleja lo que la app efectivamente entrega hoy en iOS, Android, Wear OS, Apple Watch y Garmin.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card reveal"><h3 data-lang="en">Watch-first scoring</h3><h3 data-lang="es">Score primero desde el reloj</h3><p data-lang="en">Tap-based scoring with optional hardware buttons (STEM_1 / STEM_2 on Wear OS) and responsive layouts for small circular screens.</p><p data-lang="es">Score con tap más botones físicos opcionales (STEM_1 / STEM_2 en Wear OS) y layouts responsivos para pantallas circulares chicas.</p></article>
+          <article class="feature-card reveal"><h3 data-lang="en">Shared scoring engine</h3><h3 data-lang="es">Motor de score compartido</h3><p data-lang="en">Points, games, sets, deuce, advantage, tiebreaks, super tiebreak, no-ad and configurable match formats — same rules across every platform.</p><p data-lang="es">Points, games, sets, deuce, ventaja, tiebreaks, super tiebreak, no-ad y formatos configurables — las mismas reglas en todas las plataformas.</p></article>
+          <article class="feature-card reveal"><h3 data-lang="en">Apple Watch + HealthKit</h3><h3 data-lang="es">Apple Watch + HealthKit</h3><p data-lang="en">On Apple Watch, the match runs as a HealthKit workout session so your time on court counts toward your activity in the Health app.</p><p data-lang="es">En Apple Watch, el partido corre como workout de HealthKit así tu tiempo en cancha cuenta en la app Salud.</p></article>
+          <article class="feature-card reveal"><h3 data-lang="en">Wear OS + Garmin sync</h3><h3 data-lang="es">Sync con Wear OS y Garmin</h3><p data-lang="en">Wearable Data Layer for Wear OS, Connect IQ Mobile SDK for Garmin (Epix Pro 2 today, more models coming) — idempotent delivery and ACK cleanup on both.</p><p data-lang="es">Wearable Data Layer para Wear OS, Connect IQ Mobile SDK para Garmin (Epix Pro 2 hoy, más modelos en camino) — entrega idempotente y limpieza por ACK en ambos.</p></article>
+          <article class="feature-card reveal"><h3 data-lang="en">History, stats and CSV export</h3><h3 data-lang="es">Historial, stats y export a CSV</h3><p data-lang="en">Match counts, duration summaries, average / longest / shortest match, full per-match detail and CSV export for the geeks.</p><p data-lang="es">Cantidad de partidos, resúmenes de duración, promedio / más largo / más corto, detalle completo por partido y export a CSV para los geeks.</p></article>
+          <article class="feature-card reveal"><h3 data-lang="en">Share card</h3><h3 data-lang="es">Tarjeta para compartir</h3><p data-lang="en">Generate and share a polished match summary image — final score, set breakdown, total time — straight to WhatsApp, Instagram or anywhere your share sheet goes.</p><p data-lang="es">Generá y compartí una imagen prolija del resumen del partido — score final, detalle de sets, tiempo total — directo a WhatsApp, Instagram o donde apunte tu share sheet.</p></article>
+        </div>
+      </section>
+
+      <section class="section" id="pricing">
+        <div class="section-intro reveal">
+          <p class="eyebrow"><span data-lang="en">Pricing</span><span data-lang="es">Precio</span></p>
+          <h2 data-lang="en">One purchase. No subscription. Ever.</h2>
+          <h2 data-lang="es">Una sola compra. Sin suscripción. Nunca.</h2>
+          <p data-lang="en">The free counter on your phone is fully functional. Unlock match save, history, detail, stats and share with a single one-time purchase on whichever store you use.</p>
+          <p data-lang="es">El contador gratis en el teléfono funciona completo. Desbloqueá guardado, historial, detalle, stats y compartir con una sola compra única en la store que uses.</p>
+        </div>
+        <div class="pricing-grid reveal">
+          <article class="price-card">
+            <span class="price-platform">iOS · App Store</span>
+            <div class="price-amount">$3.99 <small>USD</small></div>
+            <p data-lang="en">One-time unlock. iPhone + Apple Watch. Includes HealthKit workout integration.</p>
+            <p data-lang="es">Desbloqueo único. iPhone + Apple Watch. Incluye integración con HealthKit como workout.</p>
+            <a class="button button-primary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span data-lang="en">Get on App Store</span><span data-lang="es">Comprar en App Store</span></a>
+          </article>
+          <article class="price-card">
+            <span class="price-platform">Android · Google Play</span>
+            <div class="price-amount">$3.33 <small>USD</small></div>
+            <p data-lang="en">One-time unlock. Android + Wear OS + Garmin companion bridge. Includes home screen widget.</p>
+            <p data-lang="es">Desbloqueo único. Android + Wear OS + bridge companion para Garmin. Incluye widget de pantalla de inicio.</p>
+            <a class="button button-primary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg><span data-lang="en">Get on Google Play</span><span data-lang="es">Comprar en Google Play</span></a>
+          </article>
+        </div>
+      </section>
+
+      <section class="section cta-section">
+        <div class="cta-card reveal">
+          <div>
+            <p class="eyebrow"><span data-lang="en">Available now</span><span data-lang="es">Disponible ahora</span></p>
+            <h2 data-lang="en">Take PLAYCE to your next match.</h2>
+            <h2 data-lang="es">Llevá PLAYCE a tu próximo partido.</h2>
+            <p data-lang="en">Available on iPhone, Apple Watch, Android, Wear OS and Garmin. Free to start, one-time unlock for the full experience.</p>
+            <p data-lang="es">Disponible en iPhone, Apple Watch, Android, Wear OS y Garmin. Gratis para empezar, desbloqueo único para la experiencia completa.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="button button-primary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>App Store</a>
+            <a class="button button-secondary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg>Google Play</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section faq-section" id="faq">
+        <div class="section-intro reveal">
+          <p class="eyebrow">FAQ</p>
+          <h2 data-lang="en">Short answers for the obvious questions.</h2>
+          <h2 data-lang="es">Respuestas cortas a lo obvio.</h2>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item reveal"><summary data-lang="en">Does PLAYCE work for padel?</summary><summary data-lang="es">¿PLAYCE funciona para pádel?</summary><p data-lang="en">Yes. The scoring engine handles padel matches with the same point / game / set / tiebreak rules as tennis, plus configurable formats like Fast4. Padel and tennis share scoring logic.</p><p data-lang="es">Sí. El motor de score maneja partidos de pádel con las mismas reglas de point / game / set / tiebreak que tenis, más formatos configurables como Fast4. Pádel y tenis comparten lógica de score.</p></details>
+          <details class="faq-item reveal"><summary data-lang="en">Do I need both a phone and a watch?</summary><summary data-lang="es">¿Necesito teléfono y reloj al mismo tiempo?</summary><p data-lang="en">No. You can use just the phone as a manual counter (free). The full experience — watch-based live scoring with sync — needs a paired Apple Watch, Wear OS watch or Garmin device.</p><p data-lang="es">No. Podés usar solo el teléfono como contador manual (gratis). La experiencia completa — score en vivo desde el reloj con sync — requiere un Apple Watch, un reloj Wear OS o un Garmin emparejado.</p></details>
+          <details class="faq-item reveal"><summary data-lang="en">Which Garmin watches are supported?</summary><summary data-lang="es">¿Qué relojes Garmin soporta?</summary><p data-lang="en">At launch, the Garmin app runs on Epix Pro 2 (47mm). Support for more Garmin models is the next development priority.</p><p data-lang="es">En el lanzamiento, la app Garmin corre en Epix Pro 2 (47mm). Sumar más modelos de Garmin es la próxima prioridad de desarrollo.</p></details>
+          <details class="faq-item reveal"><summary data-lang="en">Is this a subscription?</summary><summary data-lang="es">¿Es por suscripción?</summary><p data-lang="en">No. Premium is a one-time purchase: USD 3.99 on iOS, USD 3.33 on Android. No monthly fee, no trial, no recurring charge.</p><p data-lang="es">No. Premium es una compra única: USD 3.99 en iOS, USD 3.33 en Android. Sin cuota mensual, sin trial, sin cargo recurrente.</p></details>
+          <details class="faq-item reveal"><summary data-lang="en">What can I do in the free version?</summary><summary data-lang="es">¿Qué puedo hacer en la versión gratis?</summary><p data-lang="en">Score full matches from the phone counter or the watch scorer. Premium adds saving matches to history, viewing detail and stats, exporting CSV, and sharing match cards.</p><p data-lang="es">Marcar partidos completos desde el contador del teléfono o desde el scorer del reloj. Premium suma guardar partidos al historial, ver detalle y stats, exportar a CSV y compartir tarjetas del partido.</p></details>
+          <details class="faq-item reveal"><summary data-lang="en">Where is my data stored?</summary><summary data-lang="es">¿Dónde se guardan mis datos?</summary><p data-lang="en">Locally on your devices. PLAYCE does not operate a backend for match storage. See the <a href="./privacy.html">privacy policy</a> for details.</p><p data-lang="es">Localmente en tus dispositivos. PLAYCE no opera un backend para guardar partidos. Más detalles en la <a href="./privacy.html">política de privacidad</a>.</p></details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <img src="./assets/playce-wordmark.png" alt="PLAYCE wordmark">
+        <p class="footer-tag" data-lang="en">Tennis &amp; padel scoring for iPhone, Apple Watch, Android, Wear OS and Garmin.</p>
+        <p class="footer-tag" data-lang="es">Marcador de tenis y pádel para iPhone, Apple Watch, Android, Wear OS y Garmin.</p>
+      </div>
+      <div class="footer-links">
+        <a href="mailto:atiliogmaculus@gmail.com">Support</a>
+        <a href="./privacy.html"><span data-lang="en">Privacy Policy</span><span data-lang="es">Política de privacidad</span></a>
+        <a href="./terms.html"><span data-lang="en">Terms of Service</span><span data-lang="es">Términos</span></a>
+        <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer">App Store</a>
+        <a href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer">Google Play</a>
+      </div>
+      <p class="footer-copy">© <span id="year"></span> PLAYCE. <span data-lang="en">Built for the court.</span><span data-lang="es">Hecha para la cancha.</span></p>
+    </footer>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
