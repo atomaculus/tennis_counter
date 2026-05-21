@@ -4,4 +4,13 @@
   <url>
     <loc>https://tenniscounter.vercel.app/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://tenniscounter.vercel.app/" />
-    <xhtml:link rel="alternate" 
+    <xhtml:link rel="alternate" hreflang="es" href="https://tenniscounter.vercel.app/?lang=es" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tenniscounter.vercel.app/" />
+  </url>
+  <url>
+    <loc>https://tenniscounter.vercel.app/privacy</loc>
+  </url>
+  <url>
+    <loc>https://tenniscounter.vercel.app/terms</loc>
+  </url>
+</urlset>
