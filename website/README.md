@@ -5,6 +5,7 @@ Static landing page for the Android + Wear OS project.
 ## Structure
 
 - `index.html`: main landing page
+- `download.html`: single smart download link that redirects iOS to App Store and Android to Google Play
 - `privacy.html`: public privacy policy page
 - `styles.css`: shared site styling
 - `script.js`: mobile menu and reveal interactions

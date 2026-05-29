@@ -35,7 +35,7 @@
     .lang-pill:hover { color: var(--text); }
     .lang-pill[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
     .store-icon { width: 16px; height: 16px; margin-right: 8px; flex-shrink: 0; }
-    .pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 32px; }
+    .pricing-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin: 32px auto 0; max-width: 760px; }
     @media (max-width: 720px) { .pricing-grid { grid-template-columns: 1fr; } }
     .price-card { padding: 28px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, rgba(18, 27, 19, 0.92), rgba(10, 16, 11, 0.92)); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; }
     .price-card .price-platform { font-family: "Space Grotesk", sans-serif; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.78rem; color: var(--accent); }
@@ -43,6 +43,9 @@
     .price-card .price-amount small { font-size: 1rem; color: var(--muted); letter-spacing: 0; font-weight: 500; margin-left: 6px; }
     .price-card p { color: var(--muted); line-height: 1.6; margin: 0; font-size: 0.95rem; }
     .price-card .button { margin-top: auto; align-self: flex-start; }
+    .price-note { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 6px; }
+    .price-note span { display: block; color: var(--muted); font-size: 0.92rem; line-height: 1.5; }
+    @media (max-width: 720px) { .price-note { grid-template-columns: 1fr; } }
     .footer-tag { color: var(--muted); }
   </style>
 </head>
@@ -62,8 +65,7 @@
           <button class="lang-pill" type="button" data-set-lang="en" aria-pressed="true">EN</button>
           <button class="lang-pill" type="button" data-set-lang="es" aria-pressed="false">ES</button>
         </div>
-        <a class="button button-secondary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>App Store</a>
-        <a class="button button-primary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg>Google Play</a>
+        <a class="button button-primary" href="./download"><span data-lang="en">Download PLAYCE</span><span data-lang="es">Descargar PLAYCE</span></a>
       </div>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span></button>
     </header>
@@ -74,8 +76,7 @@
       <a href="#features"><span data-lang="en">Features</span><span data-lang="es">Funciones</span></a>
       <a href="#pricing"><span data-lang="en">Pricing</span><span data-lang="es">Precio</span></a>
       <a href="#faq">FAQ</a>
-      <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer">App Store</a>
-      <a href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer">Google Play</a>
+      <a href="./download"><span data-lang="en">Download PLAYCE</span><span data-lang="es">Descargar PLAYCE</span></a>
     </div>
 
     <main id="top">
@@ -87,8 +88,7 @@
           <p class="hero-lead" data-lang="en">PLAYCE is a tennis and padel scoring system built for real courtside use. Track live points on your watch — Apple Watch, Wear OS or Garmin — sync to iPhone or Android instantly, then review history, stats, exports and share cards after the match.</p>
           <p class="hero-lead" data-lang="es">PLAYCE es un sistema de marcador de tenis y pádel pensado para usarse en la cancha. Llevá los puntos en vivo desde tu reloj — Apple Watch, Wear OS o Garmin — sincronizá al instante con tu iPhone o Android, y después revisá historial, stats, exports y tarjetas para compartir el resultado.</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span data-lang="en">Download on App Store</span><span data-lang="es">Descargar en App Store</span></a>
-            <a class="button button-primary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg><span data-lang="en">Get it on Google Play</span><span data-lang="es">Conseguilo en Google Play</span></a>
+            <a class="button button-primary" href="./download"><span data-lang="en">Download PLAYCE</span><span data-lang="es">Descargar PLAYCE</span></a>
             <a class="button button-secondary" href="#features"><span data-lang="en">See what it does</span><span data-lang="es">Ver qué hace</span></a>
           </div>
           <ul class="hero-metrics">
@@ -247,18 +247,17 @@
         </div>
         <div class="pricing-grid reveal">
           <article class="price-card">
-            <span class="price-platform">iOS · App Store</span>
-            <div class="price-amount">$3.99 <small>USD</small></div>
-            <p data-lang="en">One-time unlock. iPhone + Apple Watch. Includes HealthKit workout integration.</p>
-            <p data-lang="es">Desbloqueo único. iPhone + Apple Watch. Incluye integración con HealthKit como workout.</p>
-            <a class="button button-primary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span data-lang="en">Get on App Store</span><span data-lang="es">Comprar en App Store</span></a>
-          </article>
-          <article class="price-card">
-            <span class="price-platform">Android · Google Play</span>
-            <div class="price-amount">$3.33 <small>USD</small></div>
-            <p data-lang="en">One-time unlock. Android + Wear OS + Garmin companion bridge. Includes home screen widget.</p>
-            <p data-lang="es">Desbloqueo único. Android + Wear OS + bridge companion para Garmin. Incluye widget de pantalla de inicio.</p>
-            <a class="button button-primary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg><span data-lang="en">Get on Google Play</span><span data-lang="es">Comprar en Google Play</span></a>
+            <span class="price-platform">One link · Right store</span>
+            <div class="price-amount">$3.33-$3.99 <small>USD</small></div>
+            <p data-lang="en">Free to start. Premium is a one-time unlock for match save, history, detail, stats, CSV export and share cards. The download link sends each player to the right store automatically.</p>
+            <p data-lang="es">Gratis para empezar. Premium es un desbloqueo unico para guardar partidos, historial, detalle, stats, export CSV y tarjetas para compartir. El link de descarga manda a cada jugador a la store correcta automaticamente.</p>
+            <div class="price-note">
+              <span data-lang="en">iPhone + Apple Watch: USD 3.99 on App Store.</span>
+              <span data-lang="es">iPhone + Apple Watch: USD 3.99 en App Store.</span>
+              <span data-lang="en">Android + Wear OS + Garmin bridge: USD 3.33 on Google Play.</span>
+              <span data-lang="es">Android + Wear OS + bridge Garmin: USD 3.33 en Google Play.</span>
+            </div>
+            <a class="button button-primary" href="./download"><span data-lang="en">Download PLAYCE</span><span data-lang="es">Descargar PLAYCE</span></a>
           </article>
         </div>
       </section>
@@ -273,8 +272,7 @@
             <p data-lang="es">Disponible en iPhone, Apple Watch, Android, Wear OS y Garmin. Gratis para empezar, desbloqueo único para la experiencia completa.</p>
           </div>
           <div class="cta-actions">
-            <a class="button button-primary" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>App Store</a>
-            <a class="button button-secondary" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer"><svg class="store-icon" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg>Google Play</a>
+            <a class="button button-primary" href="./download"><span data-lang="en">Download PLAYCE</span><span data-lang="es">Descargar PLAYCE</span></a>
           </div>
         </div>
       </section>
@@ -306,8 +304,7 @@
         <a href="mailto:atiliogmaculus@gmail.com">Support</a>
         <a href="./privacy.html"><span data-lang="en">Privacy Policy</span><span data-lang="es">Política de privacidad</span></a>
         <a href="./terms.html"><span data-lang="en">Terms of Service</span><span data-lang="es">Términos</span></a>
-        <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" target="_blank" rel="noreferrer">App Store</a>
-        <a href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" target="_blank" rel="noreferrer">Google Play</a>
+        <a href="./download"><span data-lang="en">Download</span><span data-lang="es">Descargar</span></a>
       </div>
       <p class="footer-copy">© <span id="year"></span> PLAYCE. <span data-lang="en">Built for the court.</span><span data-lang="es">Hecha para la cancha.</span></p>
     </footer>

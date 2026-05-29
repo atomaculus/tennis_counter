@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download PLAYCE</title>
+  <meta
+    name="description"
+    content="Download PLAYCE for iPhone, Apple Watch, Android, Wear OS and Garmin. This link sends you to the right store for your device."
+  >
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Download PLAYCE">
+  <meta property="og:description" content="One link. iPhone goes to App Store, Android goes to Google Play.">
+  <meta property="og:image" content="/assets/feature-graphic-playce.png">
+  <meta property="og:url" content="https://tenniscounter.vercel.app/download">
+  <meta name="theme-color" content="#0b0f0a">
+  <link rel="canonical" href="https://tenniscounter.vercel.app/download">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Sora:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./styles.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .download-shell {
+      width: min(100%, 520px);
+      text-align: center;
+      padding: 42px 28px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(18, 27, 19, 0.94), rgba(8, 13, 9, 0.96));
+      box-shadow: var(--shadow);
+    }
+
+    .download-logo {
+      width: 180px;
+      max-width: 70%;
+      margin: 0 auto 28px;
+      display: block;
+    }
+
+    .download-shell h1 {
+      font-size: clamp(2.2rem, 12vw, 4.2rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+      margin: 0 0 18px;
+    }
+
+    .download-shell p {
+      margin: 0 auto;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 38rem;
+    }
+
+    .download-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-top: 30px;
+    }
+
+    .store-fallbacks {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 20px;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .store-fallbacks a {
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(181, 255, 84, 0.5);
+    }
+
+    .download-note {
+      margin-top: 26px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main class="download-shell" id="download-fallback" hidden>
+    <img class="download-logo" src="./assets/playce-wordmark.png" alt="PLAYCE">
+    <p class="eyebrow">One download link</p>
+    <h1>Get PLAYCE</h1>
+    <p>Open this link from your phone and PLAYCE will send you to the right store automatically. iPhone opens the App Store. Android opens Google Play.</p>
+    <div class="download-actions">
+      <a class="button button-primary" id="manual-download" href="./">Open the right store</a>
+    </div>
+    <div class="store-fallbacks" aria-label="Store fallbacks">
+      <span>Desktop?</span>
+      <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" rel="noreferrer">App Store</a>
+      <a href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" rel="noreferrer">Google Play</a>
+    </div>
+    <div class="download-note">Free to start. No subscription.</div>
+  </main>
+
+  <noscript>
+    <main class="download-shell">
+      <img class="download-logo" src="./assets/playce-wordmark.png" alt="PLAYCE">
+      <p class="eyebrow">Download PLAYCE</p>
+      <h1>Choose your store</h1>
+      <p>JavaScript is required for automatic store detection. Use the fallback links below.</p>
+      <div class="store-fallbacks" aria-label="Store fallbacks">
+        <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" rel="noreferrer">App Store</a>
+        <a href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" rel="noreferrer">Google Play</a>
+      </div>
+    </main>
+  </noscript>
+
+  <script>
+    const IOS_URL = "https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB";
+    const ANDROID_URL = "https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app";
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isAndroid = /android/i.test(ua);
+
+    if (isIOS) {
+      window.location.replace(IOS_URL);
+    } else if (isAndroid) {
+      window.location.replace(ANDROID_URL);
+    } else {
+      document.getElementById("manual-download").href = ANDROID_URL;
+      document.getElementById("download-fallback").hidden = false;
+    }
+  </script>
+</body>
+</html>
