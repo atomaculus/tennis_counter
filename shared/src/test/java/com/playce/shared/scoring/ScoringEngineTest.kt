@@ -253,15 +253,15 @@ class ScoringEngineTest {
     // ---- Serve side ----
 
     @Test
-    fun `serve starts on left then alternates`() {
+    fun `serve starts on right then alternates`() {
         var score = MatchScore()
-        assertTrue(score.serveStartsOnLeftSide()) // 0 points = left
+        assertFalse(score.serveStartsOnLeftSide()) // 0 points = right
 
         score = ScoringEngine.scorePoint(score, isPlayerA = true)
-        assertFalse(score.serveStartsOnLeftSide()) // 1 point = right
+        assertTrue(score.serveStartsOnLeftSide()) // 1 point = left
 
         score = ScoringEngine.scorePoint(score, isPlayerA = true)
-        assertTrue(score.serveStartsOnLeftSide()) // 2 points = left
+        assertFalse(score.serveStartsOnLeftSide()) // 2 points = right
     }
 
     // ---- Replay ----

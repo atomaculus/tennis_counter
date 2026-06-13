@@ -121,10 +121,10 @@ class TennisScoringInstrumentedTest {
     fun serveSide_changesWithPointParityWithinGame() {
         val vm = TennisViewModel(ApplicationProvider.getApplicationContext())
 
-        assertTrue(vm.matchState.value.serveStartsOnLeftSide())
-        vm.addPointToPlayerA()
         assertFalse(vm.matchState.value.serveStartsOnLeftSide())
-        vm.addPointToPlayerB()
+        vm.addPointToPlayerA()
         assertTrue(vm.matchState.value.serveStartsOnLeftSide())
+        vm.addPointToPlayerB()
+        assertFalse(vm.matchState.value.serveStartsOnLeftSide())
     }
 }

@@ -44,7 +44,7 @@ object ScoringEngine {
 
         fun serveStartsOnLeftSide(): Boolean {
             val totalPoints = playerA.points + playerB.points
-            return totalPoints % 2 == 0
+            return totalPoints % 2 != 0
         }
 
         private fun pointLabel(playerPoints: Int, rivalPoints: Int): String {
