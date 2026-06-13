@@ -55,6 +55,20 @@
     <string name="match_not_found">Match not found</string>
     <string name="label_duration">Duration %s</string>
 
+    <!-- Share card editor -->
+    <string name="btn_cancel">Cancel</string>
+    <string name="share_customize_title">Customize</string>
+    <string name="share_drag_hint">Drag the card to reposition it</string>
+    <string name="share_pos_top">Top</string>
+    <string name="share_pos_center">Center</string>
+    <string name="share_pos_bottom">Bottom</string>
+    <string name="share_data_set_scores">Set scores</string>
+    <string name="share_data_duration">Duration</string>
+    <string name="share_data_date">Date</string>
+    <string name="share_player_1">Player 1</string>
+    <string name="share_player_2">Player 2</string>
+    <string name="share_action">Share</string>
+
     <!-- Tiebreak -->
     <string name="label_tiebreak">TIEBREAK</string>
 

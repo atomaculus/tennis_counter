@@ -55,6 +55,20 @@
     <string name="match_not_found">Partido no encontrado</string>
     <string name="label_duration">Duración %s</string>
 
+    <!-- Editor de tarjeta para compartir -->
+    <string name="btn_cancel">Cancelar</string>
+    <string name="share_customize_title">Personalizar</string>
+    <string name="share_drag_hint">Arrastra la tarjeta para moverla</string>
+    <string name="share_pos_top">Arriba</string>
+    <string name="share_pos_center">Centro</string>
+    <string name="share_pos_bottom">Abajo</string>
+    <string name="share_data_set_scores">Parciales</string>
+    <string name="share_data_duration">Duración</string>
+    <string name="share_data_date">Fecha</string>
+    <string name="share_player_1">Jugador 1</string>
+    <string name="share_player_2">Jugador 2</string>
+    <string name="share_action">Compartir</string>
+
     <!-- Tiebreak -->
     <string name="label_tiebreak">TIEBREAK</string>
 

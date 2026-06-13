@@ -32,7 +32,7 @@ object MatchShareManager {
             val data = ShareCardData(
                 scoreText = match.finalScoreText,
                 setScoresText = match.setScoresText,
-                durationText = "Duration: ${formatDuration(match.durationSeconds)}",
+                durationText = formatDuration(match.durationSeconds),
                 dateText = formatDate(match.createdAt),
                 photoUri = match.photoUri
             )
