@@ -3,6 +3,13 @@
 # Keep Wearable Data Layer API classes used via reflection
 -keep class com.google.android.gms.wearable.** { *; }
 
+# Health Services uses protobuf reflection internally; obfuscating generated
+# proto field names breaks exercise startup on release builds.
+-keep class androidx.health.services.client.proto.** { *; }
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite {
+    *;
+}
+
 # Keep DataStore generated classes
 -keepclassmembers class * extends androidx.datastore.preferences.protobuf.GeneratedMessageLite {
     <fields>;

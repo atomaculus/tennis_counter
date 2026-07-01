@@ -48,13 +48,23 @@ class MatchRepositoryTest {
             finalScoreText = "2-0",
             idempotencyKey = "unique-key",
             setScoresText = "6-3 6-4",
-            photoUri = "content://share/card"
+            photoUri = "content://share/card",
+            playerAName = "Ana",
+            playerBName = "Beto",
+            caloriesKcal = 412.6,
+            avgHeartRateBpm = 143,
+            maxHeartRateBpm = 176
         )
 
         val stored = dao.snapshot().single()
         assertEquals("6-3 6-4", stored.setScoresText)
         assertEquals("content://share/card", stored.photoUri)
         assertEquals("unique-key", stored.idempotencyKey)
+        assertEquals("Ana", stored.playerAName)
+        assertEquals("Beto", stored.playerBName)
+        assertEquals(412.6, stored.caloriesKcal ?: 0.0, 0.0)
+        assertEquals(143, stored.avgHeartRateBpm)
+        assertEquals(176, stored.maxHeartRateBpm)
     }
 }
 
@@ -91,6 +101,31 @@ private class FakeMatchDao : MatchDao {
             matches[index] = match
             allMatchesFlow.value = matches.toList()
         }
+    }
+
+    override suspend fun getMatchCount(): Int = matches.size
+
+    override suspend fun getAverageDuration(): Double? = matches.map { it.durationSeconds }.average()
+
+    override suspend fun getLongestMatchDuration(): Long? = matches.maxOfOrNull { it.durationSeconds }
+
+    override suspend fun getShortestMatchDuration(): Long? = matches.minOfOrNull { it.durationSeconds }
+
+    override suspend fun getTotalPlayTime(): Long? = matches.sumOf { it.durationSeconds }
+
+    override suspend fun getLatestMatch(): MatchEntity? = matches.maxByOrNull { it.createdAt }
+
+    override suspend fun getAllMatchesOnce(): List<MatchEntity> = matches.sortedByDescending { it.createdAt }
+
+    override suspend fun getRecentMatchesWithHealthMetrics(limit: Int): List<MatchEntity> {
+        return matches
+            .filter {
+                it.caloriesKcal != null ||
+                    it.avgHeartRateBpm != null ||
+                    it.maxHeartRateBpm != null
+            }
+            .sortedByDescending { it.createdAt }
+            .take(limit)
     }
 
     fun snapshot(): List<MatchEntity> = matches.toList()

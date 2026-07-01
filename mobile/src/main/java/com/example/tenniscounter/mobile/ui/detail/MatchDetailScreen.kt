@@ -56,6 +56,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tenniscounter.mobile.billing.PremiumUiState
 import com.example.tenniscounter.mobile.data.local.MatchEntity
+import com.example.tenniscounter.mobile.health.HealthConnectMatchWriter
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
 import com.example.tenniscounter.mobile.ui.components.SectionHeader
@@ -120,6 +121,11 @@ fun MatchDetailScreen(
                 Text(stringResource(R.string.match_not_found), color = PlayceColors.TextPrimary)
             }
             return@Scaffold
+        }
+
+        LaunchedEffect(currentMatch.idempotencyKey) {
+            HealthConnectMatchWriter(context.applicationContext)
+                .writeTennisSessionIfPermitted(currentMatch)
         }
 
         if (!premiumUiState.isPremiumUnlocked) {
@@ -304,6 +310,30 @@ private fun DetailContent(
             }
         }
 
+        if (match.hasHealthMetrics()) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
+                border = BorderStroke(1.dp, PlayceColors.Border),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SectionHeader("Activity")
+                    match.caloriesKcal?.let { calories ->
+                        HealthMetricRow("Calories", "${calories.roundToInt()} kcal")
+                    }
+                    match.avgHeartRateBpm?.let { avgHeartRate ->
+                        HealthMetricRow("Avg HR", "$avgHeartRate bpm")
+                    }
+                    match.maxHeartRateBpm?.let { maxHeartRate ->
+                        HealthMetricRow("Max HR", "$maxHeartRate bpm")
+                    }
+                }
+            }
+        }
+
         Card(
             colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
             border = BorderStroke(1.dp, PlayceColors.Border),
@@ -349,6 +379,30 @@ private fun DetailContent(
             )
         }
     }
+}
+
+@Composable
+private fun HealthMetricRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = PlayceColors.TextSecondary,
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = value,
+            color = PlayceColors.TextPrimary,
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+private fun MatchEntity.hasHealthMetrics(): Boolean {
+    return caloriesKcal != null || avgHeartRateBpm != null || maxHeartRateBpm != null
 }
 
 @Composable

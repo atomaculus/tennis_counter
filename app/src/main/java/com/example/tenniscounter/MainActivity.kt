@@ -1,12 +1,17 @@
 package com.example.tenniscounter
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -60,6 +65,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -77,6 +83,7 @@ import com.example.tenniscounter.sync.PendingMatchStore
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMap
 import com.example.tenniscounter.sound.PointSoundManager
+import com.example.tenniscounter.health.PlayceHealthServicesManager
 import com.example.tenniscounter.ui.components.PlayceWearColors
 import com.example.tenniscounter.ui.components.PlayceWearSpacing
 import com.example.tenniscounter.ui.components.PlayceWearShapes
@@ -112,6 +119,16 @@ private const val WEAR_DATA_LAYER_TAG = "WearDataLayer"
 private const val ACK_WAIT_RETRY_MS = 10_000L
 private const val RETRY_TRIGGER_THROTTLE_MS = 1_500L
 private val retryScope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+private fun healthPermissionsForDevice(): Array<String> {
+    return buildList {
+        add(Manifest.permission.ACTIVITY_RECOGNITION)
+        if (Build.VERSION.SDK_INT <= 35) {
+            add(Manifest.permission.BODY_SENSORS)
+        }
+        add("android.permission.health.READ_HEART_RATE")
+    }.toTypedArray()
+}
 
 private enum class AppScreen {
     Counter,
@@ -236,6 +253,7 @@ private fun TennisCounterApp(
     val haptic = LocalHapticFeedback.current
     val pointSound = remember { PointSoundManager() }
     val liveBroadcaster = remember { LiveScoreBroadcaster(context) }
+    val healthServicesManager = remember { PlayceHealthServicesManager(context.applicationContext) }
     var localNodeId by remember { mutableStateOf("") }
     DisposableEffect(Unit) {
         onDispose { pointSound.release() }
@@ -248,6 +266,33 @@ private fun TennisCounterApp(
             } catch (e: Exception) {
                 Log.w(WEAR_DATA_LAYER_TAG, "Failed to get local node id", e)
             }
+        }
+    }
+
+    fun hasHealthPermissions(): Boolean {
+        return healthPermissionsForDevice().all { permission ->
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    fun startWorkoutIfPermitted() {
+        if (!hasHealthPermissions()) return
+        uiScope.launch {
+            healthServicesManager.startMatchWorkoutIfPossible()
+        }
+    }
+
+    val healthPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        startWorkoutIfPermitted()
+    }
+
+    LaunchedEffect(Unit) {
+        if (hasHealthPermissions()) {
+            healthServicesManager.startMatchWorkoutIfPossible()
+        } else {
+            healthPermissionLauncher.launch(healthPermissionsForDevice())
         }
     }
 
@@ -458,6 +503,7 @@ private fun TennisCounterApp(
                     onNewMatch = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.startNewMatch()
+                        startWorkoutIfPermitted()
                         // Broadcast fresh 0-0 state so phone keeps showing LIVE
                         broadcastCurrentState("")
                         appScreen = AppScreen.Counter
@@ -572,14 +618,17 @@ private fun TennisCounterApp(
                     actions = listOf(
                         // Navigation to final screen is manual and only happens after explicit Finish confirmation.
                         SheetAction("Finish") {
-                            viewModel.finishMatch()
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            liveBroadcaster.clearLiveScore()
-                            // Auto-disable hardware buttons when match ends
-                            hwButtonsEnabled = false
-                            onHardwareButtonsToggled(false)
-                            appScreen = AppScreen.MatchFinished
-                            activeSheet = ActiveSheet.None
+                            uiScope.launch {
+                                val healthMetrics = healthServicesManager.endWorkoutAndGetMetrics()
+                                viewModel.finishMatch(healthMetrics)
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                liveBroadcaster.clearLiveScore()
+                                // Auto-disable hardware buttons when match ends
+                                hwButtonsEnabled = false
+                                onHardwareButtonsToggled(false)
+                                appScreen = AppScreen.MatchFinished
+                                activeSheet = ActiveSheet.None
+                            }
                         },
                         SheetAction("Cancel") { activeSheet = ActiveSheet.None }
                     )
@@ -1289,9 +1338,14 @@ private fun buildMatchFinishedPayload(
         putLong("createdAt", createdAt)
         putLong("durationSeconds", summary.durationSeconds.toLong())
         putString("finalScoreText", finalScoreText)
+        putString("playerAName", summary.playerAName)
+        putString("playerBName", summary.playerBName)
         if (!setScoresText.isNullOrBlank()) {
             putString("setScoresText", setScoresText)
         }
+        summary.caloriesKcal?.let { putDouble("caloriesKcal", it) }
+        summary.avgHeartRateBpm?.let { putInt("avgHeartRateBpm", it) }
+        summary.maxHeartRateBpm?.let { putInt("maxHeartRateBpm", it) }
         putString("idempotencyKey", idempotencyKey)
     }
     return dataMap.toByteArray()

@@ -3,7 +3,9 @@ package com.example.tenniscounter.mobile.sync
 import android.util.Log
 import com.example.tenniscounter.mobile.BuildConfig
 import com.example.tenniscounter.mobile.billing.PremiumAccessStore
+import com.example.tenniscounter.mobile.data.local.MatchEntity
 import com.example.tenniscounter.mobile.di.MobileServiceLocator
+import com.example.tenniscounter.mobile.health.HealthConnectMatchWriter
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.MessageEvent
@@ -45,9 +47,16 @@ class WearMatchListenerService : WearableListenerService() {
         val finalScoreText = dataMap.getString(KEY_FINAL_SCORE_TEXT).orEmpty()
         val setScoresText = dataMap.getString(KEY_SET_SCORES_TEXT)?.trim().orEmpty().ifBlank { null }
         val idempotencyKey = dataMap.getString(KEY_IDEMPOTENCY_KEY).orEmpty()
+        val playerAName = dataMap.getString(KEY_PLAYER_A_NAME)?.trim().orEmpty().ifBlank { null }
+        val playerBName = dataMap.getString(KEY_PLAYER_B_NAME)?.trim().orEmpty().ifBlank { null }
+        val caloriesKcal = dataMap.getOptionalDouble(KEY_CALORIES_KCAL)
+        val avgHeartRateBpm = dataMap.getOptionalInt(KEY_AVG_HEART_RATE_BPM)
+        val maxHeartRateBpm = dataMap.getOptionalInt(KEY_MAX_HEART_RATE_BPM)
         Log.i(
             TAG,
-            "Decoded payload createdAt=$createdAt durationSeconds=$durationSeconds finalScoreText=$finalScoreText setScoresText=${setScoresText.orEmpty()} idempotencyKey=$idempotencyKey"
+            "Decoded payload createdAt=$createdAt durationSeconds=$durationSeconds finalScoreText=$finalScoreText " +
+                "setScoresText=${setScoresText.orEmpty()} idempotencyKey=$idempotencyKey caloriesKcal=$caloriesKcal " +
+                "avgHeartRateBpm=$avgHeartRateBpm maxHeartRateBpm=$maxHeartRateBpm"
         )
 
         if (createdAt <= 0L || durationSeconds < 0L || finalScoreText.isBlank()) {
@@ -72,11 +81,31 @@ class WearMatchListenerService : WearableListenerService() {
                 finalScoreText = finalScoreText,
                 idempotencyKey = idempotencyKey,
                 setScoresText = setScoresText,
-                photoUri = null
+                photoUri = null,
+                playerAName = playerAName,
+                playerBName = playerBName,
+                caloriesKcal = caloriesKcal,
+                avgHeartRateBpm = avgHeartRateBpm,
+                maxHeartRateBpm = maxHeartRateBpm
             )
 
             if (inserted) {
                 Log.i(TAG, "Match inserted from wear. idempotencyKey=$idempotencyKey")
+                HealthConnectMatchWriter(applicationContext).writeTennisSessionIfPermitted(
+                    MatchEntity(
+                        createdAt = createdAt,
+                        durationSeconds = durationSeconds,
+                        finalScoreText = finalScoreText,
+                        setScoresText = setScoresText,
+                        photoUri = null,
+                        idempotencyKey = idempotencyKey,
+                        playerAName = playerAName,
+                        playerBName = playerBName,
+                        caloriesKcal = caloriesKcal,
+                        avgHeartRateBpm = avgHeartRateBpm,
+                        maxHeartRateBpm = maxHeartRateBpm
+                    )
+                )
                 sendAck(messageEvent.sourceNodeId, idempotencyKey, status = "inserted")
             } else {
                 Log.i(TAG, "Duplicate match ignored. idempotencyKey=$idempotencyKey")
@@ -121,6 +150,19 @@ class WearMatchListenerService : WearableListenerService() {
         const val KEY_FINAL_SCORE_TEXT = "finalScoreText"
         const val KEY_SET_SCORES_TEXT = "setScoresText"
         const val KEY_IDEMPOTENCY_KEY = "idempotencyKey"
+        const val KEY_PLAYER_A_NAME = "playerAName"
+        const val KEY_PLAYER_B_NAME = "playerBName"
         const val KEY_STATUS = "status"
+        const val KEY_CALORIES_KCAL = "caloriesKcal"
+        const val KEY_AVG_HEART_RATE_BPM = "avgHeartRateBpm"
+        const val KEY_MAX_HEART_RATE_BPM = "maxHeartRateBpm"
     }
+}
+
+private fun DataMap.getOptionalDouble(key: String): Double? {
+    return if (containsKey(key)) getDouble(key) else null
+}
+
+private fun DataMap.getOptionalInt(key: String): Int? {
+    return if (containsKey(key)) getInt(key) else null
 }

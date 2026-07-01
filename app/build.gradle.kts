@@ -84,6 +84,7 @@ dependencies {
     implementation("androidx.wear.compose:compose-material:1.3.1")
     implementation("androidx.wear.compose:compose-foundation:1.3.1")
     implementation("androidx.wear:wear:1.3.0")
+    implementation("androidx.health:health-services-client:1.0.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("com.google.android.gms:play-services-wearable:18.2.0")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))

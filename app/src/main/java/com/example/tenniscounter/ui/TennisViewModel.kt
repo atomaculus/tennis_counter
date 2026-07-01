@@ -1,6 +1,7 @@
 package com.example.tenniscounter.ui
 
 import android.app.Application
+import android.app.BackgroundServiceStartNotAllowedException
 import android.content.Intent
 import android.os.SystemClock
 import android.util.Log
@@ -8,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.tenniscounter.health.HealthMetricsSnapshot
 import com.example.tenniscounter.timer.MatchTimerService
 import com.playce.shared.scoring.MatchFormat
 import com.playce.shared.scoring.ScoringEngine
@@ -52,7 +54,10 @@ data class FinishedMatchSummary(
     val setsScore: String,
     val setsDetail: String,
     val playerAName: String = "Player A",
-    val playerBName: String = "Player B"
+    val playerBName: String = "Player B",
+    val caloriesKcal: Double? = null,
+    val avgHeartRateBpm: Int? = null,
+    val maxHeartRateBpm: Int? = null
 )
 
 class TennisViewModel(application: Application) : AndroidViewModel(application) {
@@ -219,8 +224,8 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun finishMatch() {
-        _finishedMatch.value = buildFinishedSummary(_matchState.value)
+    fun finishMatch(healthMetrics: HealthMetricsSnapshot = HealthMetricsSnapshot()) {
+        _finishedMatch.value = buildFinishedSummary(_matchState.value, healthMetrics)
         _isFinishedMatchSaved.value = false
     }
 
@@ -253,7 +258,10 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         resetMatch()
     }
 
-    private fun buildFinishedSummary(state: MatchState): FinishedMatchSummary {
+    private fun buildFinishedSummary(
+        state: MatchState,
+        healthMetrics: HealthMetricsSnapshot
+    ): FinishedMatchSummary {
         val hasSets = state.playerA.sets > 0 || state.playerB.sets > 0
         // If no complete sets, show games as the headline score
         val setsScore = if (hasSets) {
@@ -275,7 +283,10 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
             setsScore = setsScore,
             setsDetail = detail,
             playerAName = state.playerAName,
-            playerBName = state.playerBName
+            playerBName = state.playerBName,
+            caloriesKcal = healthMetrics.caloriesKcal,
+            avgHeartRateBpm = healthMetrics.avgHeartRateBpm,
+            maxHeartRateBpm = healthMetrics.maxHeartRateBpm
         )
     }
 
@@ -320,7 +331,13 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun startMatchTimerService() {
         val serviceIntent = Intent(appContext, MatchTimerService::class.java)
-        appContext.startService(serviceIntent)
+        try {
+            appContext.startService(serviceIntent)
+        } catch (e: BackgroundServiceStartNotAllowedException) {
+            Log.w(TIMER_TAG, "MatchTimerService start blocked by system", e)
+        } catch (e: IllegalStateException) {
+            Log.w(TIMER_TAG, "MatchTimerService start failed", e)
+        }
     }
 
     private companion object {

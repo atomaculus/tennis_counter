@@ -47,4 +47,16 @@ interface MatchDao {
 
     @Query("SELECT * FROM matches ORDER BY createdAt DESC")
     suspend fun getAllMatchesOnce(): List<MatchEntity>
+
+    @Query(
+        """
+        SELECT * FROM matches
+        WHERE caloriesKcal IS NOT NULL
+           OR avgHeartRateBpm IS NOT NULL
+           OR maxHeartRateBpm IS NOT NULL
+        ORDER BY createdAt DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun getRecentMatchesWithHealthMetrics(limit: Int): List<MatchEntity>
 }

@@ -15,5 +15,10 @@ data class MatchEntity(
     val finalScoreText: String,
     val setScoresText: String? = null,
     val photoUri: String? = null,
-    val idempotencyKey: String
+    val idempotencyKey: String,
+    val playerAName: String? = null,
+    val playerBName: String? = null,
+    val caloriesKcal: Double? = null,
+    val avgHeartRateBpm: Int? = null,
+    val maxHeartRateBpm: Int? = null
 )
