@@ -17,7 +17,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -379,6 +380,8 @@ private fun ShareCardCaptureDialog(
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .imePadding()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Row(
@@ -401,7 +404,7 @@ private fun ShareCardCaptureDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1.4f),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -437,7 +440,7 @@ private fun ShareCardCaptureDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 300.dp)
+                        .weight(1f)
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -487,13 +490,16 @@ private fun ShareCardCaptureDialog(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    PrimaryButton(
-                        text = stringResource(R.string.share_action),
-                        onClick = { captureRequested.value = true },
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
+
+                // Pinned action, always visible above the keyboard / nav bar.
+                PrimaryButton(
+                    text = stringResource(R.string.share_action),
+                    onClick = { captureRequested.value = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                )
             }
         }
 
