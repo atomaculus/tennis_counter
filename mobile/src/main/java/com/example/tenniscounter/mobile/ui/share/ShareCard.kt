@@ -3,7 +3,6 @@ package com.example.tenniscounter.mobile.ui.share
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,12 +21,15 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -121,16 +122,15 @@ fun ShareCard(
             )
         }
 
-        // Light symmetric vignette so the photo reads as intentional.
+        // Top scrim so the fixed logo stays legible over any photo.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.20f),
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.28f)
+                        colorStops = arrayOf(
+                            0f to Color.Black.copy(alpha = 0.42f),
+                            0.30f to Color.Transparent
                         )
                     )
                 )
@@ -149,11 +149,38 @@ fun ShareCard(
         val centerX = resolvedXFrac * containerW
         val centerY = resolvedYFrac * containerH
 
-        val scoreSize = (cardWidthDp * 0.135f).sp
-        val parcialesSize = (cardWidthDp * 0.05f).sp
-        val playersSize = (cardWidthDp * 0.044f).sp
-        val metaSize = (cardWidthDp * 0.04f).sp
-        val wordmarkSize = (cardWidthDp * 0.05f).sp
+        val scoreSize = (cardWidthDp * 0.22f).sp
+        val parcialesSize = (cardWidthDp * 0.062f).sp
+        val playersSize = (cardWidthDp * 0.05f).sp
+        val metaSize = (cardWidthDp * 0.05f).sp
+        val wordmarkSize = (cardWidthDp * 0.06f).sp
+        val matchResultSize = (cardWidthDp * 0.03f).sp
+
+        val textShadow = Shadow(
+            color = Color.Black.copy(alpha = 0.6f),
+            offset = Offset(0f, containerW * 0.004f),
+            blurRadius = containerW * 0.014f
+        )
+
+        // Fixed brand lockup, always pinned to the top-left corner.
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding((cardWidthDp * 0.055f).dp)
+        ) {
+            Row {
+                Text("PLAY", color = Color.White, fontSize = wordmarkSize, fontWeight = FontWeight.Black, style = TextStyle(shadow = textShadow))
+                Text("CE", color = Accent, fontSize = wordmarkSize, fontWeight = FontWeight.Black, style = TextStyle(shadow = textShadow))
+            }
+            Text(
+                text = "MATCH RESULT",
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = matchResultSize,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 2.sp,
+                style = TextStyle(shadow = textShadow)
+            )
+        }
 
         val currentLayout by rememberUpdatedState(layout)
         val dragModifier = if (onOffsetChange != null) {
@@ -184,6 +211,8 @@ fun ShareCard(
             Modifier
         }
 
+        // Movable match info. No background box — legibility comes from the
+        // text shadow, so it reads on any photo while staying clean.
         Column(
             modifier = Modifier
                 .offset {
@@ -196,29 +225,9 @@ fun ShareCard(
                     blockW = it.width
                     blockH = it.height
                 }
-                .then(dragModifier)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.34f),
-                            Color.Black.copy(alpha = 0.5f)
-                        )
-                    ),
-                    shape = RoundedCornerShape((cardWidthDp * 0.05f).dp)
-                )
-                .border(
-                    width = 1.dp,
-                    color = Color.White.copy(alpha = 0.10f),
-                    shape = RoundedCornerShape((cardWidthDp * 0.05f).dp)
-                )
-                .padding(horizontal = (cardWidthDp * 0.05f).dp, vertical = (cardWidthDp * 0.045f).dp),
-            verticalArrangement = Arrangement.spacedBy((cardWidthDp * 0.022f).dp)
+                .then(dragModifier),
+            verticalArrangement = Arrangement.spacedBy((cardWidthDp * 0.016f).dp)
         ) {
-            Row {
-                Text(text = "PLAY", color = Color.White, fontSize = wordmarkSize, fontWeight = FontWeight.Black)
-                Text(text = "CE", color = Accent, fontSize = wordmarkSize, fontWeight = FontWeight.Black)
-            }
-
             Text(
                 text = displayScore,
                 color = Color.White,
@@ -226,30 +235,33 @@ fun ShareCard(
                 fontWeight = FontWeight.Black,
                 maxLines = 1,
                 softWrap = false,
-                overflow = TextOverflow.Clip
+                overflow = TextOverflow.Clip,
+                style = TextStyle(shadow = textShadow)
             )
 
             if (layout.showSetScores && !displaySetScores.isNullOrBlank()) {
                 Text(
                     text = displaySetScores,
-                    color = Color.White.copy(alpha = 0.92f),
+                    color = Color.White,
                     fontSize = parcialesSize,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     softWrap = false,
-                    overflow = TextOverflow.Clip
+                    overflow = TextOverflow.Clip,
+                    style = TextStyle(shadow = textShadow)
                 )
             }
 
             layout.playersText?.let { players ->
                 Text(
                     text = players,
-                    color = Color.White.copy(alpha = 0.82f),
+                    color = Color.White.copy(alpha = 0.95f),
                     fontSize = playersSize,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     softWrap = false,
-                    overflow = TextOverflow.Clip
+                    overflow = TextOverflow.Clip,
+                    style = TextStyle(shadow = textShadow)
                 )
             }
 
@@ -261,12 +273,13 @@ fun ShareCard(
                 }
                 Text(
                     text = meta,
-                    color = Color.White.copy(alpha = 0.82f),
+                    color = Color.White.copy(alpha = 0.95f),
                     fontSize = metaSize,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     softWrap = false,
-                    overflow = TextOverflow.Clip
+                    overflow = TextOverflow.Clip,
+                    style = TextStyle(shadow = textShadow)
                 )
             }
         }
