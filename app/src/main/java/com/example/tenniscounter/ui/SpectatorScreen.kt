@@ -108,8 +108,8 @@ fun SpectatorScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
                 ) {
-                    SpectatorCompactScore("SETS", liveState.playerASets, liveState.playerBSets)
-                    SpectatorCompactScore("GAMES", liveState.playerAGames, liveState.playerBGames)
+                    SpectatorCompactScore(stringResource(R.string.label_sets), liveState.playerASets, liveState.playerBSets)
+                    SpectatorCompactScore(stringResource(R.string.label_games), liveState.playerAGames, liveState.playerBGames)
                 }
             }
 

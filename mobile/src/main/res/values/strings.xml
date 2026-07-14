@@ -146,4 +146,11 @@
     <string name="label_photo">Photo: %s</string>
     <string name="label_no_photo">No photo selected</string>
     <string name="label_id">ID: %d</string>
+
+    <!-- What's New -->
+    <string name="whatsnew_title">What\'s New</string>
+    <string name="whatsnew_bullet_controls">New watch controls: tap = point, hold = undo</string>
+    <string name="whatsnew_bullet_server">Choose who serves first</string>
+    <string name="whatsnew_bullet_tiebreak">Deciding tiebreak when sets are tied</string>
+    <string name="whatsnew_got_it">Got it</string>
 </resources>

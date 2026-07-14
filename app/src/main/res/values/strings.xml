@@ -44,12 +44,6 @@
     <!-- Tiebreak -->
     <string name="label_tiebreak">TIEBREAK</string>
 
-    <!-- Hardware buttons -->
-    <string name="hw_buttons_on">Buttons: ON (tap to disable)</string>
-    <string name="hw_buttons_off">Buttons: OFF (tap to enable)</string>
-    <string name="hw_buttons_enabled_msg">HW buttons ON: Top=+A, Bottom=+B</string>
-    <string name="hw_buttons_disabled_msg">HW buttons OFF</string>
-
     <!-- Spectator -->
     <string name="spectator_watching">WATCHING LIVE</string>
 
@@ -59,4 +53,24 @@
     <!-- Player defaults -->
     <string name="default_player_a">Player A</string>
     <string name="default_player_b">Player B</string>
+
+    <!-- Initial server prompt -->
+    <string name="prompt_who_serves_first">Who serves first?</string>
+
+    <!-- Deciding tiebreak sheet -->
+    <string name="title_sets_tied">SETS TIED</string>
+    <string name="prompt_decide_tiebreak">Decide by tiebreak?</string>
+    <string name="action_continue_normal_set">Continue normal set</string>
+    <string name="action_tiebreak_to_7">Tiebreak to 7</string>
+    <string name="action_super_tiebreak_to_10">Super tiebreak to 10</string>
+
+    <!-- Timer buttons -->
+    <string name="btn_pause">PAUSE</string>
+    <string name="btn_resume">RESUME</string>
+    <string name="btn_start">START</string>
+
+    <!-- What's New overlay -->
+    <string name="whatsnew_title">What\'s New</string>
+    <string name="whatsnew_message">Tap = point\nHold = undo</string>
+    <string name="whatsnew_button">OK</string>
 </resources>

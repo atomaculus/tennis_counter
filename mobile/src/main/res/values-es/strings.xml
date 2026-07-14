@@ -146,4 +146,11 @@
     <string name="label_photo">Foto: %s</string>
     <string name="label_no_photo">Sin foto seleccionada</string>
     <string name="label_id">ID: %d</string>
+
+    <!-- Novedades -->
+    <string name="whatsnew_title">Novedades</string>
+    <string name="whatsnew_bullet_controls">Nuevos controles del reloj: tocar = punto, mantener presionado = deshacer</string>
+    <string name="whatsnew_bullet_server">Elegí quién saca primero</string>
+    <string name="whatsnew_bullet_tiebreak">Tiebreak decisivo con sets empatados</string>
+    <string name="whatsnew_got_it">Entendido</string>
 </resources>

@@ -25,6 +25,8 @@ import com.example.tenniscounter.mobile.health.HealthConnectMatchWriter
 import com.example.tenniscounter.mobile.ui.onboarding.OnboardingPrefs
 import com.example.tenniscounter.mobile.ui.onboarding.OnboardingScreen
 import com.example.tenniscounter.mobile.ui.theme.PlayceTheme
+import com.example.tenniscounter.mobile.ui.whatsnew.WhatsNewPrefs
+import com.example.tenniscounter.mobile.ui.whatsnew.WhatsNewSheet
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -59,9 +61,20 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(!OnboardingPrefs.isCompleted(this@MainActivity))
                 }
 
+                // Only existing users (onboarding already completed) see the What's New sheet.
+                var showWhatsNew by remember {
+                    mutableStateOf(
+                        OnboardingPrefs.isCompleted(this@MainActivity) &&
+                            WhatsNewPrefs.shouldShow(this@MainActivity)
+                    )
+                }
+
                 if (showOnboarding) {
                     OnboardingScreen(onFinish = {
                         OnboardingPrefs.markCompleted(this@MainActivity)
+                        // First run: the onboarding already covers the news, don't show it twice.
+                        WhatsNewPrefs.markSeen(this@MainActivity)
+                        showWhatsNew = false
                         showOnboarding = false
                         maybeRequestHealthConnectPermissions()
                     })
@@ -70,6 +83,13 @@ class MainActivity : ComponentActivity() {
                         maybeRequestHealthConnectPermissions()
                     }
                     MobileApp()
+
+                    if (showWhatsNew) {
+                        WhatsNewSheet(onDismiss = {
+                            WhatsNewPrefs.markSeen(this@MainActivity)
+                            showWhatsNew = false
+                        })
+                    }
                 }
             }
         }
