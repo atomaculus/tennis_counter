@@ -72,6 +72,13 @@
     <!-- Tiebreak -->
     <string name="label_tiebreak">TIEBREAK</string>
 
+    <!-- Diálogo de tie-break decisivo -->
+    <string name="dialog_sets_tied_title">Sets empatados</string>
+    <string name="dialog_sets_tied_message">¿Definir el partido por tie-break?</string>
+    <string name="dialog_continue_normal_set">Seguir con set normal</string>
+    <string name="dialog_tiebreak_to_7">Tie-break a 7</string>
+    <string name="dialog_super_tiebreak_to_10">Super tie-break a 10</string>
+
     <!-- Match format -->
     <string name="format_standard">Estándar (Mejor de 3)</string>
     <string name="format_grand_slam">Grand Slam (Mejor de 5)</string>
@@ -98,6 +105,9 @@
     <string name="setup_player_names">NOMBRES</string>
     <string name="setup_player_a_hint">Jugador A</string>
     <string name="setup_player_b_hint">Jugador B</string>
+    <string name="setup_first_server_label">¿Quién saca primero?</string>
+    <string name="setup_coin_toss">Sorteo</string>
+    <string name="setup_coin_toss_result">→ %s</string>
     <string name="setup_match_format">FORMATO DE PARTIDO</string>
     <string name="setup_btn_apply">Aplicar</string>
     <string name="setup_btn_send_watch">Enviar al Reloj</string>

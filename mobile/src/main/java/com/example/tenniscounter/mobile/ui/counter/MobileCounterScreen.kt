@@ -18,11 +18,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,7 +53,7 @@ fun MobileCounterScreen(
     viewModel: MobileCounterViewModel,
     premiumUiState: PremiumUiState,
     onUnlockPremium: () -> Unit,
-    onSendConfigToWatch: ((String, String, FormatPreset) -> Unit)? = null,
+    onSendConfigToWatch: ((String, String, FormatPreset, Boolean) -> Unit)? = null,
     onMatchCompleted: (() -> Unit)? = null,
     onSaveMatch: ((MobileFinishedSummary) -> Unit)? = null
 ) {
@@ -69,6 +71,14 @@ fun MobileCounterScreen(
     }
 
     val finishedSummary = state.finishedSummary
+
+    if (state.offerDecidingTiebreak) {
+        DecidingTiebreakDialog(
+            onDeclineNormalSet = viewModel::declineDecidingTiebreak,
+            onTiebreakTo7 = { viewModel.startDecidingTiebreak(7) },
+            onSuperTiebreakTo10 = { viewModel.startDecidingTiebreak(10) }
+        )
+    }
 
     Scaffold(
         containerColor = PlayceColors.Background
@@ -98,7 +108,7 @@ fun MobileCounterScreen(
                     onUnlockPremium = onUnlockPremium
                 )
                 MatchSetupCard(
-                    onApplyConfig = { nameA, nameB, preset ->
+                    onApplyConfig = { nameA, nameB, preset, initialServerIsPlayerA ->
                         viewModel.setPlayerNames(nameA, nameB)
                         viewModel.setMatchFormat(
                             com.playce.shared.scoring.MatchFormat(
@@ -108,8 +118,9 @@ fun MobileCounterScreen(
                                 noAdScoring = preset.noAdScoring
                             )
                         )
+                        viewModel.setInitialServerIsPlayerA(initialServerIsPlayerA)
                     },
-                    onSendToWatch = { nameA, nameB, preset ->
+                    onSendToWatch = { nameA, nameB, preset, initialServerIsPlayerA ->
                         viewModel.setPlayerNames(nameA, nameB)
                         viewModel.setMatchFormat(
                             com.playce.shared.scoring.MatchFormat(
@@ -119,7 +130,8 @@ fun MobileCounterScreen(
                                 noAdScoring = preset.noAdScoring
                             )
                         )
-                        onSendConfigToWatch?.invoke(nameA, nameB, preset)
+                        viewModel.setInitialServerIsPlayerA(initialServerIsPlayerA)
+                        onSendConfigToWatch?.invoke(nameA, nameB, preset, initialServerIsPlayerA)
                     }
                 )
                 TimerCard(
@@ -145,6 +157,37 @@ fun MobileCounterScreen(
             }
         }
     }
+}
+
+@Composable
+private fun DecidingTiebreakDialog(
+    onDeclineNormalSet: () -> Unit,
+    onTiebreakTo7: () -> Unit,
+    onSuperTiebreakTo10: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDeclineNormalSet,
+        containerColor = PlayceColors.Surface,
+        titleContentColor = PlayceColors.TextPrimary,
+        textContentColor = PlayceColors.TextSecondary,
+        title = { Text(stringResource(R.string.dialog_sets_tied_title)) },
+        text = { Text(stringResource(R.string.dialog_sets_tied_message)) },
+        confirmButton = {
+            TextButton(onClick = onTiebreakTo7) {
+                Text(stringResource(R.string.dialog_tiebreak_to_7), color = PlayceColors.Accent)
+            }
+        },
+        dismissButton = {
+            Column {
+                TextButton(onClick = onSuperTiebreakTo10) {
+                    Text(stringResource(R.string.dialog_super_tiebreak_to_10), color = PlayceColors.Accent)
+                }
+                TextButton(onClick = onDeclineNormalSet) {
+                    Text(stringResource(R.string.dialog_continue_normal_set), color = PlayceColors.TextSecondary)
+                }
+            }
+        }
+    )
 }
 
 @Composable

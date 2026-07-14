@@ -72,6 +72,13 @@
     <!-- Tiebreak -->
     <string name="label_tiebreak">TIEBREAK</string>
 
+    <!-- Deciding tiebreak dialog -->
+    <string name="dialog_sets_tied_title">Sets tied</string>
+    <string name="dialog_sets_tied_message">Decide the match by tiebreak?</string>
+    <string name="dialog_continue_normal_set">Continue normal set</string>
+    <string name="dialog_tiebreak_to_7">Tiebreak to 7</string>
+    <string name="dialog_super_tiebreak_to_10">Super tiebreak to 10</string>
+
     <!-- Match format -->
     <string name="format_standard">Standard (Best of 3)</string>
     <string name="format_grand_slam">Grand Slam (Best of 5)</string>
@@ -98,6 +105,9 @@
     <string name="setup_player_names">PLAYER NAMES</string>
     <string name="setup_player_a_hint">Player A</string>
     <string name="setup_player_b_hint">Player B</string>
+    <string name="setup_first_server_label">Who serves first?</string>
+    <string name="setup_coin_toss">Coin toss</string>
+    <string name="setup_coin_toss_result">→ %s</string>
     <string name="setup_match_format">MATCH FORMAT</string>
     <string name="setup_btn_apply">Apply</string>
     <string name="setup_btn_send_watch">Send to Watch</string>

@@ -159,7 +159,7 @@ fun MobileApp() {
                         onMatchCompleted = {
                             activity?.let { InAppReviewManager.onMatchCompleted(it) }
                         },
-                        onSendConfigToWatch = { nameA, nameB, preset ->
+                        onSendConfigToWatch = { nameA, nameB, preset, initialServerIsPlayerA ->
                             val resolvedA = nameA.ifBlank { "Player A" }
                             val resolvedB = nameB.ifBlank { "Player B" }
                             // Wear OS path (existing, untouched)
@@ -169,7 +169,8 @@ fun MobileApp() {
                                 setsToWin = preset.setsToWin,
                                 tiebreakAtSixAll = preset.tiebreakAtSixAll,
                                 superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
-                                noAdScoring = preset.noAdScoring
+                                noAdScoring = preset.noAdScoring,
+                                initialServerIsPlayerA = initialServerIsPlayerA
                             )
                             // Garmin path (parallel, no-op if no Garmin device connected)
                             garminConfigSender.sendConfig(
@@ -178,7 +179,8 @@ fun MobileApp() {
                                 setsToWin = preset.setsToWin,
                                 tiebreakAtSixAll = preset.tiebreakAtSixAll,
                                 superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
-                                noAdScoring = preset.noAdScoring
+                                noAdScoring = preset.noAdScoring,
+                                initialServerIsPlayerA = initialServerIsPlayerA
                             )
                         },
                         onSaveMatch = { summary ->

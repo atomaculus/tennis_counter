@@ -50,6 +50,7 @@ object GarminConstants {
     const val CONFIG_TIEBREAK_POINTS = "tiebreakPoints"
     const val CONFIG_SUPER_TIEBREAK_IN_FINAL_SET = "superTiebreakInFinalSet"
     const val CONFIG_NO_AD_SCORING = "noAdScoring"
+    const val CONFIG_INITIAL_SERVER_IS_PLAYER_A = "initialServerIsPlayerA"
     const val CONFIG_TIMESTAMP = "timestamp"
 
     const val ACK_STATUS = "status"

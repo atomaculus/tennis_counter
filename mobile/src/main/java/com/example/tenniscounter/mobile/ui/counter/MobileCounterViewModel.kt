@@ -33,7 +33,8 @@ data class MobileCounterState(
     val hasTimerStarted: Boolean = false,
     val playerAName: String = "Player A",
     val playerBName: String = "Player B",
-    val finishedSummary: MobileFinishedSummary? = null
+    val finishedSummary: MobileFinishedSummary? = null,
+    val declinedDecidingTiebreak: Boolean = false
 ) {
     // Convenience accessors for backward compatibility with UI
     val playerA: CounterPlayerScore get() = score.playerA
@@ -41,6 +42,10 @@ data class MobileCounterState(
     val completedSets: List<CounterSetScore> get() = score.completedSets
     val isTiebreak: Boolean get() = score.isTiebreak
     val isMatchOver: Boolean get() = score.isMatchOver
+
+    /** True right after tied sets, offering the player a chance to decide the match by tiebreak. */
+    val offerDecidingTiebreak: Boolean
+        get() = ScoringEngine.canOfferDecidingTiebreak(score) && !declinedDecidingTiebreak
 
     fun pointLabelForA(): String = score.pointLabelForA()
     fun pointLabelForB(): String = score.pointLabelForB()
@@ -57,7 +62,8 @@ class MobileCounterViewModel : ViewModel() {
     private var timerStartElapsedRealtime: Long = SystemClock.elapsedRealtime()
     private var accumulatedSeconds = 0
 
-    private val pointHistory = mutableListOf<Boolean>()
+    private val matchEvents = mutableListOf<ScoringEngine.MatchEvent>()
+    private var initialServerIsPlayerA = true
 
     init {
         startTicker()
@@ -72,21 +78,44 @@ class MobileCounterViewModel : ViewModel() {
 
     fun setMatchFormat(format: MatchFormat) {
         _matchFormat.value = format
-        if (pointHistory.isEmpty()) {
+        if (matchEvents.isEmpty()) {
             _state.value = _state.value.copy(
                 score = _state.value.score.copy(format = format)
             )
         }
     }
 
+    fun setInitialServerIsPlayerA(value: Boolean) {
+        initialServerIsPlayerA = value
+        if (matchEvents.isEmpty()) {
+            _state.value = _state.value.copy(
+                score = _state.value.score.copy(initialServerIsPlayerA = value)
+            )
+        }
+    }
+
     fun addPointToPlayerA() {
-        pointHistory.add(true)
+        matchEvents.add(ScoringEngine.MatchEvent.Point(true))
         applyPoint(isPlayerA = true)
     }
 
     fun addPointToPlayerB() {
-        pointHistory.add(false)
+        matchEvents.add(ScoringEngine.MatchEvent.Point(false))
         applyPoint(isPlayerA = false)
+    }
+
+    /** User declined the deciding-tiebreak offer; play a normal set instead. */
+    fun declineDecidingTiebreak() {
+        _state.value = _state.value.copy(declinedDecidingTiebreak = true)
+    }
+
+    /** User chose to decide the match by a standalone tiebreak (7 or 10 points). */
+    fun startDecidingTiebreak(targetPoints: Int) {
+        val current = _state.value
+        if (!ScoringEngine.canOfferDecidingTiebreak(current.score)) return
+        matchEvents.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints))
+        val newScore = ScoringEngine.startDecidingTiebreak(current.score, targetPoints)
+        _state.value = current.copy(score = newScore, declinedDecidingTiebreak = false)
     }
 
     fun undoLastPointForPlayerA(): Boolean = undoLastPointForPlayer(true)
@@ -94,7 +123,7 @@ class MobileCounterViewModel : ViewModel() {
     fun undoLastPointForPlayerB(): Boolean = undoLastPointForPlayer(false)
 
     fun resetGame() {
-        pointHistory.clear()
+        matchEvents.clear()
         val current = _state.value
         _state.value = current.copy(
             score = current.score.copy(
@@ -106,11 +135,11 @@ class MobileCounterViewModel : ViewModel() {
     }
 
     fun resetMatch() {
-        pointHistory.clear()
+        matchEvents.clear()
         accumulatedSeconds = 0
         timerStartElapsedRealtime = SystemClock.elapsedRealtime()
         _state.value = MobileCounterState(
-            score = MatchScore(format = _matchFormat.value)
+            score = MatchScore(format = _matchFormat.value, initialServerIsPlayerA = initialServerIsPlayerA)
         )
     }
 
@@ -149,11 +178,11 @@ class MobileCounterViewModel : ViewModel() {
     }
 
     fun startNewMatch() {
-        pointHistory.clear()
+        matchEvents.clear()
         accumulatedSeconds = 0
         timerStartElapsedRealtime = SystemClock.elapsedRealtime()
         _state.value = MobileCounterState(
-            score = MatchScore(format = _matchFormat.value)
+            score = MatchScore(format = _matchFormat.value, initialServerIsPlayerA = initialServerIsPlayerA)
         )
     }
 
@@ -193,19 +222,19 @@ class MobileCounterViewModel : ViewModel() {
     private fun applyPoint(isPlayerA: Boolean) {
         val current = _state.value
         val newScore = ScoringEngine.scorePoint(current.score, isPlayerA)
-        _state.value = current.copy(score = newScore)
+        _state.value = current.copy(score = newScore, declinedDecidingTiebreak = false)
     }
 
     private fun undoLastPointForPlayer(isPlayerA: Boolean): Boolean {
-        val index = pointHistory.indexOfLast { it == isPlayerA }
+        val index = matchEvents.indexOfLast { it is ScoringEngine.MatchEvent.Point && it.isPlayerA == isPlayerA }
         if (index < 0) return false
-        pointHistory.removeAt(index)
+        matchEvents.removeAt(index)
         rebuildScoreFromHistory()
         return true
     }
 
     private fun rebuildScoreFromHistory() {
-        val newScore = ScoringEngine.replay(pointHistory, _matchFormat.value)
-        _state.value = _state.value.copy(score = newScore)
+        val newScore = ScoringEngine.replayEvents(matchEvents, _matchFormat.value, initialServerIsPlayerA)
+        _state.value = _state.value.copy(score = newScore, declinedDecidingTiebreak = false)
     }
 }

@@ -21,7 +21,13 @@ object ScoringEngine {
         val isTiebreak: Boolean = false,
         val isMatchOver: Boolean = false,
         val format: MatchFormat = MatchFormat.STANDARD,
-        val initialServerIsPlayerA: Boolean = true
+        val initialServerIsPlayerA: Boolean = true,
+        /**
+         * When non-null, the match is being decided by a standalone tiebreak
+         * (played instead of a full set after tied sets); value is the points
+         * target (7 or 10). Winning it wins the match regardless of sets won.
+         */
+        val decidingTiebreakTarget: Int? = null
     ) {
         fun pointLabelForA(): String = pointLabel(playerA.points, playerB.points)
         fun pointLabelForB(): String = pointLabel(playerB.points, playerA.points)
@@ -96,7 +102,8 @@ object ScoringEngine {
         }
 
         val matchOver = result.completedSet != null &&
-            (if (isWinnerA) newA.sets else newB.sets) >= format.setsToWin
+            (score.decidingTiebreakTarget != null ||
+                (if (isWinnerA) newA.sets else newB.sets) >= format.setsToWin)
 
         val nowInTiebreak = when {
             matchOver -> false
@@ -123,6 +130,57 @@ object ScoringEngine {
         var score = MatchScore(format = format, initialServerIsPlayerA = initialServerIsPlayerA)
         points.forEach { isA -> score = scorePoint(score, isA) }
         return score
+    }
+
+    /**
+     * A scorable match event. Match history must be kept as events (not bare
+     * points) so that undo can also rewind a deciding-tiebreak choice.
+     */
+    sealed interface MatchEvent {
+        data class Point(val isPlayerA: Boolean) : MatchEvent
+        data class DecidingTiebreakStarted(val targetPoints: Int) : MatchEvent
+    }
+
+    /**
+     * Replay a list of match events from a blank score to rebuild match state.
+     */
+    fun replayEvents(
+        events: List<MatchEvent>,
+        format: MatchFormat = MatchFormat.STANDARD,
+        initialServerIsPlayerA: Boolean = true
+    ): MatchScore {
+        var score = MatchScore(format = format, initialServerIsPlayerA = initialServerIsPlayerA)
+        events.forEach { event ->
+            score = when (event) {
+                is MatchEvent.Point -> scorePoint(score, event.isPlayerA)
+                is MatchEvent.DecidingTiebreakStarted -> startDecidingTiebreak(score, event.targetPoints)
+            }
+        }
+        return score
+    }
+
+    /**
+     * A deciding tiebreak can be offered right after a completed set left the
+     * players tied on sets (any tie: 1-1 in best-of-3 or best-of-5, 2-2 in
+     * best-of-5), before any point of the next set is played.
+     */
+    fun canOfferDecidingTiebreak(score: MatchScore): Boolean =
+        !score.isMatchOver &&
+            score.decidingTiebreakTarget == null &&
+            !score.isTiebreak &&
+            score.playerA.sets == score.playerB.sets &&
+            score.playerA.sets > 0 &&
+            score.playerA.games == 0 && score.playerB.games == 0 &&
+            score.playerA.points == 0 && score.playerB.points == 0
+
+    /**
+     * Replace the upcoming set with a standalone tiebreak to the given points
+     * target (7 = regular, 10 = super). Whoever wins it wins the match.
+     * No-op if the current state does not allow it.
+     */
+    fun startDecidingTiebreak(score: MatchScore, targetPoints: Int): MatchScore {
+        if (!canOfferDecidingTiebreak(score) || targetPoints < 1) return score
+        return score.copy(isTiebreak = true, decidingTiebreakTarget = targetPoints)
     }
 
     /**
@@ -229,7 +287,8 @@ object ScoringEngine {
         val wp = winner.points + 1
         val lp = loser.points
 
-        val targetPoints = if (isSuperTiebreak(score)) 10 else format.tiebreakPoints
+        val targetPoints = score.decidingTiebreakTarget
+            ?: if (isSuperTiebreak(score)) 10 else format.tiebreakPoints
         val takesTiebreak = wp >= targetPoints && wp - lp >= 2
 
         if (!takesTiebreak) {
@@ -239,9 +298,12 @@ object ScoringEngine {
             )
         }
 
-        // Tiebreak won → set is won (score recorded as 7-6 or equivalent)
-        val setGamesWinner = winner.games + 1 // tiebreak counts as the winning game
-        val setGamesLoser = loser.games
+        // Tiebreak won → set is won. A regular tiebreak counts as the winning
+        // game (7-6); a deciding tiebreak records its own points (e.g. 10-7)
+        // so history reads "6-4 | 3-6 | 10-7".
+        val isDeciding = score.decidingTiebreakTarget != null
+        val setGamesWinner = if (isDeciding) wp else winner.games + 1
+        val setGamesLoser = if (isDeciding) lp else loser.games
 
         return PointResult(
             newWinner = winner.copy(points = 0, games = 0, sets = winner.sets + 1),

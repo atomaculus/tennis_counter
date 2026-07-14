@@ -281,7 +281,129 @@ class ScoringEngineTest {
         assertEquals(PlayerScore(), score.playerB)
     }
 
+    // ---- Deciding tiebreak ----
+
+    @Test
+    fun `deciding tiebreak cannot be offered at match start or mid-set`() {
+        var score = MatchScore()
+        assertFalse(ScoringEngine.canOfferDecidingTiebreak(score))
+
+        score = ScoringEngine.scorePoint(score, isPlayerA = true)
+        assertFalse(ScoringEngine.canOfferDecidingTiebreak(score))
+
+        // One set won but not tied
+        var oneSet = MatchScore()
+        repeat(6) { oneSet = winGameForPlayer(oneSet, isPlayerA = true) }
+        assertFalse(ScoringEngine.canOfferDecidingTiebreak(oneSet))
+    }
+
+    @Test
+    fun `deciding tiebreak offered on any set tie regardless of best-of`() {
+        // 1-1 in best of 3
+        assertTrue(ScoringEngine.canOfferDecidingTiebreak(scoreToTiedSets(1)))
+
+        // 1-1 in best of 5
+        assertTrue(ScoringEngine.canOfferDecidingTiebreak(scoreToTiedSets(1, MatchFormat.GRAND_SLAM)))
+
+        // 2-2 in best of 5
+        assertTrue(ScoringEngine.canOfferDecidingTiebreak(scoreToTiedSets(2, MatchFormat.GRAND_SLAM)))
+    }
+
+    @Test
+    fun `deciding tiebreak not offered once next set started`() {
+        var score = scoreToTiedSets(1)
+        score = ScoringEngine.scorePoint(score, isPlayerA = true)
+        assertFalse(ScoringEngine.canOfferDecidingTiebreak(score))
+    }
+
+    @Test
+    fun `startDecidingTiebreak is a no-op when not offerable`() {
+        val fresh = MatchScore()
+        assertEquals(fresh, ScoringEngine.startDecidingTiebreak(fresh, 10))
+    }
+
+    @Test
+    fun `deciding tiebreak to 7 wins the match in best of 3`() {
+        var score = ScoringEngine.startDecidingTiebreak(scoreToTiedSets(1), 7)
+        assertTrue(score.isTiebreak)
+        assertEquals("0", score.pointLabelForA())
+
+        repeat(7) { score = ScoringEngine.scorePoint(score, isPlayerA = true) }
+        assertTrue(score.isMatchOver)
+        assertEquals(2, score.playerA.sets)
+        assertEquals(SetScore(7, 0), score.completedSets.last())
+    }
+
+    @Test
+    fun `deciding tiebreak to 10 at 1-1 in best of 5 ends the whole match`() {
+        var score = ScoringEngine.startDecidingTiebreak(scoreToTiedSets(1, MatchFormat.GRAND_SLAM), 10)
+
+        repeat(9) { score = ScoringEngine.scorePoint(score, isPlayerA = false) }
+        assertFalse(score.isMatchOver)
+
+        score = ScoringEngine.scorePoint(score, isPlayerA = false)
+        assertTrue(score.isMatchOver)
+        assertEquals(2, score.playerB.sets) // fewer than setsToWin, still over
+        assertEquals(SetScore(0, 10), score.completedSets.last())
+    }
+
+    @Test
+    fun `deciding tiebreak requires 2-point lead`() {
+        var score = ScoringEngine.startDecidingTiebreak(scoreToTiedSets(1), 10)
+        repeat(9) {
+            score = ScoringEngine.scorePoint(score, isPlayerA = true)
+            score = ScoringEngine.scorePoint(score, isPlayerA = false)
+        }
+        // 10-9 not enough
+        score = ScoringEngine.scorePoint(score, isPlayerA = true)
+        assertFalse(score.isMatchOver)
+        // 11-9 wins
+        score = ScoringEngine.scorePoint(score, isPlayerA = true)
+        assertTrue(score.isMatchOver)
+        assertEquals(SetScore(11, 9), score.completedSets.last())
+    }
+
+    // ---- Event replay ----
+
+    @Test
+    fun `replayEvents rebuilds deciding tiebreak state`() {
+        val events = buildList {
+            repeat(24) { add(ScoringEngine.MatchEvent.Point(isPlayerA = true)) }  // A wins set 6-0
+            repeat(24) { add(ScoringEngine.MatchEvent.Point(isPlayerA = false)) } // B wins set 6-0
+            add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(10))
+            repeat(3) { add(ScoringEngine.MatchEvent.Point(isPlayerA = true)) }
+        }
+        val score = ScoringEngine.replayEvents(events)
+        assertTrue(score.isTiebreak)
+        assertEquals(10, score.decidingTiebreakTarget)
+        assertEquals(3, score.playerA.points)
+        assertFalse(score.isMatchOver)
+    }
+
+    @Test
+    fun `dropping last event undoes the deciding tiebreak choice`() {
+        val events = buildList {
+            repeat(24) { add(ScoringEngine.MatchEvent.Point(isPlayerA = true)) }
+            repeat(24) { add(ScoringEngine.MatchEvent.Point(isPlayerA = false)) }
+            add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(10))
+        }
+        val undone = ScoringEngine.replayEvents(events.dropLast(1))
+        assertFalse(undone.isTiebreak)
+        assertEquals(null, undone.decidingTiebreakTarget)
+        assertTrue(ScoringEngine.canOfferDecidingTiebreak(undone)) // question re-arms
+    }
+
     // ---- Helpers ----
+
+    private fun scoreToTiedSets(setsEach: Int, format: MatchFormat = MatchFormat.STANDARD): MatchScore {
+        var score = MatchScore(format = format)
+        repeat(setsEach) {
+            repeat(6) { score = winGameForPlayer(score, isPlayerA = true) }
+            repeat(6) { score = winGameForPlayer(score, isPlayerA = false) }
+        }
+        return score
+    }
+
 
     private fun scoreToDeuce(): MatchScore {
         var score = MatchScore()

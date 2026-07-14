@@ -141,7 +141,9 @@ private enum class ActiveSheet {
     PlayerA,
     PlayerB,
     Admin,
-    EndMatchConfirm
+    EndMatchConfirm,
+    InitialServer,
+    DecidingTiebreak
 }
 
 private enum class PhoneSendResult {
@@ -313,6 +315,7 @@ private fun TennisCounterApp(
         val config = pendingConfig ?: return@LaunchedEffect
         viewModel.setPlayerNames(config.playerAName, config.playerBName)
         viewModel.setMatchFormat(config.format)
+        config.initialServerIsPlayerA?.let { viewModel.setInitialServer(it) }
         MatchConfigRepository.consume()
         Log.d(WEAR_DATA_LAYER_TAG, "Applied config from phone: ${config.playerAName} vs ${config.playerBName}")
     }
@@ -327,6 +330,26 @@ private fun TennisCounterApp(
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
     var transientMessage by remember { mutableStateOf<String?>(null) }
     var hwButtonsEnabled by remember { mutableStateOf(false) }
+
+    // Ask who serves first before the first point (unless phone config already fixed it).
+    val showInitialServerPrompt by viewModel.showInitialServerPrompt.collectAsState()
+    LaunchedEffect(showInitialServerPrompt, appScreen, activeSheet) {
+        if (showInitialServerPrompt && appScreen == AppScreen.Counter && activeSheet == ActiveSheet.None) {
+            activeSheet = ActiveSheet.InitialServer
+        } else if (!showInitialServerPrompt && activeSheet == ActiveSheet.InitialServer) {
+            activeSheet = ActiveSheet.None
+        }
+    }
+
+    // Offer a deciding tiebreak right after a set leaves the players tied on sets.
+    val offerDecidingTiebreak by viewModel.offerDecidingTiebreak.collectAsState()
+    LaunchedEffect(offerDecidingTiebreak, appScreen, activeSheet) {
+        if (offerDecidingTiebreak && appScreen == AppScreen.Counter && activeSheet == ActiveSheet.None) {
+            activeSheet = ActiveSheet.DecidingTiebreak
+        } else if (!offerDecidingTiebreak && activeSheet == ActiveSheet.DecidingTiebreak) {
+            activeSheet = ActiveSheet.None
+        }
+    }
 
     // Handle physical watch button presses (STEM_1 = Player A, STEM_2 = Player B)
     // Only processes when: opt-in enabled, match running, screen on, no sheet open, on Counter screen
@@ -547,6 +570,7 @@ private fun TennisCounterApp(
         if (activeSheet != ActiveSheet.None) {
             val title: String
             val actions: List<SheetAction>
+            var message: String? = null
 
             when (activeSheet) {
                 ActiveSheet.PlayerA -> {
@@ -634,6 +658,47 @@ private fun TennisCounterApp(
                     )
                 }
 
+                ActiveSheet.InitialServer -> {
+                    title = "Who serves first?"
+                    actions = listOf(
+                        SheetAction(state.playerAName.take(12)) {
+                            viewModel.setInitialServer(true)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction(state.playerBName.take(12)) {
+                            viewModel.setInitialServer(false)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        }
+                    )
+                }
+
+                ActiveSheet.DecidingTiebreak -> {
+                    title = "SETS TIED"
+                    message = "Decide by tiebreak?"
+                    actions = listOf(
+                        SheetAction("Continue normal set") {
+                            viewModel.declineDecidingTiebreak()
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction("Tiebreak to 7") {
+                            viewModel.startDecidingTiebreak(7)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction("Super tiebreak to 10") {
+                            viewModel.startDecidingTiebreak(10)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        }
+                    )
+                }
+
                 ActiveSheet.None -> {
                     title = ""
                     actions = emptyList()
@@ -642,8 +707,19 @@ private fun TennisCounterApp(
 
             BottomActionSheet(
                 title = title,
+                message = message,
                 actions = actions,
-                onDismiss = { activeSheet = ActiveSheet.None }
+                onDismiss = {
+                    when (activeSheet) {
+                        // Ignoring the serve question keeps the default (Player A serves).
+                        ActiveSheet.InitialServer -> viewModel.dismissInitialServerPrompt()
+                        // Swiping away the offer counts as "continue normal set";
+                        // undoing the set-closing point re-arms the question.
+                        ActiveSheet.DecidingTiebreak -> viewModel.declineDecidingTiebreak()
+                        else -> Unit
+                    }
+                    activeSheet = ActiveSheet.None
+                }
             )
         }
 
@@ -1258,7 +1334,8 @@ private fun TimerFooter(
 private fun BottomActionSheet(
     title: String,
     actions: List<SheetAction>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    message: String? = null
 ) {
     Box(
         modifier = Modifier
@@ -1280,6 +1357,16 @@ private fun BottomActionSheet(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             PlayceChip(text = title, accent = true)
+
+            if (message != null) {
+                Text(
+                    text = message,
+                    color = PlayceWearColors.TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             actions.forEach { action ->
                 PlayceButton(
