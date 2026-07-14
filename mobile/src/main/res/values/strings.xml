@@ -97,6 +97,11 @@
     <string name="stats_export_title">Export History</string>
     <string name="stats_export_subtitle">Download all your matches as CSV</string>
     <string name="stats_export_btn">Export CSV</string>
+    <string name="stats_premium_upsell">Unlock Premium to review match stats and export your history.</string>
+    <string name="stats_results_title">Results</string>
+    <string name="stats_results_subtitle">Wins across matches with a known result</string>
+    <string name="stats_results_empty">No known results yet</string>
+    <string name="stats_results_value">%1$d wins (%2$d%%)</string>
 
     <!-- Match setup -->
     <string name="setup_title">MATCH SETUP</string>

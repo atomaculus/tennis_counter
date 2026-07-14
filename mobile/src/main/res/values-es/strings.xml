@@ -97,6 +97,11 @@
     <string name="stats_export_title">Exportar Historial</string>
     <string name="stats_export_subtitle">Descargá todos tus partidos como CSV</string>
     <string name="stats_export_btn">Exportar CSV</string>
+    <string name="stats_premium_upsell">Desbloqueá Premium para ver tus estadísticas y exportar tu historial.</string>
+    <string name="stats_results_title">Resultados</string>
+    <string name="stats_results_subtitle">Victorias en partidos con resultado conocido</string>
+    <string name="stats_results_empty">Aún no hay resultados conocidos</string>
+    <string name="stats_results_value">%1$d victorias (%2$d%%)</string>
 
     <!-- Match setup -->
     <string name="setup_title">CONFIG. PARTIDO</string>

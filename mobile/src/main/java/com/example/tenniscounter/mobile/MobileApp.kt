@@ -245,6 +245,18 @@ fun MobileApp() {
                 val exportScope = rememberCoroutineScope()
                 StatsScreen(
                     viewModel = statsViewModel,
+                    premiumUiState = premiumUiState,
+                    onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
+                    onRestorePurchases = premiumBillingManager::restorePurchases,
+                    onOpenCounter = {
+                        navController.navigate(COUNTER_ROUTE) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(COUNTER_ROUTE) {
+                                saveState = true
+                            }
+                        }
+                    },
                     onExport = {
                         exportScope.launch {
                             val matches = withContext(Dispatchers.IO) {

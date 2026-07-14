@@ -15,8 +15,12 @@ data class MatchStats(
     val avgDurationSeconds: Long = 0,
     val longestMatchSeconds: Long = 0,
     val shortestMatchSeconds: Long = 0,
+    val playerAWins: Int = 0,
+    val playerBWins: Int = 0,
     val isLoading: Boolean = true
 )
+
+private enum class MatchWinner { PLAYER_A, PLAYER_B }
 
 class StatsViewModel(private val matchDao: MatchDao) : ViewModel() {
     private val _stats = MutableStateFlow(MatchStats())
@@ -43,14 +47,29 @@ class StatsViewModel(private val matchDao: MatchDao) : ViewModel() {
                 return@launch
             }
 
+            val winners = matchDao.getAllMatchesOnce().map { winnerSide(it.finalScoreText) }
+
             _stats.value = MatchStats(
                 totalMatches = count,
                 totalPlayTimeSeconds = matchDao.getTotalPlayTime() ?: 0,
                 avgDurationSeconds = matchDao.getAverageDuration()?.toLong() ?: 0,
                 longestMatchSeconds = matchDao.getLongestMatchDuration() ?: 0,
                 shortestMatchSeconds = matchDao.getShortestMatchDuration() ?: 0,
+                playerAWins = winners.count { it == MatchWinner.PLAYER_A },
+                playerBWins = winners.count { it == MatchWinner.PLAYER_B },
                 isLoading = false
             )
         }
+    }
+
+    /**
+     * Parses a "X-Y" final score (sets won, or games won when the match had no full sets)
+     * into a winner side. Matches with an unparseable or tied score are excluded ("unknown"),
+     * mirroring the iOS MatchStats.winnerSide calculation.
+     */
+    private fun winnerSide(finalScoreText: String): MatchWinner? {
+        val parts = finalScoreText.split("-").mapNotNull { it.trim().toIntOrNull() }
+        if (parts.size != 2 || parts[0] == parts[1]) return null
+        return if (parts[0] > parts[1]) MatchWinner.PLAYER_A else MatchWinner.PLAYER_B
     }
 }
