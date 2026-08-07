@@ -26,7 +26,8 @@ class MatchRepository(
         playerBName: String? = null,
         caloriesKcal: Double? = null,
         avgHeartRateBpm: Int? = null,
-        maxHeartRateBpm: Int? = null
+        maxHeartRateBpm: Int? = null,
+        pointEventsJson: String? = null
     ): Boolean {
         val rowId = matchDao.insertOrIgnore(
             MatchEntity(
@@ -40,7 +41,8 @@ class MatchRepository(
                 playerBName = playerBName,
                 caloriesKcal = caloriesKcal,
                 avgHeartRateBpm = avgHeartRateBpm,
-                maxHeartRateBpm = maxHeartRateBpm
+                maxHeartRateBpm = maxHeartRateBpm,
+                pointEventsJson = pointEventsJson
             )
         )
         return rowId != -1L

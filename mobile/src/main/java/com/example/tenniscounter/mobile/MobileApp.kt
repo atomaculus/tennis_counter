@@ -188,6 +188,7 @@ fun MobileApp() {
                         },
                         onSaveMatch = { summary ->
                             val matchDao = MobileServiceLocator.matchDao(appContext)
+                            val pointEventsJson = counterViewModel.pointEventsJson()
                             kotlinx.coroutines.MainScope().launch {
                                 withContext(Dispatchers.IO) {
                                     val entity = com.example.tenniscounter.mobile.data.local.MatchEntity(
@@ -195,7 +196,8 @@ fun MobileApp() {
                                         durationSeconds = summary.durationSeconds.toLong(),
                                         finalScoreText = summary.setsScore,
                                         setScoresText = summary.completedSetsText,
-                                        idempotencyKey = "mobile_${summary.createdAt}"
+                                        idempotencyKey = "mobile_${summary.createdAt}",
+                                        pointEventsJson = pointEventsJson
                                     )
                                     matchDao.insertOrIgnore(entity)
                                 }

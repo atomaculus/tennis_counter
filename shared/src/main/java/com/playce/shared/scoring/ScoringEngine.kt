@@ -137,8 +137,10 @@ object ScoringEngine {
      * points) so that undo can also rewind a deciding-tiebreak choice.
      */
     sealed interface MatchEvent {
-        data class Point(val isPlayerA: Boolean) : MatchEvent
-        data class DecidingTiebreakStarted(val targetPoints: Int) : MatchEvent
+        /** Epoch millis del momento del evento; 0 = desconocido (legacy/tests). */
+        val timestampMillis: Long
+        data class Point(val isPlayerA: Boolean, override val timestampMillis: Long = 0L) : MatchEvent
+        data class DecidingTiebreakStarted(val targetPoints: Int, override val timestampMillis: Long = 0L) : MatchEvent
     }
 
     /**

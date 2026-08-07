@@ -3,6 +3,7 @@ package com.example.tenniscounter.mobile.ui.counter
 import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playce.shared.scoring.MatchEventCodec
 import com.playce.shared.scoring.MatchFormat
 import com.playce.shared.scoring.ScoringEngine
 import com.playce.shared.scoring.ScoringEngine.MatchScore
@@ -100,13 +101,13 @@ class MobileCounterViewModel : ViewModel() {
 
     fun addPointToPlayerA() {
         if (_state.value.isMatchOver) return
-        matchEvents.add(ScoringEngine.MatchEvent.Point(true))
+        matchEvents.add(ScoringEngine.MatchEvent.Point(true, timestampMillis = System.currentTimeMillis()))
         applyPoint(isPlayerA = true)
     }
 
     fun addPointToPlayerB() {
         if (_state.value.isMatchOver) return
-        matchEvents.add(ScoringEngine.MatchEvent.Point(false))
+        matchEvents.add(ScoringEngine.MatchEvent.Point(false, timestampMillis = System.currentTimeMillis()))
         applyPoint(isPlayerA = false)
     }
 
@@ -119,7 +120,7 @@ class MobileCounterViewModel : ViewModel() {
     fun startDecidingTiebreak(targetPoints: Int) {
         val current = _state.value
         if (!ScoringEngine.canOfferDecidingTiebreak(current.score)) return
-        matchEvents.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints))
+        matchEvents.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints, timestampMillis = System.currentTimeMillis()))
         val newScore = ScoringEngine.startDecidingTiebreak(current.score, targetPoints)
         _state.value = current.copy(score = newScore, declinedDecidingTiebreak = false)
     }
@@ -194,6 +195,9 @@ class MobileCounterViewModel : ViewModel() {
             score = MatchScore(format = _matchFormat.value, initialServerIsPlayerA = initialServerIsPlayerA)
         )
     }
+
+    /** JSON-encoded point/event history for the match currently in progress (or just finished). */
+    fun pointEventsJson(): String = MatchEventCodec.toJson(matchEvents)
 
     fun toggleTimer() {
         val current = _state.value

@@ -20,5 +20,6 @@ data class MatchEntity(
     val playerBName: String? = null,
     val caloriesKcal: Double? = null,
     val avgHeartRateBpm: Int? = null,
-    val maxHeartRateBpm: Int? = null
+    val maxHeartRateBpm: Int? = null,
+    val pointEventsJson: String? = null
 )

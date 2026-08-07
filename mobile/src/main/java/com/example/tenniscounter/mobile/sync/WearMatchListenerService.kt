@@ -52,11 +52,13 @@ class WearMatchListenerService : WearableListenerService() {
         val caloriesKcal = dataMap.getOptionalDouble(KEY_CALORIES_KCAL)
         val avgHeartRateBpm = dataMap.getOptionalInt(KEY_AVG_HEART_RATE_BPM)
         val maxHeartRateBpm = dataMap.getOptionalInt(KEY_MAX_HEART_RATE_BPM)
+        val pointEventsJson = dataMap.getString(KEY_POINT_EVENTS_JSON)?.trim().orEmpty().ifBlank { null }
         Log.i(
             TAG,
             "Decoded payload createdAt=$createdAt durationSeconds=$durationSeconds finalScoreText=$finalScoreText " +
                 "setScoresText=${setScoresText.orEmpty()} idempotencyKey=$idempotencyKey caloriesKcal=$caloriesKcal " +
-                "avgHeartRateBpm=$avgHeartRateBpm maxHeartRateBpm=$maxHeartRateBpm"
+                "avgHeartRateBpm=$avgHeartRateBpm maxHeartRateBpm=$maxHeartRateBpm " +
+                "pointEventsJsonPresent=${pointEventsJson != null}"
         )
 
         if (createdAt <= 0L || durationSeconds < 0L || finalScoreText.isBlank()) {
@@ -86,7 +88,8 @@ class WearMatchListenerService : WearableListenerService() {
                 playerBName = playerBName,
                 caloriesKcal = caloriesKcal,
                 avgHeartRateBpm = avgHeartRateBpm,
-                maxHeartRateBpm = maxHeartRateBpm
+                maxHeartRateBpm = maxHeartRateBpm,
+                pointEventsJson = pointEventsJson
             )
 
             if (inserted) {
@@ -103,7 +106,8 @@ class WearMatchListenerService : WearableListenerService() {
                         playerBName = playerBName,
                         caloriesKcal = caloriesKcal,
                         avgHeartRateBpm = avgHeartRateBpm,
-                        maxHeartRateBpm = maxHeartRateBpm
+                        maxHeartRateBpm = maxHeartRateBpm,
+                        pointEventsJson = pointEventsJson
                     )
                 )
                 sendAck(messageEvent.sourceNodeId, idempotencyKey, status = "inserted")
@@ -156,6 +160,7 @@ class WearMatchListenerService : WearableListenerService() {
         const val KEY_CALORIES_KCAL = "caloriesKcal"
         const val KEY_AVG_HEART_RATE_BPM = "avgHeartRateBpm"
         const val KEY_MAX_HEART_RATE_BPM = "maxHeartRateBpm"
+        const val KEY_POINT_EVENTS_JSON = "pointEventsJson"
     }
 }
 

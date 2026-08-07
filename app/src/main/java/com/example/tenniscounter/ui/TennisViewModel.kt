@@ -11,6 +11,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tenniscounter.health.HealthMetricsSnapshot
 import com.example.tenniscounter.timer.MatchTimerService
+import com.playce.shared.scoring.MatchEventCodec
 import com.playce.shared.scoring.MatchFormat
 import com.playce.shared.scoring.ScoringEngine
 import com.playce.shared.scoring.ScoringEngine.MatchScore
@@ -155,7 +156,7 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     fun startDecidingTiebreak(targetPoints: Int) {
         val state = _matchState.value
         if (!ScoringEngine.canOfferDecidingTiebreak(state.score)) return
-        eventHistory.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints))
+        eventHistory.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints, timestampMillis = System.currentTimeMillis()))
         _matchState.value = state.copy(
             score = ScoringEngine.startDecidingTiebreak(state.score, targetPoints)
         )
@@ -239,12 +240,12 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun addPointToPlayerA() {
-        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = true))
+        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = System.currentTimeMillis()))
         applyPoint(isPlayerA = true)
     }
 
     fun addPointToPlayerB() {
-        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = false))
+        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = false, timestampMillis = System.currentTimeMillis()))
         applyPoint(isPlayerA = false)
     }
 
@@ -311,6 +312,9 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         _isFinishedMatchSaved.value = false
         resetMatch()
     }
+
+    /** JSON-encoded point/event history for the match currently in progress (or just finished). */
+    fun pointEventsJson(): String = MatchEventCodec.toJson(eventHistory)
 
     private fun buildFinishedSummary(
         state: MatchState,

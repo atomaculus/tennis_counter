@@ -393,6 +393,58 @@ class ScoringEngineTest {
         assertTrue(ScoringEngine.canOfferDecidingTiebreak(undone)) // question re-arms
     }
 
+    @Test
+    fun `replayEvents produces same score with and without timestamps`() {
+        val baseTime = 1_723_050_000_000L
+        val eventsWithoutTimestamps = buildList {
+            repeat(24) { add(ScoringEngine.MatchEvent.Point(isPlayerA = true)) }
+            repeat(24) { add(ScoringEngine.MatchEvent.Point(isPlayerA = false)) }
+            add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(10))
+            repeat(3) { add(ScoringEngine.MatchEvent.Point(isPlayerA = true)) }
+        }
+        val eventsWithTimestamps = eventsWithoutTimestamps.mapIndexed { index, event ->
+            when (event) {
+                is ScoringEngine.MatchEvent.Point ->
+                    event.copy(timestampMillis = baseTime + index * 1000L)
+                is ScoringEngine.MatchEvent.DecidingTiebreakStarted ->
+                    event.copy(timestampMillis = baseTime + index * 1000L)
+            }
+        }
+
+        val scoreWithout = ScoringEngine.replayEvents(eventsWithoutTimestamps)
+        val scoreWith = ScoringEngine.replayEvents(eventsWithTimestamps)
+
+        assertEquals(scoreWithout, scoreWith)
+    }
+
+    // ---- MatchEventCodec ----
+
+    @Test
+    fun `toJson of empty list is empty array`() {
+        assertEquals("[]", MatchEventCodec.toJson(emptyList()))
+    }
+
+    @Test
+    fun `toJson of single point event`() {
+        val events = listOf(ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 1723050000123))
+        assertEquals(
+            "[{\"type\":\"point\",\"isPlayerA\":true,\"t\":1723050000123}]",
+            MatchEventCodec.toJson(events)
+        )
+    }
+
+    @Test
+    fun `toJson of mixed point and deciding tiebreak events`() {
+        val events = listOf(
+            ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 1723050000123),
+            ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints = 10, timestampMillis = 1723050100456)
+        )
+        assertEquals(
+            "[{\"type\":\"point\",\"isPlayerA\":true,\"t\":1723050000123},{\"type\":\"deciding_tb\",\"targetPoints\":10,\"t\":1723050100456}]",
+            MatchEventCodec.toJson(events)
+        )
+    }
+
     // ---- Helpers ----
 
     private fun scoreToTiedSets(setsEach: Int, format: MatchFormat = MatchFormat.STANDARD): MatchScore {

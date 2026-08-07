@@ -470,8 +470,9 @@ private fun TennisCounterApp(
                         }
                         if (saved && summaryToSend != null) {
                             val setScoresText = buildSetScoresText(state)
+                            val pointEventsJson = viewModel.pointEventsJson()
                             uiScope.launch(Dispatchers.IO) {
-                                val pendingMessage = createPendingMatchMessage(summaryToSend, setScoresText)
+                                val pendingMessage = createPendingMatchMessage(summaryToSend, setScoresText, pointEventsJson)
                                 PendingMatchStore.savePending(context.applicationContext, pendingMessage)
                                 when (sendPendingMatchToPhone(
                                     context = context.applicationContext,
@@ -1476,10 +1477,11 @@ private fun buildFinalScoreText(summary: FinishedMatchSummary): String {
 
 private fun createPendingMatchMessage(
     summary: FinishedMatchSummary,
-    setScoresText: String?
+    setScoresText: String?,
+    pointEventsJson: String? = null
 ): PendingMatchMessage {
     val idempotencyKey = UUID.randomUUID().toString()
-    val payload = buildMatchFinishedPayload(summary, setScoresText, idempotencyKey)
+    val payload = buildMatchFinishedPayload(summary, setScoresText, idempotencyKey, pointEventsJson)
     val now = System.currentTimeMillis()
     return PendingMatchMessage(
         idempotencyKey = idempotencyKey,
@@ -1494,7 +1496,8 @@ private fun createPendingMatchMessage(
 private fun buildMatchFinishedPayload(
     summary: FinishedMatchSummary,
     setScoresText: String?,
-    idempotencyKey: String
+    idempotencyKey: String,
+    pointEventsJson: String? = null
 ): ByteArray {
     val createdAt = if (summary.createdAt > 0L) summary.createdAt else System.currentTimeMillis()
     val finalScoreText = buildFinalScoreText(summary)
@@ -1511,6 +1514,9 @@ private fun buildMatchFinishedPayload(
         summary.avgHeartRateBpm?.let { putInt("avgHeartRateBpm", it) }
         summary.maxHeartRateBpm?.let { putInt("maxHeartRateBpm", it) }
         putString("idempotencyKey", idempotencyKey)
+        if (!pointEventsJson.isNullOrBlank()) {
+            putString("pointEventsJson", pointEventsJson)
+        }
     }
     return dataMap.toByteArray()
 }
