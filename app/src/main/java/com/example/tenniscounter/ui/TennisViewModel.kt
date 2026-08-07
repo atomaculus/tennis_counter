@@ -17,9 +17,12 @@ import com.playce.shared.scoring.ScoringEngine.MatchScore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 // Re-export shared types with aliases for backward compat with UI code
@@ -79,7 +82,24 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     val matchFormat: StateFlow<MatchFormat> = _matchFormat.asStateFlow()
 
     private var timerJob: Job? = null
-    private val pointHistory = mutableListOf<Boolean>()
+    private val eventHistory = mutableListOf<ScoringEngine.MatchEvent>()
+
+    /** True once the initial server has been fixed (phone config or user choice) or the prompt was dismissed. */
+    private val _initialServerResolved = MutableStateFlow(false)
+
+    /** Show "Who serves first?" only on a fresh scoreboard when nothing has fixed the server yet. */
+    val showInitialServerPrompt: StateFlow<Boolean> =
+        combine(_matchState, _initialServerResolved) { state, resolved ->
+            !resolved && state.isFreshScoreboard()
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Set to true when the user answers "Continue normal set"; reset on any score change or new match. */
+    private val _decidingTiebreakDeclined = MutableStateFlow(false)
+
+    val offerDecidingTiebreak: StateFlow<Boolean> =
+        combine(_matchState, _decidingTiebreakDeclined) { state, declined ->
+            ScoringEngine.canOfferDecidingTiebreak(state.score) && !declined
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     init {
         viewModelScope.launch {
@@ -103,11 +123,42 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         _matchFormat.value = format
         // Apply to current score if match hasn't started
         val state = _matchState.value
-        if (pointHistory.isEmpty()) {
+        if (eventHistory.isEmpty()) {
             _matchState.value = state.copy(
                 score = state.score.copy(format = format)
             )
         }
+    }
+
+    /** Fix who serves first. Only valid before the first point is played. */
+    fun setInitialServer(isPlayerA: Boolean) {
+        _initialServerResolved.value = true
+        val state = _matchState.value
+        if (eventHistory.isEmpty()) {
+            _matchState.value = state.copy(
+                score = state.score.copy(initialServerIsPlayerA = isPlayerA)
+            )
+        }
+    }
+
+    /** User ignored the "Who serves first?" prompt; keep default (Player A) and stop asking. */
+    fun dismissInitialServerPrompt() {
+        _initialServerResolved.value = true
+    }
+
+    /** User chose to play a normal set instead of a deciding tiebreak. */
+    fun declineDecidingTiebreak() {
+        _decidingTiebreakDeclined.value = true
+    }
+
+    /** Replace the upcoming set with a standalone tiebreak to [targetPoints] (7 or 10). */
+    fun startDecidingTiebreak(targetPoints: Int) {
+        val state = _matchState.value
+        if (!ScoringEngine.canOfferDecidingTiebreak(state.score)) return
+        eventHistory.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints))
+        _matchState.value = state.copy(
+            score = ScoringEngine.startDecidingTiebreak(state.score, targetPoints)
+        )
     }
 
     private fun startTicker() {
@@ -188,12 +239,12 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun addPointToPlayerA() {
-        pointHistory.add(true)
+        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = true))
         applyPoint(isPlayerA = true)
     }
 
     fun addPointToPlayerB() {
-        pointHistory.add(false)
+        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = false))
         applyPoint(isPlayerA = false)
     }
 
@@ -202,7 +253,8 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     fun undoLastPointForPlayerB(): Boolean = undoLastPointForPlayer(false)
 
     fun resetGame() {
-        pointHistory.clear()
+        eventHistory.clear()
+        _decidingTiebreakDeclined.value = false
         val state = _matchState.value
         _matchState.value = state.copy(
             score = state.score.copy(
@@ -214,7 +266,9 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun resetMatch() {
-        pointHistory.clear()
+        eventHistory.clear()
+        _initialServerResolved.value = false
+        _decidingTiebreakDeclined.value = false
         viewModelScope.launch {
             TimerStateStore.resetStopped(appContext)
             _matchState.value = MatchState(
@@ -274,6 +328,8 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         val detail = when {
             completed.isBlank() && !hasSets -> "Games: ${state.playerA.games}-${state.playerB.games}"
             completed.isBlank() -> liveSegment
+            // Match decided on the last completed set: the residual 0-0 game adds nothing.
+            state.isMatchOver -> completed
             else -> "$completed | $liveSegment"
         }
 
@@ -302,24 +358,28 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     private fun applyPoint(isPlayerA: Boolean) {
         val state = _matchState.value
         val newScore = ScoringEngine.scorePoint(state.score, isPlayerA)
+        _decidingTiebreakDeclined.value = false
         _matchState.value = state.copy(score = newScore)
     }
 
     private fun undoLastPointForPlayer(isPlayerA: Boolean): Boolean {
-        val index = pointHistory.indexOfLast { winnerIsA -> winnerIsA == isPlayerA }
+        val index = eventHistory.indexOfLast { event ->
+            event is ScoringEngine.MatchEvent.Point && event.isPlayerA == isPlayerA
+        }
         if (index < 0) return false
 
-        pointHistory.removeAt(index)
+        eventHistory.removeAt(index)
         rebuildScoreFromHistory()
         return true
     }
 
     private fun rebuildScoreFromHistory() {
-        val newScore = ScoringEngine.replay(
-            pointHistory,
+        val newScore = ScoringEngine.replayEvents(
+            eventHistory,
             _matchFormat.value,
             _matchState.value.score.initialServerIsPlayerA
         )
+        _decidingTiebreakDeclined.value = false
         _matchState.value = _matchState.value.copy(score = newScore)
     }
 

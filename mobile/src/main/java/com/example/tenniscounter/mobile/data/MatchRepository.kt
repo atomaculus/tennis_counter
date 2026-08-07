@@ -48,6 +48,8 @@ class MatchRepository(
 
     suspend fun update(match: MatchEntity) = matchDao.update(match)
 
+    suspend fun deleteMatch(id: Long) = matchDao.deleteById(id)
+
     suspend fun getRecentMatchesWithHealthMetrics(limit: Int = 10): List<MatchEntity> {
         return matchDao.getRecentMatchesWithHealthMetrics(limit)
     }

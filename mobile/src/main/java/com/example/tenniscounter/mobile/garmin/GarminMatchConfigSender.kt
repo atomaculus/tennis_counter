@@ -13,7 +13,8 @@ class GarminMatchConfigSender(private val appContext: Context) {
         tiebreakAtSixAll: Boolean,
         superTiebreakInFinalSet: Boolean,
         noAdScoring: Boolean,
-        tiebreakPoints: Int = if (superTiebreakInFinalSet) 10 else 7
+        tiebreakPoints: Int = if (superTiebreakInFinalSet) 10 else 7,
+        initialServerIsPlayerA: Boolean = true
     ) {
         val timestamp = System.currentTimeMillis()
         val payload = HashMap<String, Any?>().apply {
@@ -24,6 +25,7 @@ class GarminMatchConfigSender(private val appContext: Context) {
             put(GarminConstants.CONFIG_TIEBREAK_POINTS, tiebreakPoints)
             put(GarminConstants.CONFIG_SUPER_TIEBREAK_IN_FINAL_SET, superTiebreakInFinalSet)
             put(GarminConstants.CONFIG_NO_AD_SCORING, noAdScoring)
+            put(GarminConstants.CONFIG_INITIAL_SERVER_IS_PLAYER_A, initialServerIsPlayerA)
             put(GarminConstants.CONFIG_TIMESTAMP, timestamp)
         }
         val envelope = HashMap<String, Any?>().apply {

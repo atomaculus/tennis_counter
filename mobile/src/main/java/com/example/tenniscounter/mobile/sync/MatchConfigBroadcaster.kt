@@ -17,7 +17,8 @@ class MatchConfigBroadcaster(private val context: Context) {
         setsToWin: Int,
         tiebreakAtSixAll: Boolean,
         superTiebreakInFinalSet: Boolean,
-        noAdScoring: Boolean
+        noAdScoring: Boolean,
+        initialServerIsPlayerA: Boolean = true
     ) {
         val request = PutDataMapRequest.create(CONFIG_PATH).apply {
             dataMap.putString("playerAName", playerAName)
@@ -26,6 +27,7 @@ class MatchConfigBroadcaster(private val context: Context) {
             dataMap.putBoolean("tiebreakAtSixAll", tiebreakAtSixAll)
             dataMap.putBoolean("superTiebreakInFinalSet", superTiebreakInFinalSet)
             dataMap.putBoolean("noAdScoring", noAdScoring)
+            dataMap.putBoolean("initialServerIsPlayerA", initialServerIsPlayerA)
             // timestamp forces propagation even when the rest of the payload is identical
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()

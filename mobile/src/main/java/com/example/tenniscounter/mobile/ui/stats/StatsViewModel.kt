@@ -4,10 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.tenniscounter.mobile.data.local.MatchDao
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.tenniscounter.mobile.data.local.MatchEntity
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 data class MatchStats(
     val totalMatches: Int = 0,
@@ -15,16 +16,19 @@ data class MatchStats(
     val avgDurationSeconds: Long = 0,
     val longestMatchSeconds: Long = 0,
     val shortestMatchSeconds: Long = 0,
+    val playerAWins: Int = 0,
+    val playerBWins: Int = 0,
     val isLoading: Boolean = true
 )
 
-class StatsViewModel(private val matchDao: MatchDao) : ViewModel() {
-    private val _stats = MutableStateFlow(MatchStats())
-    val stats: StateFlow<MatchStats> = _stats.asStateFlow()
+private enum class MatchWinner { PLAYER_A, PLAYER_B }
 
-    init {
-        loadStats()
-    }
+class StatsViewModel(matchDao: MatchDao) : ViewModel() {
+    // Derived from the Room flow so stats stay current while the screen is
+    // open (deletes from Detail, matches arriving from the watch, etc.).
+    val stats: StateFlow<MatchStats> = matchDao.getAllMatches()
+        .map { matches -> buildStats(matches) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MatchStats())
 
     companion object {
         fun factory(matchDao: MatchDao) = object : ViewModelProvider.Factory {
@@ -35,22 +39,31 @@ class StatsViewModel(private val matchDao: MatchDao) : ViewModel() {
         }
     }
 
-    fun loadStats() {
-        viewModelScope.launch {
-            val count = matchDao.getMatchCount()
-            if (count == 0) {
-                _stats.value = MatchStats(isLoading = false)
-                return@launch
-            }
+    private fun buildStats(matches: List<MatchEntity>): MatchStats {
+        if (matches.isEmpty()) return MatchStats(isLoading = false)
 
-            _stats.value = MatchStats(
-                totalMatches = count,
-                totalPlayTimeSeconds = matchDao.getTotalPlayTime() ?: 0,
-                avgDurationSeconds = matchDao.getAverageDuration()?.toLong() ?: 0,
-                longestMatchSeconds = matchDao.getLongestMatchDuration() ?: 0,
-                shortestMatchSeconds = matchDao.getShortestMatchDuration() ?: 0,
-                isLoading = false
-            )
-        }
+        val durations = matches.map { it.durationSeconds }
+        val winners = matches.map { winnerSide(it.finalScoreText) }
+        return MatchStats(
+            totalMatches = matches.size,
+            totalPlayTimeSeconds = durations.sum(),
+            avgDurationSeconds = durations.average().toLong(),
+            longestMatchSeconds = durations.max(),
+            shortestMatchSeconds = durations.min(),
+            playerAWins = winners.count { it == MatchWinner.PLAYER_A },
+            playerBWins = winners.count { it == MatchWinner.PLAYER_B },
+            isLoading = false
+        )
+    }
+
+    /**
+     * Parses a "X-Y" final score (sets won, or games won when the match had no full sets)
+     * into a winner side. Matches with an unparseable or tied score are excluded ("unknown"),
+     * mirroring the iOS MatchStats.winnerSide calculation.
+     */
+    private fun winnerSide(finalScoreText: String): MatchWinner? {
+        val parts = finalScoreText.split("-").mapNotNull { it.trim().toIntOrNull() }
+        if (parts.size != 2 || parts[0] == parts[1]) return null
+        return if (parts[0] > parts[1]) MatchWinner.PLAYER_A else MatchWinner.PLAYER_B
     }
 }

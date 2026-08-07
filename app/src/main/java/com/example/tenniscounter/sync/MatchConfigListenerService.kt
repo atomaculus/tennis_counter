@@ -26,6 +26,12 @@ class MatchConfigListenerService : WearableListenerService() {
             val superTiebreakInFinalSet = dataMap.getBoolean("superTiebreakInFinalSet", false)
             val noAdScoring = dataMap.getBoolean("noAdScoring", false)
             val timestamp = dataMap.getLong("timestamp")
+            // Default true when missing; keep null so the watch knows the phone didn't fix the server.
+            val initialServerIsPlayerA = if (dataMap.containsKey("initialServerIsPlayerA")) {
+                dataMap.getBoolean("initialServerIsPlayerA", true)
+            } else {
+                null
+            }
 
             val format = MatchFormat(
                 setsToWin = setsToWin,
@@ -38,11 +44,13 @@ class MatchConfigListenerService : WearableListenerService() {
                 playerAName = playerAName,
                 playerBName = playerBName,
                 format = format,
-                timestamp = timestamp
+                timestamp = timestamp,
+                initialServerIsPlayerA = initialServerIsPlayerA
             )
 
             Log.d(TAG, "Match config received: $playerAName vs $playerBName, " +
-                "sets=${setsToWin}, tb=$tiebreakAtSixAll, superTB=$superTiebreakInFinalSet, noAd=$noAdScoring")
+                "sets=${setsToWin}, tb=$tiebreakAtSixAll, superTB=$superTiebreakInFinalSet, " +
+                "noAd=$noAdScoring, initialServerA=$initialServerIsPlayerA")
 
             MatchConfigRepository.update(config)
         }

@@ -20,6 +20,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,22 +37,43 @@ import com.example.tenniscounter.mobile.R
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
 import com.example.tenniscounter.mobile.ui.theme.PlayceColors
+import kotlinx.coroutines.delay
+import kotlin.random.Random
 
 /**
  * Match configuration card: player names, format selection, and "Send to Watch" button.
  */
 @Composable
 fun MatchSetupCard(
-    onApplyConfig: (playerAName: String, playerBName: String, formatPreset: FormatPreset) -> Unit,
-    onSendToWatch: (playerAName: String, playerBName: String, formatPreset: FormatPreset) -> Unit
+    onApplyConfig: (playerAName: String, playerBName: String, formatPreset: FormatPreset, initialServerIsPlayerA: Boolean) -> Unit,
+    onSendToWatch: (playerAName: String, playerBName: String, formatPreset: FormatPreset, initialServerIsPlayerA: Boolean) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var playerAName by remember { mutableStateOf("") }
     var playerBName by remember { mutableStateOf("") }
     var selectedPreset by remember { mutableIntStateOf(0) }
     var sentToWatch by remember { mutableStateOf(false) }
+    var appliedLocally by remember { mutableStateOf(false) }
+
+    // Temporary "Applied" feedback, mirroring iOS; also cleared by any config edit.
+    LaunchedEffect(appliedLocally) {
+        if (appliedLocally) {
+            delay(2000)
+            appliedLocally = false
+        }
+    }
+    var firstServerChoice by remember { mutableStateOf(FirstServerChoice.PLAYER_A) }
+    var coinTossResolvedIsPlayerA by remember { mutableStateOf<Boolean?>(null) }
 
     val presets = FormatPreset.entries
+
+    fun resolveInitialServer(): Boolean = when (firstServerChoice) {
+        FirstServerChoice.PLAYER_A -> true
+        FirstServerChoice.PLAYER_B -> false
+        FirstServerChoice.COIN_TOSS -> coinTossResolvedIsPlayerA ?: Random.nextBoolean().also {
+            coinTossResolvedIsPlayerA = it
+        }
+    }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
@@ -109,6 +131,7 @@ fun MatchSetupCard(
                             onValueChange = {
                                 playerAName = it.take(12)
                                 sentToWatch = false
+                                coinTossResolvedIsPlayerA = null
                             },
                             placeholder = stringResource(R.string.setup_player_a_hint),
                             modifier = Modifier.weight(1f)
@@ -118,8 +141,56 @@ fun MatchSetupCard(
                             onValueChange = {
                                 playerBName = it.take(12)
                                 sentToWatch = false
+                                coinTossResolvedIsPlayerA = null
                             },
                             placeholder = stringResource(R.string.setup_player_b_hint),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // Who serves first
+                    Text(
+                        text = stringResource(R.string.setup_first_server_label),
+                        color = PlayceColors.TextSecondary,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val resolvedCoinTossName = coinTossResolvedIsPlayerA?.let { isA ->
+                            if (isA) playerAName.ifBlank { stringResource(R.string.setup_player_a_hint) }
+                            else playerBName.ifBlank { stringResource(R.string.setup_player_b_hint) }
+                        }
+                        ServerChoiceChip(
+                            label = playerAName.ifBlank { stringResource(R.string.setup_player_a_hint) },
+                            selected = firstServerChoice == FirstServerChoice.PLAYER_A,
+                            onClick = {
+                                firstServerChoice = FirstServerChoice.PLAYER_A
+                                coinTossResolvedIsPlayerA = null
+                                sentToWatch = false
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        ServerChoiceChip(
+                            label = playerBName.ifBlank { stringResource(R.string.setup_player_b_hint) },
+                            selected = firstServerChoice == FirstServerChoice.PLAYER_B,
+                            onClick = {
+                                firstServerChoice = FirstServerChoice.PLAYER_B
+                                coinTossResolvedIsPlayerA = null
+                                sentToWatch = false
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        ServerChoiceChip(
+                            label = stringResource(R.string.setup_coin_toss),
+                            subtitle = resolvedCoinTossName?.let { stringResource(R.string.setup_coin_toss_result, it) },
+                            selected = firstServerChoice == FirstServerChoice.COIN_TOSS,
+                            onClick = {
+                                firstServerChoice = FirstServerChoice.COIN_TOSS
+                                coinTossResolvedIsPlayerA = null
+                                sentToWatch = false
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -156,9 +227,14 @@ fun MatchSetupCard(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         PrimaryButton(
-                            text = stringResource(R.string.setup_btn_apply),
+                            text = if (appliedLocally) {
+                                stringResource(R.string.setup_btn_applied)
+                            } else {
+                                stringResource(R.string.setup_btn_apply)
+                            },
                             onClick = {
-                                onApplyConfig(playerAName, playerBName, presets[selectedPreset])
+                                onApplyConfig(playerAName, playerBName, presets[selectedPreset], resolveInitialServer())
+                                appliedLocally = true
                             },
                             style = PrimaryButtonStyle.Outline,
                             modifier = Modifier.weight(1f)
@@ -166,7 +242,7 @@ fun MatchSetupCard(
                         PrimaryButton(
                             text = if (sentToWatch) stringResource(R.string.setup_btn_sent) else stringResource(R.string.setup_btn_send_watch),
                             onClick = {
-                                onSendToWatch(playerAName, playerBName, presets[selectedPreset])
+                                onSendToWatch(playerAName, playerBName, presets[selectedPreset], resolveInitialServer())
                                 sentToWatch = true
                             },
                             modifier = Modifier.weight(1f)
@@ -248,6 +324,50 @@ private fun FormatChip(
             textAlign = TextAlign.Center
         )
     }
+}
+
+@Composable
+private fun ServerChoiceChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null
+) {
+    val bgColor = if (selected) PlayceColors.AccentMuted else PlayceColors.Background
+    val textColor = if (selected) PlayceColors.Accent else PlayceColors.TextPrimary
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(bgColor)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            color = textColor,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            maxLines = 1
+        )
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                color = PlayceColors.TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/** Who serves first: a specific player, or a coin toss resolved on Apply / Send to Watch. */
+enum class FirstServerChoice {
+    PLAYER_A, PLAYER_B, COIN_TOSS
 }
 
 enum class FormatPreset(

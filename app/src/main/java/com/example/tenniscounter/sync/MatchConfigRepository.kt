@@ -14,7 +14,9 @@ data class MatchConfig(
     val playerAName: String,
     val playerBName: String,
     val format: MatchFormat,
-    val timestamp: Long
+    val timestamp: Long,
+    /** Who serves first; null when the phone did not include the key (watch may still ask). */
+    val initialServerIsPlayerA: Boolean? = null
 )
 
 object MatchConfigRepository {

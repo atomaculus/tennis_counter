@@ -149,7 +149,10 @@ fun MobileApp() {
 
                 Box(modifier = Modifier.fillMaxSize()) {
                 if (liveState != null) {
-                    LiveScoreScreen(liveState = liveState)
+                    LiveScoreScreen(
+                        liveState = liveState,
+                        receivedAtElapsedRealtime = LiveScoreRepository.receivedAtElapsedRealtime
+                    )
                 } else {
                     val counterViewModel: MobileCounterViewModel = viewModel()
                     MobileCounterScreen(
@@ -159,7 +162,7 @@ fun MobileApp() {
                         onMatchCompleted = {
                             activity?.let { InAppReviewManager.onMatchCompleted(it) }
                         },
-                        onSendConfigToWatch = { nameA, nameB, preset ->
+                        onSendConfigToWatch = { nameA, nameB, preset, initialServerIsPlayerA ->
                             val resolvedA = nameA.ifBlank { "Player A" }
                             val resolvedB = nameB.ifBlank { "Player B" }
                             // Wear OS path (existing, untouched)
@@ -169,7 +172,8 @@ fun MobileApp() {
                                 setsToWin = preset.setsToWin,
                                 tiebreakAtSixAll = preset.tiebreakAtSixAll,
                                 superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
-                                noAdScoring = preset.noAdScoring
+                                noAdScoring = preset.noAdScoring,
+                                initialServerIsPlayerA = initialServerIsPlayerA
                             )
                             // Garmin path (parallel, no-op if no Garmin device connected)
                             garminConfigSender.sendConfig(
@@ -178,7 +182,8 @@ fun MobileApp() {
                                 setsToWin = preset.setsToWin,
                                 tiebreakAtSixAll = preset.tiebreakAtSixAll,
                                 superTiebreakInFinalSet = preset.superTiebreakInFinalSet,
-                                noAdScoring = preset.noAdScoring
+                                noAdScoring = preset.noAdScoring,
+                                initialServerIsPlayerA = initialServerIsPlayerA
                             )
                         },
                         onSaveMatch = { summary ->
@@ -189,7 +194,7 @@ fun MobileApp() {
                                         createdAt = summary.createdAt,
                                         durationSeconds = summary.durationSeconds.toLong(),
                                         finalScoreText = summary.setsScore,
-                                        setScoresText = summary.setsDetail,
+                                        setScoresText = summary.completedSetsText,
                                         idempotencyKey = "mobile_${summary.createdAt}"
                                     )
                                     matchDao.insertOrIgnore(entity)
@@ -243,6 +248,18 @@ fun MobileApp() {
                 val exportScope = rememberCoroutineScope()
                 StatsScreen(
                     viewModel = statsViewModel,
+                    premiumUiState = premiumUiState,
+                    onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
+                    onRestorePurchases = premiumBillingManager::restorePurchases,
+                    onOpenCounter = {
+                        navController.navigate(COUNTER_ROUTE) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(COUNTER_ROUTE) {
+                                saveState = true
+                            }
+                        }
+                    },
                     onExport = {
                         exportScope.launch {
                             val matches = withContext(Dispatchers.IO) {
@@ -269,6 +286,7 @@ fun MobileApp() {
                 MatchDetailScreen(
                     viewModel = detailViewModel,
                     onBack = { navController.popBackStack() },
+                    onDeleted = { navController.popBackStack() },
                     premiumUiState = premiumUiState,
                     onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
                     onRestorePurchases = premiumBillingManager::restorePurchases

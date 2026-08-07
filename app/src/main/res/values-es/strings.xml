@@ -44,12 +44,6 @@
     <!-- Tiebreak -->
     <string name="label_tiebreak">TIEBREAK</string>
 
-    <!-- Hardware buttons -->
-    <string name="hw_buttons_on">Botones: ON (tocá para desactivar)</string>
-    <string name="hw_buttons_off">Botones: OFF (tocá para activar)</string>
-    <string name="hw_buttons_enabled_msg">Botones ON: Arriba=+A, Abajo=+B</string>
-    <string name="hw_buttons_disabled_msg">Botones OFF</string>
-
     <!-- Spectator -->
     <string name="spectator_watching">VIENDO EN VIVO</string>
 
@@ -59,4 +53,24 @@
     <!-- Player defaults -->
     <string name="default_player_a">Jugador A</string>
     <string name="default_player_b">Jugador B</string>
+
+    <!-- Initial server prompt -->
+    <string name="prompt_who_serves_first">¿Quién saca primero?</string>
+
+    <!-- Deciding tiebreak sheet -->
+    <string name="title_sets_tied">SETS EMPATADOS</string>
+    <string name="prompt_decide_tiebreak">¿Definir por tiebreak?</string>
+    <string name="action_continue_normal_set">Seguir set normal</string>
+    <string name="action_tiebreak_to_7">TB a 7</string>
+    <string name="action_super_tiebreak_to_10">TB a 10</string>
+
+    <!-- Timer buttons -->
+    <string name="btn_pause">PAUSAR</string>
+    <string name="btn_resume">REANUDAR</string>
+    <string name="btn_start">INICIAR</string>
+
+    <!-- What's New overlay -->
+    <string name="whatsnew_title">Novedades</string>
+    <string name="whatsnew_message">Tocar = punto\nMantener presionado = deshacer</string>
+    <string name="whatsnew_button">Entendido</string>
 </resources>

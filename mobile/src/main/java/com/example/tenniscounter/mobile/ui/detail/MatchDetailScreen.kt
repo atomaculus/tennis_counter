@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -77,6 +78,7 @@ import kotlin.math.roundToInt
 fun MatchDetailScreen(
     viewModel: MatchDetailViewModel,
     onBack: () -> Unit,
+    onDeleted: () -> Unit,
     premiumUiState: PremiumUiState,
     onUnlockPremium: () -> Unit,
     onRestorePurchases: () -> Unit
@@ -86,6 +88,7 @@ fun MatchDetailScreen(
     val scope = rememberCoroutineScope()
     val shareError = remember { mutableStateOf<String?>(null) }
     val shareRenderModel = remember { mutableStateOf<ShareRenderModel?>(null) }
+    val showDeleteConfirm = remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -146,6 +149,7 @@ fun MatchDetailScreen(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 )
             },
+            onDeleteRequest = { showDeleteConfirm.value = true },
             onShare = {
                 shareError.value = null
                 scope.launch {
@@ -195,6 +199,29 @@ fun MatchDetailScreen(
             onDismissRequest = {
                 shareRenderModel.value = null
             }
+        )
+    }
+
+    if (showDeleteConfirm.value) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm.value = false },
+            title = {
+                Text(stringResource(R.string.delete_match_dialog_title), color = PlayceColors.TextPrimary)
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm.value = false
+                    viewModel.deleteMatch(onDeleted = onDeleted)
+                }) {
+                    Text(stringResource(R.string.btn_delete), color = PlayceColors.Danger)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm.value = false }) {
+                    Text(stringResource(R.string.btn_cancel), color = PlayceColors.TextPrimary)
+                }
+            },
+            containerColor = PlayceColors.Surface
         )
     }
 }
@@ -258,6 +285,7 @@ private fun DetailContent(
     match: MatchEntity,
     shareError: String?,
     onAddPhoto: () -> Unit,
+    onDeleteRequest: () -> Unit,
     onShare: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -367,6 +395,13 @@ private fun DetailContent(
             text = stringResource(R.string.btn_add_photo),
             onClick = onAddPhoto,
             style = PrimaryButtonStyle.Outline,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        PrimaryButton(
+            text = stringResource(R.string.btn_delete_match),
+            onClick = onDeleteRequest,
+            style = PrimaryButtonStyle.Danger,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -629,7 +664,19 @@ private fun formatDuration(totalSeconds: Long): String {
 }
 
 private fun formatSetScoresForDisplay(setScoresText: String): String {
-    return setScoresText.trim().split(Regex("\\s+")).joinToString(" | ")
+    // Records saved by older builds may carry extra "| G 0-0" / "Games:" tokens; keep set pairs only.
+    val tokens = setScoresText.trim().split(Regex("\\s+"))
+    val sets = mutableListOf<String>()
+    var skipNext = false
+    for (token in tokens) {
+        when {
+            skipNext -> skipNext = false
+            token == "|" -> Unit
+            token == "G" || token == "Games:" -> skipNext = true
+            else -> sets.add(token)
+        }
+    }
+    return sets.joinToString(" | ")
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
@@ -648,6 +695,7 @@ private fun DetailPreview() {
             ),
             shareError = null,
             onAddPhoto = {},
+            onDeleteRequest = {},
             onShare = {}
         )
     }

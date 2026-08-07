@@ -248,7 +248,19 @@ private fun EmptyHistoryState(
 }
 
 private fun formatSetScoresForDisplay(setScoresText: String): String {
-    return setScoresText.trim().split(Regex("\\s+")).joinToString(" | ")
+    // Records saved by older builds may carry extra "| G 0-0" / "Games:" tokens; keep set pairs only.
+    val tokens = setScoresText.trim().split(Regex("\\s+"))
+    val sets = mutableListOf<String>()
+    var skipNext = false
+    for (token in tokens) {
+        when {
+            skipNext -> skipNext = false
+            token == "|" -> Unit
+            token == "G" || token == "Games:" -> skipNext = true
+            else -> sets.add(token)
+        }
+    }
+    return sets.joinToString(" | ")
 }
 
 private fun formatDate(timestampMillis: Long): String {

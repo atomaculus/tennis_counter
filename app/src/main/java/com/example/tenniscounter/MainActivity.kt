@@ -58,6 +58,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -108,7 +109,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -130,6 +130,29 @@ private fun healthPermissionsForDevice(): Array<String> {
     }.toTypedArray()
 }
 
+/**
+ * Versioned "What's New" flag. Bump [CURRENT_WHATSNEW_VERSION] whenever the
+ * controls change and the overlay should be shown again after an update.
+ */
+private object WhatsNewPrefs {
+    const val CURRENT_WHATSNEW_VERSION = 1
+    private const val PREFS_NAME = "playce_whatsnew"
+    private const val KEY_LAST_SEEN_VERSION = "last_seen_version"
+
+    fun shouldShow(context: Context): Boolean {
+        val lastSeen = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(KEY_LAST_SEEN_VERSION, 0)
+        return lastSeen < CURRENT_WHATSNEW_VERSION
+    }
+
+    fun markSeen(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putInt(KEY_LAST_SEEN_VERSION, CURRENT_WHATSNEW_VERSION)
+            .apply()
+    }
+}
+
 private enum class AppScreen {
     Counter,
     MatchFinished,
@@ -141,7 +164,9 @@ private enum class ActiveSheet {
     PlayerA,
     PlayerB,
     Admin,
-    EndMatchConfirm
+    EndMatchConfirm,
+    InitialServer,
+    DecidingTiebreak
 }
 
 private enum class PhoneSendResult {
@@ -161,41 +186,13 @@ private data class ServeIndicatorState(
     val serveOnLeftSide: Boolean
 )
 
-/**
- * Represents a physical button press event from the watch hardware.
- * STEM_1 = top button → Player A point
- * STEM_2 = bottom button → Player B point
- *
- * Only active when [hardwareButtonsEnabled] is true (user opt-in).
- * Does NOT intercept KEYCODE_HOME or KEYCODE_BACK — those always work normally.
- */
-enum class HardwareButtonEvent {
-    STEM_1_PLAYER_A,
-    STEM_2_PLAYER_B
-}
-
 class MainActivity : ComponentActivity() {
-
-    /** Emits hardware button presses so composables can react. */
-    private val _hardwareButtonEvent = MutableStateFlow<HardwareButtonEvent?>(null)
-
-    /**
-     * Opt-in flag: hardware buttons only score points when this is true.
-     * Controlled from the UI via the Admin sheet toggle.
-     */
-    var hardwareButtonsEnabled: Boolean = false
-
-    /** True when the screen is interactive (not ambient/off). */
-    private var isScreenInteractive: Boolean = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             TennisWearTheme {
-                TennisCounterApp(
-                    hardwareButtonFlow = _hardwareButtonEvent,
-                    onHardwareButtonsToggled = { enabled -> hardwareButtonsEnabled = enabled }
-                )
+                TennisCounterApp()
             }
         }
     }
@@ -203,47 +200,17 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         triggerPendingRetry(applicationContext, "onStart")
-        isScreenInteractive = true
     }
 
     override fun onResume() {
         super.onResume()
         triggerPendingRetry(applicationContext, "onResume")
-        isScreenInteractive = true
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // Screen off / ambient mode → disable button scoring to prevent accidental presses
-        isScreenInteractive = false
-    }
-
-    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
-        // Only intercept STEM buttons, never HOME or BACK
-        if (!hardwareButtonsEnabled || !isScreenInteractive) {
-            return super.onKeyDown(keyCode, event)
-        }
-
-        return when (keyCode) {
-            android.view.KeyEvent.KEYCODE_STEM_1 -> {
-                _hardwareButtonEvent.value = HardwareButtonEvent.STEM_1_PLAYER_A
-                true
-            }
-            android.view.KeyEvent.KEYCODE_STEM_2 -> {
-                _hardwareButtonEvent.value = HardwareButtonEvent.STEM_2_PLAYER_B
-                true
-            }
-            // KEYCODE_HOME and KEYCODE_BACK always pass through to the system
-            else -> super.onKeyDown(keyCode, event)
-        }
     }
 }
 
 @Composable
 private fun TennisCounterApp(
-    viewModel: TennisViewModel = viewModel(),
-    hardwareButtonFlow: MutableStateFlow<HardwareButtonEvent?> = MutableStateFlow(null),
-    onHardwareButtonsToggled: (Boolean) -> Unit = {}
+    viewModel: TennisViewModel = viewModel()
 ) {
     val state by viewModel.matchState.collectAsState()
     val finishedSummary by viewModel.finishedMatch.collectAsState()
@@ -313,6 +280,7 @@ private fun TennisCounterApp(
         val config = pendingConfig ?: return@LaunchedEffect
         viewModel.setPlayerNames(config.playerAName, config.playerBName)
         viewModel.setMatchFormat(config.format)
+        config.initialServerIsPlayerA?.let { viewModel.setInitialServer(it) }
         MatchConfigRepository.consume()
         Log.d(WEAR_DATA_LAYER_TAG, "Applied config from phone: ${config.playerAName} vs ${config.playerBName}")
     }
@@ -326,34 +294,39 @@ private fun TennisCounterApp(
     var appScreen by remember { mutableStateOf(AppScreen.Counter) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
     var transientMessage by remember { mutableStateOf<String?>(null) }
-    var hwButtonsEnabled by remember { mutableStateOf(false) }
+    var showWhatsNew by remember { mutableStateOf(WhatsNewPrefs.shouldShow(context)) }
 
-    // Handle physical watch button presses (STEM_1 = Player A, STEM_2 = Player B)
-    // Only processes when: opt-in enabled, match running, screen on, no sheet open, on Counter screen
-    val hardwareButtonEvent by hardwareButtonFlow.collectAsState()
-    LaunchedEffect(hardwareButtonEvent) {
-        val event = hardwareButtonEvent ?: return@LaunchedEffect
-        val canScore = hwButtonsEnabled &&
-            !state.isMatchOver &&
-            appScreen == AppScreen.Counter &&
-            activeSheet == ActiveSheet.None
-        if (canScore) {
-            when (event) {
-                HardwareButtonEvent.STEM_1_PLAYER_A -> {
-                    viewModel.addPointToPlayerA()
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    pointSound.playPlayerASound()
-                    broadcastCurrentState("A")
-                }
-                HardwareButtonEvent.STEM_2_PLAYER_B -> {
-                    viewModel.addPointToPlayerB()
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    pointSound.playPlayerBSound()
-                    broadcastCurrentState("B")
-                }
-            }
+    // Ask who serves first before the first point (unless phone config already fixed it).
+    val showInitialServerPrompt by viewModel.showInitialServerPrompt.collectAsState()
+    LaunchedEffect(showInitialServerPrompt, appScreen, activeSheet) {
+        if (showInitialServerPrompt && appScreen == AppScreen.Counter && activeSheet == ActiveSheet.None) {
+            activeSheet = ActiveSheet.InitialServer
+        } else if (!showInitialServerPrompt && activeSheet == ActiveSheet.InitialServer) {
+            activeSheet = ActiveSheet.None
         }
-        hardwareButtonFlow.value = null // consume the event
+    }
+
+    // Offer a deciding tiebreak right after a set leaves the players tied on sets.
+    val offerDecidingTiebreak by viewModel.offerDecidingTiebreak.collectAsState()
+    LaunchedEffect(offerDecidingTiebreak, appScreen, activeSheet) {
+        if (offerDecidingTiebreak && appScreen == AppScreen.Counter && activeSheet == ActiveSheet.None) {
+            activeSheet = ActiveSheet.DecidingTiebreak
+        } else if (!offerDecidingTiebreak && activeSheet == ActiveSheet.DecidingTiebreak) {
+            activeSheet = ActiveSheet.None
+        }
+    }
+
+    // The winning point takes the watch straight to the finished screen,
+    // same as mobile and iOS. END MATCH remains for ending mid-match.
+    LaunchedEffect(state.isMatchOver) {
+        if (state.isMatchOver && appScreen == AppScreen.Counter) {
+            val healthMetrics = healthServicesManager.endWorkoutAndGetMetrics()
+            viewModel.finishMatch(healthMetrics)
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            liveBroadcaster.clearLiveScore()
+            activeSheet = ActiveSheet.None
+            appScreen = AppScreen.MatchFinished
+        }
     }
 
     // If spectator is watching and the match ends, go back to counter
@@ -461,9 +434,9 @@ private fun TennisCounterApp(
                         if (saved) {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            transientMessage = "Saved OK"
+                            transientMessage = context.getString(R.string.status_saved)
                         } else {
-                            transientMessage = "Already saved"
+                            transientMessage = context.getString(R.string.status_already_saved)
                         }
                         if (saved && summaryToSend != null) {
                             val setScoresText = buildSetScoresText(state)
@@ -482,13 +455,13 @@ private fun TennisCounterApp(
                                     PhoneSendResult.NoConnectedPhone -> {
                                         withContext(Dispatchers.Main) {
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            transientMessage = "Phone not connected"
+                                            transientMessage = context.getString(R.string.status_phone_not_connected)
                                         }
                                     }
 
                                     PhoneSendResult.Failed -> {
                                         withContext(Dispatchers.Main) {
-                                            transientMessage = "Saved OK, send failed"
+                                            transientMessage = context.getString(R.string.status_saved_send_failed)
                                         }
                                     }
                                 }
@@ -535,7 +508,7 @@ private fun TennisCounterApp(
                 contentAlignment = Alignment.BottomCenter
             ) {
                 PlayceButton(
-                    text = "Watch Live",
+                    text = stringResource(R.string.btn_watch_live),
                     variant = PlayceButtonVariant.Primary,
                     onClick = {
                         appScreen = AppScreen.Spectator
@@ -547,12 +520,13 @@ private fun TennisCounterApp(
         if (activeSheet != ActiveSheet.None) {
             val title: String
             val actions: List<SheetAction>
+            var message: String? = null
 
             when (activeSheet) {
                 ActiveSheet.PlayerA -> {
                     title = state.playerAName.take(12)
                     actions = listOf(
-                        SheetAction("Undo (${state.playerAName.take(8)})") {
+                        SheetAction(stringResource(R.string.action_undo_short, state.playerAName.take(8))) {
                             if (viewModel.undoLastPointForPlayerA()) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -560,14 +534,14 @@ private fun TennisCounterApp(
                             }
                             activeSheet = ActiveSheet.None
                         },
-                        SheetAction("Cancel") { activeSheet = ActiveSheet.None }
+                        SheetAction(stringResource(R.string.btn_cancel)) { activeSheet = ActiveSheet.None }
                     )
                 }
 
                 ActiveSheet.PlayerB -> {
                     title = state.playerBName.take(12)
                     actions = listOf(
-                        SheetAction("Undo (${state.playerBName.take(8)})") {
+                        SheetAction(stringResource(R.string.action_undo_short, state.playerBName.take(8))) {
                             if (viewModel.undoLastPointForPlayerB()) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -575,62 +549,87 @@ private fun TennisCounterApp(
                             }
                             activeSheet = ActiveSheet.None
                         },
-                        SheetAction("Cancel") { activeSheet = ActiveSheet.None }
+                        SheetAction(stringResource(R.string.btn_cancel)) { activeSheet = ActiveSheet.None }
                     )
                 }
 
                 ActiveSheet.Admin -> {
-                    title = "Admin"
-                    val buttonToggleLabel = if (hwButtonsEnabled)
-                        "Buttons: ON (tap to disable)"
-                    else
-                        "Buttons: OFF (tap to enable)"
+                    title = stringResource(R.string.sheet_admin)
                     actions = listOf(
-                        SheetAction(buttonToggleLabel) {
-                            hwButtonsEnabled = !hwButtonsEnabled
-                            onHardwareButtonsToggled(hwButtonsEnabled)
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            transientMessage = if (hwButtonsEnabled)
-                                "HW buttons ON: Top=+A, Bottom=+B"
-                            else
-                                "HW buttons OFF"
-                            activeSheet = ActiveSheet.None
-                        },
-                        SheetAction("Reset current game") {
+                        SheetAction(stringResource(R.string.action_reset_game)) {
                             viewModel.resetGame()
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             broadcastCurrentState("")
                             activeSheet = ActiveSheet.None
                         },
-                        SheetAction("Reset match") {
+                        SheetAction(stringResource(R.string.action_reset_match)) {
                             viewModel.resetMatch()
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             liveBroadcaster.clearLiveScore()
-                            transientMessage = "Match reset"
+                            transientMessage = context.getString(R.string.status_match_reset)
                             activeSheet = ActiveSheet.None
                         },
-                        SheetAction("Cancel") { activeSheet = ActiveSheet.None }
+                        SheetAction(stringResource(R.string.btn_cancel)) { activeSheet = ActiveSheet.None }
                     )
                 }
 
                 ActiveSheet.EndMatchConfirm -> {
-                    title = "End match?"
+                    title = stringResource(R.string.sheet_end_match_confirm)
                     actions = listOf(
-                        // Navigation to final screen is manual and only happens after explicit Finish confirmation.
-                        SheetAction("Finish") {
+                        // Manual path for ending mid-match; a match won on points navigates automatically.
+                        SheetAction(stringResource(R.string.btn_finish)) {
                             uiScope.launch {
                                 val healthMetrics = healthServicesManager.endWorkoutAndGetMetrics()
                                 viewModel.finishMatch(healthMetrics)
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 liveBroadcaster.clearLiveScore()
-                                // Auto-disable hardware buttons when match ends
-                                hwButtonsEnabled = false
-                                onHardwareButtonsToggled(false)
                                 appScreen = AppScreen.MatchFinished
                                 activeSheet = ActiveSheet.None
                             }
                         },
-                        SheetAction("Cancel") { activeSheet = ActiveSheet.None }
+                        SheetAction(stringResource(R.string.btn_cancel)) { activeSheet = ActiveSheet.None }
+                    )
+                }
+
+                ActiveSheet.InitialServer -> {
+                    title = stringResource(R.string.prompt_who_serves_first)
+                    actions = listOf(
+                        SheetAction(state.playerAName.take(12)) {
+                            viewModel.setInitialServer(true)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction(state.playerBName.take(12)) {
+                            viewModel.setInitialServer(false)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        }
+                    )
+                }
+
+                ActiveSheet.DecidingTiebreak -> {
+                    title = stringResource(R.string.title_sets_tied)
+                    message = stringResource(R.string.prompt_decide_tiebreak)
+                    // Rendered two-per-row: [TB to 7 | TB to 10] with the decline below.
+                    actions = listOf(
+                        SheetAction(stringResource(R.string.action_tiebreak_to_7)) {
+                            viewModel.startDecidingTiebreak(7)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction(stringResource(R.string.action_super_tiebreak_to_10)) {
+                            viewModel.startDecidingTiebreak(10)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction(stringResource(R.string.action_continue_normal_set)) {
+                            viewModel.declineDecidingTiebreak()
+                            activeSheet = ActiveSheet.None
+                        }
                     )
                 }
 
@@ -642,8 +641,20 @@ private fun TennisCounterApp(
 
             BottomActionSheet(
                 title = title,
+                message = message,
                 actions = actions,
-                onDismiss = { activeSheet = ActiveSheet.None }
+                actionsPerRow = if (activeSheet == ActiveSheet.DecidingTiebreak) 2 else 1,
+                onDismiss = {
+                    when (activeSheet) {
+                        // Ignoring the serve question keeps the default (Player A serves).
+                        ActiveSheet.InitialServer -> viewModel.dismissInitialServerPrompt()
+                        // Swiping away the offer counts as "continue normal set";
+                        // undoing the set-closing point re-arms the question.
+                        ActiveSheet.DecidingTiebreak -> viewModel.declineDecidingTiebreak()
+                        else -> Unit
+                    }
+                    activeSheet = ActiveSheet.None
+                }
             )
         }
 
@@ -665,6 +676,51 @@ private fun TennisCounterApp(
                 color = PlayceWearColors.TextPrimary,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 11.sp
+            )
+        }
+
+        // Versioned "What's New" overlay, shown once after an update changes the controls.
+        if (showWhatsNew) {
+            WhatsNewOverlay(
+                onDismiss = {
+                    WhatsNewPrefs.markSeen(context)
+                    showWhatsNew = false
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun WhatsNewOverlay(onDismiss: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PlayceWearColors.Scrim)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { /* consume taps behind the overlay */ })
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            PlayceChip(text = stringResource(R.string.whatsnew_title), accent = true)
+            Text(
+                text = stringResource(R.string.whatsnew_message),
+                color = PlayceWearColors.TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+            PlayceButton(
+                text = stringResource(R.string.whatsnew_button),
+                onClick = onDismiss,
+                variant = PlayceButtonVariant.Primary
             )
         }
     }
@@ -738,9 +794,11 @@ private fun CounterScreen(
     onPauseTimer: () -> Unit
 ) {
     val listState = rememberScalingLazyListState()
-    val serveIndicatorState = remember(state) {
+    val serverName = if (state.currentServerIsPlayerA()) state.playerAName else state.playerBName
+    val serverLabel = stringResource(R.string.serve_indicator, serverName.take(6).uppercase())
+    val serveIndicatorState = remember(state, serverLabel) {
         ServeIndicatorState(
-            serverLabel = if (state.currentServerIsPlayerA()) "${state.playerAName.take(6).uppercase()} SERVES" else "${state.playerBName.take(6).uppercase()} SERVES",
+            serverLabel = serverLabel,
             isPlayerAServing = state.currentServerIsPlayerA(),
             serveOnLeftSide = state.serveStartsOnLeftSide()
         )
@@ -769,8 +827,8 @@ private fun CounterScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
                     ) {
-                        CompactScore(label = "SETS", a = state.playerA.sets, b = state.playerB.sets)
-                        CompactScore(label = "GAMES", a = state.playerA.games, b = state.playerB.games)
+                        CompactScore(label = stringResource(R.string.label_sets), a = state.playerA.sets, b = state.playerB.sets)
+                        CompactScore(label = stringResource(R.string.label_games), a = state.playerA.games, b = state.playerB.games)
                     }
                 }
 
@@ -877,11 +935,11 @@ private fun MatchFinishedScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    "MATCH FINISHED",
+                    stringResource(R.string.title_match_finished),
                     fontWeight = FontWeight.Black,
                     color = PlayceWearColors.TextPrimary
                 )
-                Text("No summary", color = PlayceWearColors.TextSecondary, fontSize = 11.sp)
+                Text(stringResource(R.string.label_no_summary), color = PlayceWearColors.TextSecondary, fontSize = 11.sp)
             }
             return@Box
         }
@@ -900,7 +958,7 @@ private fun MatchFinishedScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
             ) {
-                PlayceChip(text = "MATCH FINISHED", accent = true)
+                PlayceChip(text = stringResource(R.string.title_match_finished), accent = true)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -940,7 +998,7 @@ private fun MatchFinishedScreen(
                             color = PlayceWearColors.TextSecondary
                         )
                         Text(
-                            text = "Duration ${formatTime(safeSummary.durationSeconds)}",
+                            text = stringResource(R.string.label_duration, formatTime(safeSummary.durationSeconds)),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = PlayceWearColors.TextPrimary,
@@ -961,13 +1019,13 @@ private fun MatchFinishedScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 PlayceButton(
-                    text = if (isSaved) "Saved OK" else "SAVE MATCH",
+                    text = if (isSaved) stringResource(R.string.status_saved) else stringResource(R.string.btn_save_match),
                     onClick = onSave,
                     enabled = !isSaved,
                     variant = PlayceButtonVariant.Primary
                 )
                 PlayceButton(
-                    text = "NEW MATCH",
+                    text = stringResource(R.string.btn_new_match),
                     onClick = onNewMatch,
                     variant = PlayceButtonVariant.Secondary
                 )
@@ -977,12 +1035,18 @@ private fun MatchFinishedScreen(
 }
 
 
+private sealed class SyncStatus {
+    data class RetryIn(val seconds: Long) : SyncStatus()
+    object Syncing : SyncStatus()
+    object Synced : SyncStatus()
+}
+
 @Composable
 private fun SyncStatusLabel(saveTapSignal: Int) {
     val context = LocalContext.current
     val syncedVisibleWindowMs = 4_000L
     var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var statusText by remember { mutableStateOf<String?>(null) }
+    var status by remember { mutableStateOf<SyncStatus?>(null) }
     var lastSaveTapAtMillis by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(saveTapSignal) {
@@ -1003,34 +1067,34 @@ private fun SyncStatusLabel(saveTapSignal: Int) {
         val nextStatus = when {
             pending != null && nowMillis < pending.nextRetryAt -> {
                 val remainingSeconds = ((pending.nextRetryAt - nowMillis + 999L) / 1000L).coerceAtLeast(1L)
-                "Retry in ${remainingSeconds}s"
+                SyncStatus.RetryIn(remainingSeconds)
             }
-            pending != null -> "Syncing..."
+            pending != null -> SyncStatus.Syncing
             lastSaveTapAtMillis > 0L && (nowMillis - lastSaveTapAtMillis) <= syncedVisibleWindowMs ->
-                "Synced \u2713"
+                SyncStatus.Synced
             else -> null
         }
-        if (statusText != nextStatus) {
-            statusText = nextStatus
+        if (status != nextStatus) {
+            status = nextStatus
         }
     }
-    val label = statusText ?: return
+    val currentStatus = status ?: return
 
-    val normalizedLabel = when {
-        label.startsWith("Retry in", ignoreCase = true) -> label.uppercase(Locale.getDefault())
-        label.startsWith("Retry", ignoreCase = true) -> "RETRY"
-        label.startsWith("Syncing", ignoreCase = true) -> "SYNCING..."
-        label.startsWith("Synced", ignoreCase = true) -> "SENT"
-        else -> label.uppercase(Locale.getDefault())
+    val normalizedLabel = when (currentStatus) {
+        is SyncStatus.RetryIn ->
+            stringResource(R.string.status_retry_in, currentStatus.seconds).uppercase(Locale.getDefault())
+        SyncStatus.Syncing -> stringResource(R.string.status_syncing).uppercase(Locale.getDefault())
+        SyncStatus.Synced -> stringResource(R.string.status_sent)
     }
+    val isSynced = currentStatus == SyncStatus.Synced
 
     Text(
         text = normalizedLabel,
         fontSize = 10.sp,
         fontWeight = FontWeight.SemiBold,
-        color = when {
-            label.startsWith("Synced") -> PlayceWearColors.Accent
-            label.startsWith("Retry") -> PlayceWearColors.TextSecondary
+        color = when (currentStatus) {
+            SyncStatus.Synced -> PlayceWearColors.Accent
+            is SyncStatus.RetryIn -> PlayceWearColors.TextSecondary
             else -> PlayceWearColors.TextPrimary
         },
         textAlign = TextAlign.Center,
@@ -1038,11 +1102,11 @@ private fun SyncStatusLabel(saveTapSignal: Int) {
             .fillMaxWidth()
             .clip(PlayceWearShapes.Chip)
             .background(
-                if (label.startsWith("Synced")) PlayceWearColors.AccentSoft else PlayceWearColors.Surface
+                if (isSynced) PlayceWearColors.AccentSoft else PlayceWearColors.Surface
             )
             .border(
                 1.dp,
-                if (label.startsWith("Synced")) PlayceWearColors.Accent.copy(alpha = 0.28f) else PlayceWearColors.Border,
+                if (isSynced) PlayceWearColors.Accent.copy(alpha = 0.28f) else PlayceWearColors.Border,
                 PlayceWearShapes.Chip
             )
             .padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 5.dp)
@@ -1053,7 +1117,7 @@ private fun SyncStatusLabel(saveTapSignal: Int) {
 @Composable
 private fun EndMatchButton(onClick: () -> Unit) {
     PlayceButton(
-        text = "END MATCH",
+        text = stringResource(R.string.btn_end_match),
         onClick = onClick,
         variant = PlayceButtonVariant.Secondary
     )
@@ -1225,7 +1289,7 @@ private fun TimerFooter(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "TIMER",
+                text = stringResource(R.string.label_timer),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = PlayceWearColors.Accent
@@ -1239,13 +1303,13 @@ private fun TimerFooter(
             Spacer(modifier = Modifier.height(4.dp))
             if (isRunning) {
                 PlayceButton(
-                    text = "PAUSE",
+                    text = stringResource(R.string.btn_pause),
                     onClick = onPause,
                     variant = PlayceButtonVariant.Secondary
                 )
             } else {
                 PlayceButton(
-                    text = if (hasStarted) "RESUME" else "START",
+                    text = if (hasStarted) stringResource(R.string.btn_resume) else stringResource(R.string.btn_start),
                     onClick = onStart,
                     variant = PlayceButtonVariant.Primary
                 )
@@ -1258,7 +1322,9 @@ private fun TimerFooter(
 private fun BottomActionSheet(
     title: String,
     actions: List<SheetAction>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    message: String? = null,
+    actionsPerRow: Int = 1
 ) {
     Box(
         modifier = Modifier
@@ -1281,15 +1347,33 @@ private fun BottomActionSheet(
         ) {
             PlayceChip(text = title, accent = true)
 
-            actions.forEach { action ->
-                PlayceButton(
-                    text = action.label,
-                    onClick = action.onClick,
-                    variant = when {
-                        action.label.contains("END MATCH", ignoreCase = true) -> PlayceButtonVariant.Danger
-                        else -> PlayceButtonVariant.Secondary
-                    }
+            if (message != null) {
+                Text(
+                    text = message,
+                    color = PlayceWearColors.TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
+            }
+
+            actions.chunked(actionsPerRow).forEach { rowActions ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    rowActions.forEach { action ->
+                        PlayceButton(
+                            text = action.label,
+                            onClick = action.onClick,
+                            modifier = Modifier.weight(1f),
+                            variant = when {
+                                action.label.contains("END MATCH", ignoreCase = true) -> PlayceButtonVariant.Danger
+                                else -> PlayceButtonVariant.Secondary
+                            }
+                        )
+                    }
+                }
             }
         }
     }
