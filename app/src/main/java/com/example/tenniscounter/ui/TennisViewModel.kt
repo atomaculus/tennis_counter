@@ -328,6 +328,8 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         val detail = when {
             completed.isBlank() && !hasSets -> "Games: ${state.playerA.games}-${state.playerB.games}"
             completed.isBlank() -> liveSegment
+            // Match decided on the last completed set: the residual 0-0 game adds nothing.
+            state.isMatchOver -> completed
             else -> "$completed | $liveSegment"
         }
 

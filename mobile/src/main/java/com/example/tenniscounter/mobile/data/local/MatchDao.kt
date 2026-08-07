@@ -27,6 +27,9 @@ interface MatchDao {
     @Update
     suspend fun update(match: MatchEntity)
 
+    @Query("DELETE FROM matches WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Query("SELECT COUNT(*) FROM matches")
     suspend fun getMatchCount(): Int
 

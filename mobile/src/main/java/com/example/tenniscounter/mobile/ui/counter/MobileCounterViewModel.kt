@@ -22,6 +22,8 @@ data class MobileFinishedSummary(
     val durationSeconds: Int,
     val setsScore: String,
     val setsDetail: String,
+    /** Completed sets as space-separated pairs ("6-4 3-6 10-7"), the storage format history expects. */
+    val completedSetsText: String?,
     val playerAName: String,
     val playerBName: String
 )
@@ -49,6 +51,8 @@ data class MobileCounterState(
 
     fun pointLabelForA(): String = score.pointLabelForA()
     fun pointLabelForB(): String = score.pointLabelForB()
+    fun currentServerIsPlayerA(): Boolean = score.currentServerIsPlayerA()
+    fun serveStartsOnLeftSide(): Boolean = score.serveStartsOnLeftSide()
 }
 
 class MobileCounterViewModel : ViewModel() {
@@ -95,11 +99,13 @@ class MobileCounterViewModel : ViewModel() {
     }
 
     fun addPointToPlayerA() {
+        if (_state.value.isMatchOver) return
         matchEvents.add(ScoringEngine.MatchEvent.Point(true))
         applyPoint(isPlayerA = true)
     }
 
     fun addPointToPlayerB() {
+        if (_state.value.isMatchOver) return
         matchEvents.add(ScoringEngine.MatchEvent.Point(false))
         applyPoint(isPlayerA = false)
     }
@@ -160,6 +166,8 @@ class MobileCounterViewModel : ViewModel() {
         val detail = when {
             completed.isBlank() && !hasSets -> "Games: ${current.playerA.games}-${current.playerB.games}"
             completed.isBlank() -> "G ${current.playerA.games}-${current.playerB.games}"
+            // Match decided on the last completed set: the residual 0-0 game adds nothing.
+            current.isMatchOver -> completed
             else -> "$completed | G ${current.playerA.games}-${current.playerB.games}"
         }
 
@@ -168,6 +176,7 @@ class MobileCounterViewModel : ViewModel() {
             durationSeconds = current.elapsedSeconds,
             setsScore = setsScore,
             setsDetail = detail,
+            completedSetsText = completed.ifBlank { null },
             playerAName = current.playerAName,
             playerBName = current.playerBName
         )
@@ -223,6 +232,11 @@ class MobileCounterViewModel : ViewModel() {
         val current = _state.value
         val newScore = ScoringEngine.scorePoint(current.score, isPlayerA)
         _state.value = current.copy(score = newScore, declinedDecidingTiebreak = false)
+        // Same behavior as iOS ScoreboardController.addPoint: the winning point
+        // takes the user straight to the finished screen.
+        if (newScore.isMatchOver) {
+            finishMatch()
+        }
     }
 
     private fun undoLastPointForPlayer(isPlayerA: Boolean): Boolean {

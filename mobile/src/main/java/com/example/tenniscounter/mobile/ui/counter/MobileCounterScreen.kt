@@ -18,13 +18,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tenniscounter.mobile.billing.PremiumUiState
 import com.example.tenniscounter.mobile.ui.components.PlayceWordmark
@@ -165,29 +164,51 @@ private fun DecidingTiebreakDialog(
     onTiebreakTo7: () -> Unit,
     onSuperTiebreakTo10: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDeclineNormalSet,
-        containerColor = PlayceColors.Surface,
-        titleContentColor = PlayceColors.TextPrimary,
-        textContentColor = PlayceColors.TextSecondary,
-        title = { Text(stringResource(R.string.dialog_sets_tied_title)) },
-        text = { Text(stringResource(R.string.dialog_sets_tied_message)) },
-        confirmButton = {
-            TextButton(onClick = onTiebreakTo7) {
-                Text(stringResource(R.string.dialog_tiebreak_to_7), color = PlayceColors.Accent)
-            }
-        },
-        dismissButton = {
-            Column {
-                TextButton(onClick = onSuperTiebreakTo10) {
-                    Text(stringResource(R.string.dialog_super_tiebreak_to_10), color = PlayceColors.Accent)
-                }
-                TextButton(onClick = onDeclineNormalSet) {
-                    Text(stringResource(R.string.dialog_continue_normal_set), color = PlayceColors.TextSecondary)
-                }
+    Dialog(onDismissRequest = onDeclineNormalSet) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = PlayceColors.Surface),
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.dialog_sets_tied_title),
+                    color = PlayceColors.TextPrimary,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(R.string.dialog_sets_tied_message),
+                    color = PlayceColors.TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                PrimaryButton(
+                    text = stringResource(R.string.dialog_tiebreak_to_7),
+                    onClick = onTiebreakTo7,
+                    style = PrimaryButtonStyle.Solid,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                PrimaryButton(
+                    text = stringResource(R.string.dialog_super_tiebreak_to_10),
+                    onClick = onSuperTiebreakTo10,
+                    style = PrimaryButtonStyle.Solid,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                PrimaryButton(
+                    text = stringResource(R.string.dialog_continue_normal_set),
+                    onClick = onDeclineNormalSet,
+                    style = PrimaryButtonStyle.Outline,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -338,7 +359,63 @@ private fun ScoreboardCard(
                     )
                 }
             }
+            MatchStatusRow(state = state)
         }
+    }
+}
+
+// Same layout as the iOS ScoreboardCard's MatchStatusRow (server + serve side pills).
+@Composable
+private fun MatchStatusRow(state: MobileCounterState) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        StatusPill(
+            title = if (state.isTiebreak) stringResource(R.string.label_tiebreak) else stringResource(R.string.label_server),
+            value = if (state.currentServerIsPlayerA()) state.playerAName else state.playerBName,
+            highlighted = state.isTiebreak,
+            modifier = Modifier.weight(1f)
+        )
+        StatusPill(
+            title = stringResource(R.string.label_serve_side),
+            value = if (state.serveStartsOnLeftSide()) {
+                stringResource(R.string.serve_side_left)
+            } else {
+                stringResource(R.string.serve_side_right)
+            },
+            highlighted = false,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun StatusPill(
+    title: String,
+    value: String,
+    highlighted: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (highlighted) PlayceColors.AccentMuted else PlayceColors.SurfaceElevated)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = title.uppercase(),
+            color = PlayceColors.TextSecondary,
+            style = MaterialTheme.typography.labelSmall
+        )
+        Text(
+            text = value,
+            color = if (highlighted) PlayceColors.Accent else PlayceColors.TextPrimary,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
+        )
     }
 }
 

@@ -149,7 +149,10 @@ fun MobileApp() {
 
                 Box(modifier = Modifier.fillMaxSize()) {
                 if (liveState != null) {
-                    LiveScoreScreen(liveState = liveState)
+                    LiveScoreScreen(
+                        liveState = liveState,
+                        receivedAtElapsedRealtime = LiveScoreRepository.receivedAtElapsedRealtime
+                    )
                 } else {
                     val counterViewModel: MobileCounterViewModel = viewModel()
                     MobileCounterScreen(
@@ -191,7 +194,7 @@ fun MobileApp() {
                                         createdAt = summary.createdAt,
                                         durationSeconds = summary.durationSeconds.toLong(),
                                         finalScoreText = summary.setsScore,
-                                        setScoresText = summary.setsDetail,
+                                        setScoresText = summary.completedSetsText,
                                         idempotencyKey = "mobile_${summary.createdAt}"
                                     )
                                     matchDao.insertOrIgnore(entity)
@@ -283,6 +286,7 @@ fun MobileApp() {
                 MatchDetailScreen(
                     viewModel = detailViewModel,
                     onBack = { navController.popBackStack() },
+                    onDeleted = { navController.popBackStack() },
                     premiumUiState = premiumUiState,
                     onUnlockPremium = { activity?.let(premiumBillingManager::launchPurchase) },
                     onRestorePurchases = premiumBillingManager::restorePurchases

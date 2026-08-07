@@ -316,6 +316,19 @@ private fun TennisCounterApp(
         }
     }
 
+    // The winning point takes the watch straight to the finished screen,
+    // same as mobile and iOS. END MATCH remains for ending mid-match.
+    LaunchedEffect(state.isMatchOver) {
+        if (state.isMatchOver && appScreen == AppScreen.Counter) {
+            val healthMetrics = healthServicesManager.endWorkoutAndGetMetrics()
+            viewModel.finishMatch(healthMetrics)
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            liveBroadcaster.clearLiveScore()
+            activeSheet = ActiveSheet.None
+            appScreen = AppScreen.MatchFinished
+        }
+    }
+
     // If spectator is watching and the match ends, go back to counter
     LaunchedEffect(spectatorState) {
         if (appScreen == AppScreen.Spectator && spectatorState == null) {
@@ -563,7 +576,7 @@ private fun TennisCounterApp(
                 ActiveSheet.EndMatchConfirm -> {
                     title = stringResource(R.string.sheet_end_match_confirm)
                     actions = listOf(
-                        // Navigation to final screen is manual and only happens after explicit Finish confirmation.
+                        // Manual path for ending mid-match; a match won on points navigates automatically.
                         SheetAction(stringResource(R.string.btn_finish)) {
                             uiScope.launch {
                                 val healthMetrics = healthServicesManager.endWorkoutAndGetMetrics()
@@ -599,11 +612,8 @@ private fun TennisCounterApp(
                 ActiveSheet.DecidingTiebreak -> {
                     title = stringResource(R.string.title_sets_tied)
                     message = stringResource(R.string.prompt_decide_tiebreak)
+                    // Rendered two-per-row: [TB to 7 | TB to 10] with the decline below.
                     actions = listOf(
-                        SheetAction(stringResource(R.string.action_continue_normal_set)) {
-                            viewModel.declineDecidingTiebreak()
-                            activeSheet = ActiveSheet.None
-                        },
                         SheetAction(stringResource(R.string.action_tiebreak_to_7)) {
                             viewModel.startDecidingTiebreak(7)
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -614,6 +624,10 @@ private fun TennisCounterApp(
                             viewModel.startDecidingTiebreak(10)
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             broadcastCurrentState("")
+                            activeSheet = ActiveSheet.None
+                        },
+                        SheetAction(stringResource(R.string.action_continue_normal_set)) {
+                            viewModel.declineDecidingTiebreak()
                             activeSheet = ActiveSheet.None
                         }
                     )
@@ -629,6 +643,7 @@ private fun TennisCounterApp(
                 title = title,
                 message = message,
                 actions = actions,
+                actionsPerRow = if (activeSheet == ActiveSheet.DecidingTiebreak) 2 else 1,
                 onDismiss = {
                     when (activeSheet) {
                         // Ignoring the serve question keeps the default (Player A serves).
@@ -1308,7 +1323,8 @@ private fun BottomActionSheet(
     title: String,
     actions: List<SheetAction>,
     onDismiss: () -> Unit,
-    message: String? = null
+    message: String? = null,
+    actionsPerRow: Int = 1
 ) {
     Box(
         modifier = Modifier
@@ -1341,15 +1357,23 @@ private fun BottomActionSheet(
                 )
             }
 
-            actions.forEach { action ->
-                PlayceButton(
-                    text = action.label,
-                    onClick = action.onClick,
-                    variant = when {
-                        action.label.contains("END MATCH", ignoreCase = true) -> PlayceButtonVariant.Danger
-                        else -> PlayceButtonVariant.Secondary
+            actions.chunked(actionsPerRow).forEach { rowActions ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    rowActions.forEach { action ->
+                        PlayceButton(
+                            text = action.label,
+                            onClick = action.onClick,
+                            modifier = Modifier.weight(1f),
+                            variant = when {
+                                action.label.contains("END MATCH", ignoreCase = true) -> PlayceButtonVariant.Danger
+                                else -> PlayceButtonVariant.Secondary
+                            }
+                        )
                     }
-                )
+                }
             }
         }
     }

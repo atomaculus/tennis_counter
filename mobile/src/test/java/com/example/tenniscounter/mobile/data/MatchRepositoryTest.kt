@@ -66,6 +66,24 @@ class MatchRepositoryTest {
         assertEquals(143, stored.avgHeartRateBpm)
         assertEquals(176, stored.maxHeartRateBpm)
     }
+
+    @Test
+    fun deleteMatch_removesStoredMatch() = runBlocking {
+        val dao = FakeMatchDao()
+        val repository = MatchRepository(dao)
+        val id = repository.insert(
+            MatchEntity(
+                createdAt = 3_000L,
+                durationSeconds = 120L,
+                finalScoreText = "2-0",
+                idempotencyKey = "delete-me"
+            )
+        )
+
+        repository.deleteMatch(id)
+
+        assertTrue(dao.snapshot().isEmpty())
+    }
 }
 
 private class FakeMatchDao : MatchDao {
@@ -101,6 +119,11 @@ private class FakeMatchDao : MatchDao {
             matches[index] = match
             allMatchesFlow.value = matches.toList()
         }
+    }
+
+    override suspend fun deleteById(id: Long) {
+        matches.removeAll { it.id == id }
+        allMatchesFlow.value = matches.toList()
     }
 
     override suspend fun getMatchCount(): Int = matches.size

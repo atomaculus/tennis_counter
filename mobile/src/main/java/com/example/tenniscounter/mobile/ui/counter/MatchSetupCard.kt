@@ -20,6 +20,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,7 @@ import com.example.tenniscounter.mobile.R
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
 import com.example.tenniscounter.mobile.ui.theme.PlayceColors
+import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 /**
@@ -51,6 +53,15 @@ fun MatchSetupCard(
     var playerBName by remember { mutableStateOf("") }
     var selectedPreset by remember { mutableIntStateOf(0) }
     var sentToWatch by remember { mutableStateOf(false) }
+    var appliedLocally by remember { mutableStateOf(false) }
+
+    // Temporary "Applied" feedback, mirroring iOS; also cleared by any config edit.
+    LaunchedEffect(appliedLocally) {
+        if (appliedLocally) {
+            delay(2000)
+            appliedLocally = false
+        }
+    }
     var firstServerChoice by remember { mutableStateOf(FirstServerChoice.PLAYER_A) }
     var coinTossResolvedIsPlayerA by remember { mutableStateOf<Boolean?>(null) }
 
@@ -216,9 +227,14 @@ fun MatchSetupCard(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         PrimaryButton(
-                            text = stringResource(R.string.setup_btn_apply),
+                            text = if (appliedLocally) {
+                                stringResource(R.string.setup_btn_applied)
+                            } else {
+                                stringResource(R.string.setup_btn_apply)
+                            },
                             onClick = {
                                 onApplyConfig(playerAName, playerBName, presets[selectedPreset], resolveInitialServer())
+                                appliedLocally = true
                             },
                             style = PrimaryButtonStyle.Outline,
                             modifier = Modifier.weight(1f)

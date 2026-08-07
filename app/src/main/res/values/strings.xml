@@ -61,8 +61,8 @@
     <string name="title_sets_tied">SETS TIED</string>
     <string name="prompt_decide_tiebreak">Decide by tiebreak?</string>
     <string name="action_continue_normal_set">Continue normal set</string>
-    <string name="action_tiebreak_to_7">Tiebreak to 7</string>
-    <string name="action_super_tiebreak_to_10">Super tiebreak to 10</string>
+    <string name="action_tiebreak_to_7">TB to 7</string>
+    <string name="action_super_tiebreak_to_10">TB to 10</string>
 
     <!-- Timer buttons -->
     <string name="btn_pause">PAUSE</string>

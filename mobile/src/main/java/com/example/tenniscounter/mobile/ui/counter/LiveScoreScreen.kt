@@ -1,5 +1,6 @@
 package com.example.tenniscounter.mobile.ui.counter
 
+import android.os.SystemClock
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -50,13 +51,14 @@ import com.example.tenniscounter.mobile.sound.PointSoundManager
 import com.example.tenniscounter.mobile.sync.LiveMatchState
 import com.example.tenniscounter.mobile.ui.components.PlayceWordmark
 import com.example.tenniscounter.mobile.ui.theme.PlayceColors
+import kotlinx.coroutines.delay
 
 /**
  * Read-only screen that displays the live score being broadcast from the scorer watch.
  * Plays a sound each time the score changes (different tone for Player A vs B).
  */
 @Composable
-fun LiveScoreScreen(liveState: LiveMatchState) {
+fun LiveScoreScreen(liveState: LiveMatchState, receivedAtElapsedRealtime: Long) {
     val pointSound = remember { PointSoundManager() }
     DisposableEffect(Unit) { onDispose { pointSound.release() } }
 
@@ -69,6 +71,28 @@ fun LiveScoreScreen(liveState: LiveMatchState) {
                 "B" -> pointSound.playPlayerBSound()
             }
             prevTimestamp = liveState.timestamp
+        }
+    }
+
+    // The live payload has no explicit "timer running" flag distinct from match activity
+    // (only isMatchActive), and this screen is only shown while isMatchActive is true, so
+    // treat "active" as "running". Extrapolate locally between payload updates, anchored to
+    // the elapsedRealtime() captured when this payload was received, so the timer ticks once
+    // per second on the phone instead of appearing frozen between watch-sent events.
+    val isTimerRunning = liveState.isMatchActive
+    var displayedElapsedSeconds by remember(liveState.elapsedSeconds, receivedAtElapsedRealtime) {
+        mutableStateOf(liveState.elapsedSeconds)
+    }
+    LaunchedEffect(liveState.elapsedSeconds, receivedAtElapsedRealtime, isTimerRunning) {
+        if (!isTimerRunning) {
+            displayedElapsedSeconds = liveState.elapsedSeconds
+            return@LaunchedEffect
+        }
+        while (true) {
+            val extrapolatedSeconds = liveState.elapsedSeconds +
+                ((SystemClock.elapsedRealtime() - receivedAtElapsedRealtime) / 1000L).toInt()
+            displayedElapsedSeconds = extrapolatedSeconds
+            delay(1000)
         }
     }
 
@@ -85,7 +109,7 @@ fun LiveScoreScreen(liveState: LiveMatchState) {
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             LiveHeader()
-            LiveTimerCard(elapsedSeconds = liveState.elapsedSeconds)
+            LiveTimerCard(elapsedSeconds = displayedElapsedSeconds)
             LiveScoreboardCard(liveState = liveState)
             Spacer(modifier = Modifier.height(8.dp))
         }

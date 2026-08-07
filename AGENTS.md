@@ -333,15 +333,13 @@ Ejemplo correcto:
   - `accumulatedSeconds`
 
 ### Reglas UX actuales
-- El timer auto-arranca al entrar a `CounterScreen` con scoreboard nuevo (0-0) y timer en 0 detenido.
-- Si hubo `task removed` y quedó tiempo viejo con scoreboard nuevo:
-  - se resetea primero (`reset timer on fresh scoreboard after task removed`) y luego auto-start.
-- `New Match` mantiene reset + start.
+- El timer NO auto-arranca: inicio manual explícito del usuario (criterio compartido con iOS/watchOS y mobile; footer START/PAUSE/RESUME en Wear).
+- Al entrar a `CounterScreen` con scoreboard nuevo (0-0), si quedó tiempo viejo de una sesión anterior sin Start manual, se resetea (`reset timer on fresh scoreboard after task removed`) y queda detenido.
+- `New Match` resetea el timer y lo deja detenido hasta que el usuario lo inicie.
 - `MatchTimerService.onTaskRemoved()` consolida tiempo, setea `isRunning=false` y `stopSelf()`.
 
 Logs clave timer:
 - `reset timer on fresh scoreboard after task removed`
-- `auto-start timer on entering match screen`
 - `MatchTimerService onTaskRemoved`
 
 ---

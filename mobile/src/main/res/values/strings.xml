@@ -11,6 +11,10 @@
     <string name="label_sets">Sets</string>
     <string name="label_games">Games</string>
     <string name="label_pts">Pts</string>
+    <string name="label_server">Server</string>
+    <string name="label_serve_side">Serve side</string>
+    <string name="serve_side_left">Left</string>
+    <string name="serve_side_right">Right</string>
     <string name="btn_start">Start</string>
     <string name="btn_pause">Pause</string>
     <string name="btn_resume">Resume</string>
@@ -115,6 +119,7 @@
     <string name="setup_coin_toss_result">→ %s</string>
     <string name="setup_match_format">MATCH FORMAT</string>
     <string name="setup_btn_apply">Apply</string>
+    <string name="setup_btn_applied">Applied ✓</string>
     <string name="setup_btn_send_watch">Send to Watch</string>
     <string name="setup_btn_sent">Sent!</string>
     <string name="setup_sent_message">Config sent to watch. Start the match on your watch when ready.</string>
@@ -153,4 +158,9 @@
     <string name="whatsnew_bullet_server">Choose who serves first</string>
     <string name="whatsnew_bullet_tiebreak">Deciding tiebreak when sets are tied</string>
     <string name="whatsnew_got_it">Got it</string>
+
+    <!-- Match deletion -->
+    <string name="btn_delete_match">Delete match</string>
+    <string name="delete_match_dialog_title">Delete match?</string>
+    <string name="btn_delete">Delete</string>
 </resources>

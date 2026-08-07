@@ -61,8 +61,8 @@
     <string name="title_sets_tied">SETS EMPATADOS</string>
     <string name="prompt_decide_tiebreak">¿Definir por tiebreak?</string>
     <string name="action_continue_normal_set">Seguir set normal</string>
-    <string name="action_tiebreak_to_7">Tiebreak a 7</string>
-    <string name="action_super_tiebreak_to_10">Super tiebreak a 10</string>
+    <string name="action_tiebreak_to_7">TB a 7</string>
+    <string name="action_super_tiebreak_to_10">TB a 10</string>
 
     <!-- Timer buttons -->
     <string name="btn_pause">PAUSAR</string>

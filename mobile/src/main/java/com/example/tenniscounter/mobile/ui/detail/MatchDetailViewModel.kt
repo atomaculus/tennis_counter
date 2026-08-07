@@ -25,6 +25,14 @@ class MatchDetailViewModel(
         }
     }
 
+    fun deleteMatch(onDeleted: () -> Unit) {
+        val current = match.value ?: return
+        viewModelScope.launch {
+            repository.deleteMatch(current.id)
+            onDeleted()
+        }
+    }
+
     companion object {
         fun factory(matchId: Long, repository: MatchRepository): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
