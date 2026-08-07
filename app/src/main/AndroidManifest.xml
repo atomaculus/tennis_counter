@@ -40,6 +40,16 @@
             android:exported="false"
             android:foregroundServiceType="health" />
 
+        <!-- Dev-only N1 sensor spike: no launcher entry, started via adb. -->
+        <activity
+            android:name=".spike.SensorSpikeLoggerActivity"
+            android:exported="true" />
+
+        <service
+            android:name=".spike.SensorSpikeLoggerService"
+            android:exported="false"
+            android:foregroundServiceType="health" />
+
         <service
             android:name=".sync.WearAckListenerService"
             android:exported="true">
