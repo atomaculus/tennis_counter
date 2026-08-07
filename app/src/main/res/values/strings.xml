@@ -71,6 +71,11 @@
 
     <!-- What's New overlay -->
     <string name="whatsnew_title">What\'s New</string>
-    <string name="whatsnew_message">Tap = point\nHold = undo</string>
+    <string name="whatsnew_message">The match now stays on your wrist:\nlower your arm and the score stays visible.\nThe chip on the watch face brings you back.</string>
     <string name="whatsnew_button">OK</string>
+
+    <!-- Match timer foreground notification / ongoing activity -->
+    <string name="timer_notification_channel">Match timer</string>
+    <string name="timer_notification_title">PLAYCE</string>
+    <string name="timer_notification_text">Match in progress</string>
 </resources>

@@ -71,6 +71,11 @@
 
     <!-- What's New overlay -->
     <string name="whatsnew_title">Novedades</string>
-    <string name="whatsnew_message">Tocar = punto\nMantener presionado = deshacer</string>
+    <string name="whatsnew_message">El partido ahora se queda en tu muñeca:\nbajá el brazo y el marcador sigue visible.\nEl chip en la esfera te trae de vuelta.</string>
     <string name="whatsnew_button">Entendido</string>
+
+    <!-- Match timer foreground notification / ongoing activity -->
+    <string name="timer_notification_channel">Temporizador del partido</string>
+    <string name="timer_notification_title">PLAYCE</string>
+    <string name="timer_notification_text">Partido en curso</string>
 </resources>

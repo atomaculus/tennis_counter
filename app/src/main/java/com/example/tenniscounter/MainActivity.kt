@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -135,7 +136,7 @@ private fun healthPermissionsForDevice(): Array<String> {
  * controls change and the overlay should be shown again after an update.
  */
 private object WhatsNewPrefs {
-    const val CURRENT_WHATSNEW_VERSION = 1
+    const val CURRENT_WHATSNEW_VERSION = 2
     private const val PREFS_NAME = "playce_whatsnew"
     private const val KEY_LAST_SEEN_VERSION = "last_seen_version"
 
@@ -188,11 +189,27 @@ private data class ServeIndicatorState(
 
 class MainActivity : ComponentActivity() {
 
+    private val isAmbient = mutableStateOf(false)
+    private val ambientCallback = object : AmbientLifecycleObserver.AmbientLifecycleCallback {
+        override fun onEnterAmbient(ambientDetails: AmbientLifecycleObserver.AmbientDetails) {
+            isAmbient.value = true
+        }
+
+        override fun onExitAmbient() {
+            isAmbient.value = false
+        }
+    }
+    private val ambientObserver = AmbientLifecycleObserver(this, ambientCallback)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Declares ambient support: during a match the activity stays on screen
+        // in ambient mode (simplified scoreboard) instead of falling back to the
+        // watch face.
+        lifecycle.addObserver(ambientObserver)
         setContent {
             TennisWearTheme {
-                TennisCounterApp()
+                TennisCounterApp(isAmbient = isAmbient.value)
             }
         }
     }
@@ -210,6 +227,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun TennisCounterApp(
+    isAmbient: Boolean = false,
     viewModel: TennisViewModel = viewModel()
 ) {
     val state by viewModel.matchState.collectAsState()
@@ -256,10 +274,22 @@ private fun TennisCounterApp(
     }
 
     LaunchedEffect(Unit) {
-        if (hasHealthPermissions()) {
+        val missing = mutableListOf<String>()
+        if (!hasHealthPermissions()) {
+            missing += healthPermissionsForDevice()
+        }
+        // Needed so the foreground-service notification (and its watch-face chip)
+        // can be shown while a match is running.
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            missing += Manifest.permission.POST_NOTIFICATIONS
+        }
+        if (missing.isEmpty()) {
             healthServicesManager.startMatchWorkoutIfPossible()
         } else {
-            healthPermissionLauncher.launch(healthPermissionsForDevice())
+            healthPermissionLauncher.launch(missing.toTypedArray())
         }
     }
 
@@ -686,6 +716,56 @@ private fun TennisCounterApp(
                     WhatsNewPrefs.markSeen(context)
                     showWhatsNew = false
                 }
+            )
+        }
+
+        // Ambient mode: simplified, burn-in-friendly scoreboard drawn over
+        // whatever screen was active. No touch targets, no seconds.
+        if (isAmbient) {
+            AmbientMatchScreen(state = state)
+        }
+    }
+}
+
+@Composable
+private fun AmbientMatchScreen(state: MatchState) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "${state.playerAName.take(6).uppercase()} · ${state.playerBName.take(6).uppercase()}",
+            color = Color.Gray,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "${state.pointLabelForA()} – ${state.pointLabelForB()}",
+            color = Color.White,
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Light,
+            fontFamily = FontFamily.Monospace
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.label_sets) + " ${state.playerA.sets}-${state.playerB.sets}" +
+                "   " + stringResource(R.string.label_games) + " ${state.playerA.games}-${state.playerB.games}",
+            color = Color.Gray,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+        if (state.hasTimerStarted) {
+            Spacer(modifier = Modifier.height(10.dp))
+            val minutes = state.elapsedSeconds / 60
+            Text(
+                text = if (minutes >= 60) "%d:%02d".format(minutes / 60, minutes % 60) else "$minutes min",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
             )
         }
     }
