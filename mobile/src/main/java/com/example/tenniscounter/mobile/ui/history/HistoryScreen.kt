@@ -119,7 +119,7 @@ private fun HistoryContent(
                             )
                         }
                         PrimaryButton(
-                            text = stringResource(R.string.tab_counter),
+                            text = stringResource(R.string.tab_play),
                             onClick = onOpenCounter,
                             style = PrimaryButtonStyle.Outline
                         )

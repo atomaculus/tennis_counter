@@ -99,10 +99,13 @@ import com.example.tenniscounter.sync.MatchConfigRepository
 import com.example.tenniscounter.sync.LiveScoreBroadcaster
 import com.example.tenniscounter.sync.LiveScoreObserver
 import com.example.tenniscounter.sync.WearLiveMatchState
+import com.example.tenniscounter.ui.ActiveSessionStore
 import com.example.tenniscounter.ui.FinishedMatchSummary
 import com.example.tenniscounter.ui.MatchState
+import com.example.tenniscounter.ui.ParedonStubScreen
 import com.example.tenniscounter.ui.SpectatorScreen
 import com.example.tenniscounter.ui.TennisViewModel
+import com.example.tenniscounter.ui.VeintiunoScreen
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import java.text.SimpleDateFormat
@@ -155,9 +158,12 @@ private object WhatsNewPrefs {
 }
 
 private enum class AppScreen {
+    ModeSelect,
     Counter,
     MatchFinished,
-    Spectator
+    Spectator,
+    Veintiuno,
+    ParedonStub
 }
 
 private enum class ActiveSheet {
@@ -321,10 +327,30 @@ private fun TennisCounterApp(
     )
     val spectatorState = spectatorUiState.spectatorState
 
-    var appScreen by remember { mutableStateOf(AppScreen.Counter) }
+    val restoredActiveMatch by viewModel.restoredActiveMatch.collectAsState()
+    val hasActiveMatch by viewModel.hasActiveMatch.collectAsState()
+    var appScreen by remember { mutableStateOf(if (hasActiveMatch) AppScreen.Counter else AppScreen.ModeSelect) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
     var transientMessage by remember { mutableStateOf<String?>(null) }
     var showWhatsNew by remember { mutableStateOf(WhatsNewPrefs.shouldShow(context)) }
+    var lastMode by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        lastMode = ActiveSessionStore.readLastMode(context)
+    }
+
+    // A restored snapshot (or any in-memory progress, e.g. activity
+    // recreation) skips the mode selector straight to the scoreboard.
+    LaunchedEffect(restoredActiveMatch, hasActiveMatch) {
+        if ((restoredActiveMatch || hasActiveMatch) && appScreen == AppScreen.ModeSelect) {
+            appScreen = AppScreen.Counter
+        }
+    }
+
+    fun selectMode(mode: String, screen: AppScreen) {
+        appScreen = screen
+        uiScope.launch { ActiveSessionStore.saveLastMode(context, mode) }
+    }
 
     // Ask who serves first before the first point (unless phone config already fixed it).
     val showInitialServerPrompt by viewModel.showInitialServerPrompt.collectAsState()
@@ -423,6 +449,23 @@ private fun TennisCounterApp(
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (appScreen) {
+            AppScreen.ModeSelect -> {
+                ModeSelectScreen(
+                    lastMode = lastMode,
+                    onSelectMatch = { selectMode(ActiveSessionStore.MODE_MATCH, AppScreen.Counter) },
+                    onSelectParedon = { selectMode(ActiveSessionStore.MODE_PAREDON, AppScreen.ParedonStub) },
+                    onSelectVeintiuno = { selectMode(ActiveSessionStore.MODE_VEINTIUNO, AppScreen.Veintiuno) }
+                )
+            }
+
+            AppScreen.Veintiuno -> {
+                VeintiunoScreen(onExit = { appScreen = AppScreen.ModeSelect })
+            }
+
+            AppScreen.ParedonStub -> {
+                ParedonStubScreen(onBack = { appScreen = AppScreen.ModeSelect })
+            }
+
             AppScreen.Counter -> {
                 CounterScreen(
                     state = state,
@@ -720,10 +763,20 @@ private fun TennisCounterApp(
             )
         }
 
-        // Ambient mode: simplified, burn-in-friendly scoreboard drawn over
-        // whatever screen was active. No touch targets, no seconds.
+        // Ambient mode: simplified, burn-in-friendly scoreboard drawn over the
+        // match screens. Non-match screens (mode selector, training) get plain
+        // black instead of a misleading 0-0 match scoreboard.
         if (isAmbient) {
-            AmbientMatchScreen(state = state)
+            when (appScreen) {
+                AppScreen.Counter, AppScreen.MatchFinished, AppScreen.Spectator ->
+                    AmbientMatchScreen(state = state)
+                else ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black)
+                    )
+            }
         }
     }
 }
@@ -859,6 +912,56 @@ private fun rememberSpectatorUiState(
         hasActiveLiveMatch = hasActiveLiveMatch,
         spectatorState = spectatorState
     )
+}
+
+@Composable
+private fun ModeSelectScreen(
+    lastMode: String?,
+    onSelectMatch: () -> Unit,
+    onSelectParedon: () -> Unit,
+    onSelectVeintiuno: () -> Unit
+) {
+    // Fits everything in a static viewport on purpose — this screen must not
+    // scroll (long-press is undo on the scoreboard; scroll gestures would
+    // conflict with that convention project-wide).
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PlayceWearColors.Background)
+            .padding(horizontal = PlayceWearSpacing.Lg),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
+        ) {
+            PlayceChip(text = stringResource(R.string.mode_select_title), accent = true)
+            PlayceButton(
+                text = stringResource(R.string.mode_match),
+                onClick = onSelectMatch,
+                variant = PlayceButtonVariant.Primary
+            )
+            PlayceButton(
+                text = stringResource(R.string.mode_paredon),
+                onClick = onSelectParedon,
+                variant = if (lastMode == ActiveSessionStore.MODE_PAREDON) {
+                    PlayceButtonVariant.Primary
+                } else {
+                    PlayceButtonVariant.Secondary
+                }
+            )
+            PlayceButton(
+                text = stringResource(R.string.mode_veintiuno),
+                onClick = onSelectVeintiuno,
+                variant = if (lastMode == ActiveSessionStore.MODE_VEINTIUNO) {
+                    PlayceButtonVariant.Primary
+                } else {
+                    PlayceButtonVariant.Secondary
+                }
+            )
+        }
+    }
 }
 
 @Composable

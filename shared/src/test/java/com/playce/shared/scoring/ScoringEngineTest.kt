@@ -445,6 +445,53 @@ class ScoringEngineTest {
         )
     }
 
+    @Test
+    fun `fromJson of empty array is empty list`() {
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[]"))
+    }
+
+    @Test
+    fun `fromJson tolerates surrounding and interior whitespace`() {
+        val json = "  [ { \"type\" : \"point\" , \"isPlayerA\" : true , \"t\" : 42 } ] "
+        val events = MatchEventCodec.fromJson(json)
+        assertEquals(1, events.size)
+        assertEquals(ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 42), events[0])
+    }
+
+    @Test
+    fun `round-trip toJson then fromJson for empty list`() {
+        val events = emptyList<ScoringEngine.MatchEvent>()
+        assertEquals(events, MatchEventCodec.fromJson(MatchEventCodec.toJson(events)))
+    }
+
+    @Test
+    fun `round-trip toJson then fromJson for single point event`() {
+        val events = listOf(ScoringEngine.MatchEvent.Point(isPlayerA = false, timestampMillis = 1723050000123))
+        assertEquals(events, MatchEventCodec.fromJson(MatchEventCodec.toJson(events)))
+    }
+
+    @Test
+    fun `round-trip toJson then fromJson for mixed events`() {
+        val events = listOf(
+            ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 1),
+            ScoringEngine.MatchEvent.Point(isPlayerA = false, timestampMillis = 2),
+            ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints = 10, timestampMillis = 3),
+            ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 4)
+        )
+        assertEquals(events, MatchEventCodec.fromJson(MatchEventCodec.toJson(events)))
+    }
+
+    @Test
+    fun `fromJson of malformed json returns empty list instead of throwing`() {
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("not json"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson(""))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("{\"type\":\"point\"}"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[{\"type\":\"point\"}]"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[{\"type\":\"unknown\",\"t\":1}]"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[{\"type\":\"point\",\"isPlayerA\":true"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[{\"type\":\"point\",\"isPlayerA\":true,\"t\":1}"))
+    }
+
     // ---- Helpers ----
 
     private fun scoreToTiedSets(setsEach: Int, format: MatchFormat = MatchFormat.STANDARD): MatchScore {

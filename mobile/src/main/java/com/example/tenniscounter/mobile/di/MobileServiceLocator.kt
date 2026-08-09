@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.tenniscounter.mobile.data.MatchRepository
 import com.example.tenniscounter.mobile.data.local.AppDatabase
 import com.example.tenniscounter.mobile.data.local.MatchDao
+import com.example.tenniscounter.mobile.data.local.TrainingSessionDao
 import com.example.tenniscounter.mobile.garmin.GarminConnectivityManager
 import com.example.tenniscounter.mobile.garmin.GarminMatchConfigSender
 
@@ -24,6 +25,8 @@ object MobileServiceLocator {
     }
 
     fun matchDao(context: Context): MatchDao = database(context).matchDao()
+
+    fun trainingSessionDao(context: Context): TrainingSessionDao = database(context).trainingSessionDao()
 
     fun matchRepository(context: Context): MatchRepository {
         return repository ?: synchronized(this) {

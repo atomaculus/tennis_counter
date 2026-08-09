@@ -78,4 +78,23 @@
     <string name="timer_notification_channel">Match timer</string>
     <string name="timer_notification_title">PLAYCE</string>
     <string name="timer_notification_text">Match in progress</string>
+
+    <!-- Mode select -->
+    <string name="mode_select_title">CHOOSE MODE</string>
+    <string name="mode_match">MATCH</string>
+    <string name="mode_paredon">WALL</string>
+    <string name="mode_veintiuno">21</string>
+
+    <!-- 21 (veintiuno) training mode -->
+    <string name="veintiuno_title">21</string>
+    <string name="veintiuno_best_streak">Best streak: %d</string>
+    <string name="veintiuno_plus_one">+1</string>
+    <string name="veintiuno_miss">MISS</string>
+    <string name="veintiuno_save_and_exit">Save &amp; exit</string>
+    <string name="veintiuno_exit_small">Exit</string>
+
+    <!-- Paredón (wall) stub -->
+    <string name="paredon_stub_title">WALL</string>
+    <string name="paredon_stub_message">Wall mode is coming soon — your watch will count your hits.</string>
+    <string name="btn_back">Back</string>
 </resources>

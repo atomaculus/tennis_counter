@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,6 +40,9 @@ import com.example.tenniscounter.mobile.ui.theme.PlayceColors
 import com.example.tenniscounter.mobile.ui.counter.LiveScoreScreen
 import com.example.tenniscounter.mobile.ui.counter.MobileCounterScreen
 import com.example.tenniscounter.mobile.ui.counter.MobileCounterViewModel
+import com.example.tenniscounter.mobile.ui.counter.MobileVeintiunoScreen
+import com.example.tenniscounter.mobile.ui.counter.ParedonStubScreen
+import com.example.tenniscounter.mobile.ui.counter.PlayModeSelectScreen
 import com.example.tenniscounter.mobile.ui.detail.MatchDetailScreen
 import com.example.tenniscounter.mobile.ui.detail.MatchDetailViewModel
 import com.example.tenniscounter.mobile.ui.history.HistoryScreen
@@ -60,6 +64,11 @@ private const val HISTORY_ROUTE = "history"
 private const val STATS_ROUTE = "stats"
 private const val DETAIL_ROUTE = "detail/{matchId}"
 private const val DETAIL_ROUTE_PREFIX = "detail"
+
+/** Modality picked from [PlayModeSelectScreen] within the "Play" tab, for this composition only (not persisted). */
+private enum class PlayMode {
+    Match, Paredon, Veintiuno
+}
 
 @Composable
 fun MobileApp() {
@@ -91,9 +100,9 @@ fun MobileApp() {
                 ) {
                     data class NavItem(val route: String, val label: String, val iconRes: Int)
                     listOf(
-                        NavItem(COUNTER_ROUTE, "Counter", R.drawable.ic_counter),
-                        NavItem(HISTORY_ROUTE, "History", R.drawable.ic_history),
-                        NavItem(STATS_ROUTE, "Stats", R.drawable.ic_stats)
+                        NavItem(COUNTER_ROUTE, stringResource(R.string.tab_play), R.drawable.ic_counter),
+                        NavItem(HISTORY_ROUTE, stringResource(R.string.tab_history), R.drawable.ic_history),
+                        NavItem(STATS_ROUTE, stringResource(R.string.tab_stats), R.drawable.ic_stats)
                     ).forEach { item ->
                         NavigationBarItem(
                             selected = currentRoute == item.route,
@@ -134,6 +143,8 @@ fun MobileApp() {
         ) {
             composable(COUNTER_ROUTE) {
                 val liveState = LiveScoreRepository.state.collectAsStateWithLifecycle().value
+                val counterViewModel: MobileCounterViewModel = viewModel()
+                val hasActiveLocalMatch = counterViewModel.hasActiveMatch.collectAsStateWithLifecycle().value
 
                 // Detect when a live watch match ends (state goes non-null → null)
                 var wasLive by remember { mutableStateOf(false) }
@@ -147,14 +158,28 @@ fun MobileApp() {
                     }
                 }
 
+                // A session already in progress (local match, or a live watch
+                // match) always wins over the mode selector.
+                var playMode by remember { mutableStateOf<PlayMode?>(null) }
+                val skipModeSelect = liveState != null || hasActiveLocalMatch
+
                 Box(modifier = Modifier.fillMaxSize()) {
                 if (liveState != null) {
                     LiveScoreScreen(
                         liveState = liveState,
                         receivedAtElapsedRealtime = LiveScoreRepository.receivedAtElapsedRealtime
                     )
+                } else if (!skipModeSelect && playMode == null) {
+                    PlayModeSelectScreen(
+                        onSelectMatch = { playMode = PlayMode.Match },
+                        onSelectParedon = { playMode = PlayMode.Paredon },
+                        onSelectVeintiuno = { playMode = PlayMode.Veintiuno }
+                    )
+                } else if (!skipModeSelect && playMode == PlayMode.Veintiuno) {
+                    MobileVeintiunoScreen(onExit = { playMode = null })
+                } else if (!skipModeSelect && playMode == PlayMode.Paredon) {
+                    ParedonStubScreen(onBack = { playMode = null })
                 } else {
-                    val counterViewModel: MobileCounterViewModel = viewModel()
                     MobileCounterScreen(
                         viewModel = counterViewModel,
                         premiumUiState = premiumUiState,

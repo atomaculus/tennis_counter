@@ -78,4 +78,23 @@
     <string name="timer_notification_channel">Temporizador del partido</string>
     <string name="timer_notification_title">PLAYCE</string>
     <string name="timer_notification_text">Partido en curso</string>
+
+    <!-- Selector de modo -->
+    <string name="mode_select_title">ELEGÍ MODO</string>
+    <string name="mode_match">PARTIDO</string>
+    <string name="mode_paredon">PAREDÓN</string>
+    <string name="mode_veintiuno">21</string>
+
+    <!-- Modo de entrenamiento 21 (veintiuno) -->
+    <string name="veintiuno_title">21</string>
+    <string name="veintiuno_best_streak">Mejor racha: %d</string>
+    <string name="veintiuno_plus_one">+1</string>
+    <string name="veintiuno_miss">FALLÉ</string>
+    <string name="veintiuno_save_and_exit">Guardar y salir</string>
+    <string name="veintiuno_exit_small">Salir</string>
+
+    <!-- Stub de paredón -->
+    <string name="paredon_stub_title">PAREDÓN</string>
+    <string name="paredon_stub_message">Paredón llega pronto — el reloj va a contar tus golpes.</string>
+    <string name="btn_back">Volver</string>
 </resources>

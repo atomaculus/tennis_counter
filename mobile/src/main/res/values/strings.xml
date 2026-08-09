@@ -163,4 +163,21 @@
     <string name="btn_delete_match">Delete match</string>
     <string name="delete_match_dialog_title">Delete match?</string>
     <string name="btn_delete">Delete</string>
+
+    <!-- Play mode select -->
+    <string name="tab_play">Play</string>
+    <string name="mode_match">Match</string>
+    <string name="mode_paredon">Wall</string>
+    <string name="mode_veintiuno">21</string>
+
+    <!-- 21 (veintiuno) training mode -->
+    <string name="veintiuno_title">21</string>
+    <string name="veintiuno_best_streak">Best streak: %d</string>
+    <string name="veintiuno_plus_one">+1</string>
+    <string name="veintiuno_miss">MISS</string>
+    <string name="veintiuno_save_and_exit">Save &amp; exit</string>
+    <string name="veintiuno_exit_small">Exit</string>
+
+    <!-- Paredón (wall) stub -->
+    <string name="paredon_stub_message">Wall mode is coming soon — count your hits from your watch.</string>
 </resources>
