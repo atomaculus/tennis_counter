@@ -2,8 +2,6 @@ package com.example.tenniscounter.mobile.garmin
 
 import android.content.Context
 import android.util.Log
-import com.example.tenniscounter.mobile.BuildConfig
-import com.example.tenniscounter.mobile.billing.PremiumAccessStore
 import com.example.tenniscounter.mobile.di.MobileServiceLocator
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.IQDevice
@@ -46,12 +44,6 @@ class GarminFinishedMatchHandler(private val appContext: Context) {
         }
 
         scope.launch {
-            if (!BuildConfig.DEBUG && !PremiumAccessStore.isPremiumUnlocked(appContext)) {
-                Log.i(TAG, "Premium locked: Garmin match not saved. idempotencyKey=$idempotencyKey")
-                ackSender.send(device, app, idempotencyKey, GarminConstants.ACK_STATUS_PREMIUM_LOCKED)
-                return@launch
-            }
-
             val inserted = MobileServiceLocator
                 .matchRepository(appContext)
                 .insertIfNotExists(

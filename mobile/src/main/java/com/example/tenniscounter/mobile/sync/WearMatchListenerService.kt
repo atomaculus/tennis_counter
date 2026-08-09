@@ -1,8 +1,6 @@
 package com.example.tenniscounter.mobile.sync
 
 import android.util.Log
-import com.example.tenniscounter.mobile.BuildConfig
-import com.example.tenniscounter.mobile.billing.PremiumAccessStore
 import com.example.tenniscounter.mobile.data.local.MatchEntity
 import com.example.tenniscounter.mobile.di.MobileServiceLocator
 import com.example.tenniscounter.mobile.health.HealthConnectMatchWriter
@@ -71,12 +69,6 @@ class WearMatchListenerService : WearableListenerService() {
         }
 
         serviceScope.launch {
-            if (!BuildConfig.DEBUG && !PremiumAccessStore.isPremiumUnlocked(applicationContext)) {
-                Log.i(TAG, "Premium locked: match not saved. idempotencyKey=$idempotencyKey")
-                sendAck(messageEvent.sourceNodeId, idempotencyKey, status = "premium_locked")
-                return@launch
-            }
-
             val inserted = MobileServiceLocator.matchRepository(applicationContext).insertIfNotExists(
                 createdAt = createdAt,
                 durationSeconds = durationSeconds,
