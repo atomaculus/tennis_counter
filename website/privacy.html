@@ -29,7 +29,7 @@
       <div class="section-intro reveal is-visible">
         <p class="eyebrow">Policy</p>
         <h2>Privacy Policy</h2>
-        <p>Last updated: May 13, 2026</p>
+        <p>Last updated: September 18, 2026</p>
       </div>
 
       <article class="panel panel-wide reveal is-visible" style="grid-column: span 12; margin-top: 28px;">
@@ -39,11 +39,16 @@
         <h3>Data processed by the app</h3>
         <p>PLAYCE can process match score data, player names entered by the user, match duration, timestamps used for local history and sync retries, technical sync identifiers such as <code>idempotencyKey</code>, device connectivity state, and purchase or entitlement state used to unlock Premium features where those features are offered.</p>
 
+        <h3>Health and fitness data</h3>
+        <p>When you grant the relevant permissions and use PLAYCE on a supported watch, PLAYCE accesses and collects health and fitness data during an active tennis or padel session. Depending on the device and platform, this can include heart-rate samples, average and maximum heart rate, active energy or total calories burned, exercise type, session start and end times, and workout duration.</p>
+        <p>On Wear OS, Google Health Services is used to run the workout and read heart-rate and calorie estimates. PLAYCE keeps the resulting calorie and heart-rate summary with the match on your devices and may sync that summary from the watch to the paired phone through the Google Play Services Wearable Data Layer. With your permission, the Android phone app writes a tennis exercise session and total calories burned to Health Connect. On Apple Watch, PLAYCE uses HealthKit to run the workout, read heart rate and active energy, and save the workout to Apple Health.</p>
+        <p>PLAYCE uses health and fitness data only to operate the workout, keep the match active on the watch, show health metrics in match details, and save the tennis session in the health platform you authorize. PLAYCE does not sell health data, use it for advertising, or upload it to a PLAYCE-operated server.</p>
+
         <h3>How the data is used</h3>
         <p>The app uses this data to run the live score counter on your phone or supported watch, sync match results between a watch and paired phone, store match history locally on your device when history features are available, prevent duplicate inserts during sync, show match details and stats, generate shareable match summary images when you explicitly share them, and restore or validate Premium entitlement.</p>
 
         <h3>Data sharing</h3>
-        <p>PLAYCE does not operate its own backend for match storage. Match data is primarily stored locally on your devices. When watch sync is used, match data may be exchanged between your supported watch and paired phone through the platform connectivity layer, such as Google Play Services Wearable Data Layer for Wear OS or Garmin Connect IQ / Garmin Connect Mobile for Garmin devices.</p>
+        <p>PLAYCE does not operate its own backend for match storage. Match data, including health and fitness summaries associated with a match, is primarily stored locally on your devices. When watch sync is used, match data may be exchanged between your supported watch and paired phone through the platform connectivity layer, such as Google Play Services Wearable Data Layer for Wear OS, Apple Watch connectivity, or Garmin Connect IQ / Garmin Connect Mobile for Garmin devices. Health and fitness records are written only to Health Connect or Apple Health when you grant the corresponding permission.</p>
         <p>If you purchase Premium features, payment and entitlement processing may be handled by the relevant app store or platform provider, such as Apple App Store, Google Play, or their payment services. If you explicitly share a match card or export, the selected destination app or service receives the content you choose to share.</p>
 
         <h3>Diagnostics and analytics</h3>
@@ -51,7 +56,7 @@
         <p>Usage events may also be processed to understand general app usage and product performance. Platform providers such as Apple, Google and Garmin may process app distribution, purchase, crash, device or connectivity metadata according to their own privacy policies and terms.</p>
 
         <h3>Local storage</h3>
-        <p>PLAYCE stores data locally on your devices. The phone app can store match history, settings and entitlement state locally. Supported watch apps can store live match state and pending sync state used for retry and acknowledgment handling. You can remove locally stored data by clearing app data or uninstalling the app from your devices.</p>
+        <p>PLAYCE stores data locally on your devices. The phone app can store match history, health and fitness summaries associated with a match, settings and entitlement state locally. Supported watch apps can store live match state, workout metrics, and pending sync state used for retry and acknowledgment handling. You can remove locally stored data by clearing app data or uninstalling the app from your devices. Records already written to Health Connect or Apple Health are controlled by those platforms and can be reviewed or deleted using their privacy and data-management controls.</p>
 
         <h3 id="data-deletion">Data deletion request</h3>
         <p>If you want to request deletion of data associated with your use of PLAYCE, send an email to <a href="mailto:atiliogmaculus@gmail.com?subject=PLAYCE%20Data%20Deletion%20Request">atiliogmaculus@gmail.com</a> with the subject line <code>PLAYCE Data Deletion Request</code>.</p>
