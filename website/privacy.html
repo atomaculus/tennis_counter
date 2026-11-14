@@ -1,11 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es" data-default-lang="es" data-title-es="PLAYCE | Política de privacidad" data-title-en="PLAYCE | Privacy Policy">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PLAYCE | Privacy Policy</title>
-  <meta name="description" content="Privacy policy for PLAYCE, the iOS, Android and watch-based tennis scoring app.">
+  <title>PLAYCE | Política de privacidad</title>
+  <script>
+    (function () {
+      var supported = { en: 1, es: 1 };
+      var lang = document.documentElement.getAttribute("data-default-lang") || "es";
+      try {
+        var q = new URLSearchParams(location.search).get("lang");
+        var saved = localStorage.getItem("playce-lang");
+        if (supported[q]) lang = q;
+        else if (supported[saved]) lang = saved;
+      } catch (e) {}
+      document.documentElement.lang = lang;
+      var title = document.documentElement.getAttribute("data-title-" + lang);
+      if (title) document.title = title;
+    })();
+  </script>
+  <meta name="description" content="Política de privacidad de PLAYCE. Datos locales, salud, Firebase Analytics y Crashlytics, ID de publicidad en Android, compras y eliminación. English version included. Updated 2026-11-14.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PLAYCE | Política de privacidad">
+  <meta property="og:description" content="Cómo PLAYCE trata el marcador, la salud, Firebase en Android y Wear OS, las compras y la eliminación de datos.">
+  <meta property="og:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PLAYCE wordmark. Tennis and padel. Partido + 21 on phone and watch.">
+  <meta property="og:url" content="https://tenniscounter.vercel.app/privacy">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PLAYCE | Política de privacidad">
+  <meta name="twitter:description" content="Cómo PLAYCE trata el marcador, la salud, Firebase en Android y Wear OS, las compras y la eliminación de datos.">
+  <meta name="twitter:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta name="theme-color" content="#07110a">
+  <link rel="canonical" href="https://tenniscounter.vercel.app/privacy">
+  <link rel="alternate" hreflang="es" href="https://tenniscounter.vercel.app/privacy">
+  <link rel="alternate" hreflang="en" href="https://tenniscounter.vercel.app/privacy?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://tenniscounter.vercel.app/privacy">
+  <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -14,64 +50,247 @@
   >
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
+<body class="legal-page">
   <div class="page-shell">
     <header class="site-header">
-      <a class="brand" href="./index.html" aria-label="PLAYCE home">
-        <img src="./assets/playce-wordmark.png" alt="PLAYCE wordmark">
+      <a class="brand" href="./" aria-label="PLAYCE home">
+        <img src="./assets/playce-wordmark.png" alt="PLAYCE">
       </a>
       <div class="site-actions">
-        <a class="button button-secondary" href="./index.html">Back to site</a>
+        <div class="lang-toggle" role="group" aria-label="Idioma / Language">
+          <button class="lang-pill" type="button" data-set-lang="es" aria-pressed="true">ES</button>
+          <button class="lang-pill" type="button" data-set-lang="en" aria-pressed="false">EN</button>
+        </div>
+        <a class="button button-secondary" href="./">
+          <span data-lang="es">Volver al sitio</span>
+          <span data-lang="en">Back to site</span>
+        </a>
       </div>
     </header>
 
     <main class="section faq-section">
       <div class="section-intro reveal is-visible">
         <p class="eyebrow">Policy</p>
-        <h2>Privacy Policy</h2>
-        <p>Last updated: September 18, 2026</p>
+        <h2 data-lang="es">Política de privacidad</h2>
+        <h2 data-lang="en">Privacy Policy</h2>
+        <p class="legal-updated" data-lang="es">Última actualización: 14 de noviembre de 2026 (2026-11-14)</p>
+        <p class="legal-updated" data-lang="en">Last updated: November 14, 2026 (2026-11-14)</p>
       </div>
 
-      <article class="panel panel-wide reveal is-visible" style="grid-column: span 12; margin-top: 28px;">
-        <p>PLAYCE is a tennis and padel scoring app available for phones and supported watches. The product includes mobile apps for iOS and Android, plus watch-based scoring support for Wear OS and Garmin where available.</p>
-        <p>This policy describes how PLAYCE handles data across its supported mobile and watch experiences.</p>
+      <article class="panel legal-copy reveal is-visible">
+        <div data-lang="es">
+          <p>Esta política describe cómo PLAYCE trata los datos en el teléfono, en el reloj y en este sitio. El marcador y el historial quedan en tus dispositivos. En Android y Wear OS, Firebase Analytics y Firebase Crashlytics envían datos técnicos de uso y de fallos a Google, incluido el ID de publicidad de Android cuando el dispositivo lo ofrece.</p>
 
-        <h3>Data processed by the app</h3>
-        <p>PLAYCE can process match score data, player names entered by the user, match duration, timestamps used for local history and sync retries, technical sync identifiers such as <code>idempotencyKey</code>, device connectivity state, and purchase or entitlement state used to unlock Premium features where those features are offered.</p>
+          <h3>1. Responsable</h3>
+          <p>El responsable del Servicio es:</p>
+          <p>
+            <strong>Atilio Guido Maculus</strong><br>
+            En Google Play el desarrollador figura como <strong>Atilio Maculus</strong>.<br>
+            Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina<br>
+            Teléfono: <a href="tel:+5491163508919">+54 9 11 6350-8919</a><br>
+            Correo: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a>
+          </p>
 
-        <h3>Health and fitness data</h3>
-        <p>When you grant the relevant permissions and use PLAYCE on a supported watch, PLAYCE accesses and collects health and fitness data during an active tennis or padel session. Depending on the device and platform, this can include heart-rate samples, average and maximum heart rate, active energy or total calories burned, exercise type, session start and end times, and workout duration.</p>
-        <p>On Wear OS, Google Health Services is used to run the workout and read heart-rate and calorie estimates. PLAYCE keeps the resulting calorie and heart-rate summary with the match on your devices and may sync that summary from the watch to the paired phone through the Google Play Services Wearable Data Layer. With your permission, the Android phone app writes a tennis exercise session and total calories burned to Health Connect. On Apple Watch, PLAYCE uses HealthKit to run the workout, read heart rate and active energy, and save the workout to Apple Health.</p>
-        <p>PLAYCE uses health and fitness data only to operate the workout, keep the match active on the watch, show health metrics in match details, and save the tennis session in the health platform you authorize. PLAYCE does not sell health data, use it for advertising, or upload it to a PLAYCE-operated server.</p>
+          <h3>2. Qué cubre esta política</h3>
+          <p>PLAYCE es un marcador de tenis y pádel para:</p>
+          <ul>
+            <li>iPhone y Apple Watch (watchOS);</li>
+            <li>Android y Wear OS;</li>
+            <li>relojes Garmin Connect IQ compatibles con la app de Android (al 14 de noviembre de 2026, Epix Pro 2 de 47 mm);</li>
+            <li>este sitio, https://tenniscounter.vercel.app/.</li>
+          </ul>
+          <p>Podés marcar un partido completo (Partido) o usar el modo de entrenamiento 21, en el teléfono y en el reloj, para tenis y para pádel. PLAYCE no exige una cuenta para el marcador.</p>
 
-        <h3>How the data is used</h3>
-        <p>The app uses this data to run the live score counter on your phone or supported watch, sync match results between a watch and paired phone, store match history locally on your device when history features are available, prevent duplicate inserts during sync, show match details and stats, generate shareable match summary images when you explicitly share them, and restore or validate Premium entitlement.</p>
+          <h3>3. Datos en tus dispositivos</h3>
+          <p>En el teléfono y en el reloj, PLAYCE puede procesar:</p>
+          <ul>
+            <li>el marcador (puntos, games, sets, resultado final y detalle de sets);</li>
+            <li>los nombres de jugadores que vos ingresás;</li>
+            <li>la duración del partido y las marcas de tiempo del historial y de los reintentos de sincronización;</li>
+            <li>identificadores técnicos de sincronización, como <code>idempotencyKey</code>, y el estado pendiente hasta que el teléfono confirma la recepción;</li>
+            <li>el estado local de Premium (un indicador de que la compra está desbloqueada).</li>
+          </ul>
+          <p>PLAYCE no opera un servidor propio para guardar partidos. El historial vive en el teléfono. Mientras jugás, el reloj puede enviar el estado al teléfono emparejado por el canal de la plataforma:</p>
+          <ul>
+            <li>Wear OS: Google Play Services Wearable Data Layer;</li>
+            <li>Apple Watch: WatchConnectivity;</li>
+            <li>Garmin: Garmin Connect IQ a través de Garmin Connect Mobile, hacia la app de Android.</li>
+          </ul>
+          <p>Si compartís una tarjeta o exportás un CSV, el destino que elijas recibe solo lo que decidís enviar.</p>
 
-        <h3>Data sharing</h3>
-        <p>PLAYCE does not operate its own backend for match storage. Match data, including health and fitness summaries associated with a match, is primarily stored locally on your devices. When watch sync is used, match data may be exchanged between your supported watch and paired phone through the platform connectivity layer, such as Google Play Services Wearable Data Layer for Wear OS, Apple Watch connectivity, or Garmin Connect IQ / Garmin Connect Mobile for Garmin devices. Health and fitness records are written only to Health Connect or Apple Health when you grant the corresponding permission.</p>
-        <p>If you purchase Premium features, payment and entitlement processing may be handled by the relevant app store or platform provider, such as Apple App Store, Google Play, or their payment services. If you explicitly share a match card or export, the selected destination app or service receives the content you choose to share.</p>
+          <h3>4. Salud y actividad</h3>
+          <p>Si das los permisos y usás PLAYCE en un reloj compatible, la app puede acceder a datos de salud y actividad durante una sesión de tenis o pádel. Según el dispositivo, eso puede incluir muestras de ritmo cardíaco, ritmo promedio y máximo, calorías o energía activa, tipo de ejercicio, inicio y fin de la sesión, y duración.</p>
+          <p>En Wear OS, Google Health Services corre el ejercicio y lee estimaciones de ritmo cardíaco y calorías. PLAYCE guarda ese resumen con el partido en tus dispositivos y puede sincronizarlo del reloj al teléfono emparejado por el Wearable Data Layer. Con tu permiso, la app de Android escribe una sesión de ejercicio de tenis y las calorías totales en Health Connect. En Apple Watch, PLAYCE usa HealthKit para la sesión, el ritmo cardíaco y la energía activa, y para guardar el entrenamiento en Apple Health.</p>
+          <p>Esos datos se usan para mantener la sesión en el reloj, mostrar métricas en el detalle del partido y guardar la sesión en la plataforma de salud que autorices. PLAYCE no vende datos de salud, no los usa para publicidad y no los sube a un servidor operado por PLAYCE. Los registros que ya están en Health Connect o Apple Health se administran en esas plataformas.</p>
 
-        <h3>Diagnostics and analytics</h3>
-        <p>PLAYCE may include diagnostics or analytics services in some app builds, including Firebase services. Diagnostic information such as crash traces, app version, device model, operating system version and related technical metadata may be processed to improve app stability and help diagnose failures.</p>
-        <p>Usage events may also be processed to understand general app usage and product performance. Platform providers such as Apple, Google and Garmin may process app distribution, purchase, crash, device or connectivity metadata according to their own privacy policies and terms.</p>
+          <h3>5. Firebase Analytics y Crashlytics</h3>
+          <p>La app de Android y la app de Wear OS incluyen dos productos de Firebase, y ningún otro (no hay Firebase Auth, Firestore, Cloud Messaging, Remote Config ni un SDK de anuncios):</p>
+          <ul>
+            <li><strong>Firebase Analytics</strong> (Google Analytics for Firebase), para medición de uso;</li>
+            <li><strong>Firebase Crashlytics</strong>, para informes de fallos.</li>
+          </ul>
+          <p>El código de la app no define eventos propios ni asigna un ID de usuario. La recolección es la automática de esos SDK una vez que están en la app.</p>
+          <p><strong>Qué se recoge</strong></p>
+          <ul>
+            <li>ID de instancia de la app;</li>
+            <li>ID de publicidad de Android (AAID), cuando el dispositivo lo ofrece. Los dos manifiestos declaran el permiso <code>com.google.android.gms.permission.AD_ID</code> y el proyecto no desactiva la recolección (<code>google_analytics_adid_collection_enabled</code> no está en false). PLAYCE no muestra anuncios y no incluye AdMob. El ID se usa para la medición de Analytics;</li>
+            <li>modelo de dispositivo, versión del sistema, idioma y versión de la app;</li>
+            <li>eventos automáticos como la primera apertura, el inicio de sesión de uso y, cuando hay una compra por Google Play, un evento de compra in-app con el identificador del producto, el precio y la moneda. No incluye el número de tarjeta;</li>
+            <li>en Crashlytics: traza del fallo, modelo, sistema, versión de la app, momento del fallo y un identificador de instalación de Crashlytics.</li>
+          </ul>
+          <p>El código de la app no envía a Firebase nombres de jugadores, marcador ni métricas de salud. Esta política no afirma que la app de iOS use Firebase: ese código no está en el repositorio de Android que se usó para redactar esta sección. Tampoco describe un identificador de publicidad de iOS (IDFA).</p>
+          <p><strong>Para qué</strong></p>
+          <p>Analytics sirve para entender el uso agregado y el funcionamiento de la app. Crashlytics sirve para diagnosticar fallos y mejorar la estabilidad. PLAYCE no vende estos datos y no los usa para mostrar anuncios propios.</p>
+          <p><strong>Conservación</strong></p>
+          <p>Google conserva los datos de eventos de Analytics según el plazo del proyecto de Firebase / Google Analytics. El plazo predeterminado de Google para datos de eventos es de 2 meses (en la consola se puede dejar en 2 meses o ampliar a 14). PLAYCE no guarda una copia propia. Crashlytics conserva los datos de fallos durante 90 días, según la documentación de Google. Después, Google los borra o los anonimiza de acuerdo con sus políticas.</p>
+          <p><strong>Terceros</strong></p>
+          <p>El destinatario de Analytics y Crashlytics es Google (Firebase y Google Analytics). En Android también intervienen, para otras funciones, Google Play, Google Play Services, el Wearable Data Layer y Health Connect / Health Services. En Apple, la App Store, WatchConnectivity y HealthKit. En Garmin, Garmin Connect Mobile solo transporta mensajes entre el reloj y el teléfono Android. Cada uno aplica su propia política.</p>
 
-        <h3>Local storage</h3>
-        <p>PLAYCE stores data locally on your devices. The phone app can store match history, health and fitness summaries associated with a match, settings and entitlement state locally. Supported watch apps can store live match state, workout metrics, and pending sync state used for retry and acknowledgment handling. You can remove locally stored data by clearing app data or uninstalling the app from your devices. Records already written to Health Connect or Apple Health are controlled by those platforms and can be reviewed or deleted using their privacy and data-management controls.</p>
+          <h3>6. Compras</h3>
+          <p>Premium es una compra única, no una suscripción. En Android, Wear OS y el puente Garmin que viaja con la app de Android, Google Play Billing procesa el producto <code>premium_unlock</code>. En iPhone y Apple Watch, la compra única de Premium la procesa la App Store. PLAYCE no recibe ni guarda el número de tu tarjeta. La app guarda en el teléfono un indicador local para mantener Premium desbloqueado. Los comprobantes y reembolsos los administran Google o Apple.</p>
 
-        <h3 id="data-deletion">Data deletion request</h3>
-        <p>If you want to request deletion of data associated with your use of PLAYCE, send an email to <a href="mailto:atiliogmaculus@gmail.com?subject=PLAYCE%20Data%20Deletion%20Request">atiliogmaculus@gmail.com</a> with the subject line <code>PLAYCE Data Deletion Request</code>.</p>
-        <p>Because PLAYCE stores match history locally on your devices and does not operate its own backend for match storage, you can also delete locally stored data at any time by clearing app data, deleting local app data where the operating system allows it, or uninstalling the app from your devices.</p>
+          <h3>7. Este sitio web</h3>
+          <p>El sitio es estático y no crea una cuenta. El idioma que elegís (ES o EN) se guarda solo en tu navegador, en <code>localStorage</code>, con la clave <code>playce-lang</code>. Ese valor no se envía a PLAYCE. El sitio está alojado en Vercel, que puede procesar registros de conexión (incluida la dirección IP y el agente de usuario) para entregar y proteger el sitio, según la política de Vercel.</p>
 
-        <h3>Data not requested directly by PLAYCE</h3>
-        <p>PLAYCE does not require account creation for core scoring. In the current implementation, PLAYCE does not directly require precise location, contacts, microphone or camera access.</p>
+          <h3>8. Menores de 13 años</h3>
+          <p>PLAYCE no está dirigido a menores de 13 años. No recogemos a sabiendas información personal de menores de 13 años. Si sos madre, padre o tutor y creés que un menor de 13 años usó la app de Android o Wear OS de una forma que envió datos de Analytics o Crashlytics a Google, escribinos y vamos a borrar los datos que podamos asociar a ese pedido.</p>
 
-        <h3>Contact</h3>
-        <p>Support email: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a></p>
-        <p>Terms of Service: <a href="./terms.html">View terms</a></p>
+          <h3 id="data-deletion">9. Eliminación de datos</h3>
+          <p>Podés borrar lo que está en tus dispositivos sin escribirnos:</p>
+          <ul>
+            <li>en el teléfono: Ajustes → Aplicaciones → PLAYCE → Almacenamiento → Borrar datos, o desinstalá la app;</li>
+            <li>en el reloj: desinstalá PLAYCE;</li>
+            <li>en Health Connect o Apple Health: borrá ahí la sesión de ejercicio. PLAYCE no puede borrarla desde afuera.</li>
+          </ul>
+          <p>Para pedir la eliminación de datos de Analytics o Crashlytics que Google tenga asociados a tu uso, enviá un correo a <a href="mailto:atiliogmaculus@gmail.com?subject=PLAYCE%20Data%20Deletion%20Request">atiliogmaculus@gmail.com</a> con el asunto <code>PLAYCE Data Deletion Request</code>. Indicá la plataforma (Android, Wear OS, iPhone o Apple Watch). Si podés, incluí el ID de publicidad de Android o cualquier identificador que tengas.</p>
+          <p>PLAYCE no tiene cuentas de usuario. Analytics y Crashlytics se asocian a un ID de instancia y, en Android, al ID de publicidad, no a tu correo. Si el correo no alcanza para encontrar un registro, te lo vamos a decir. Los comprobantes de compra quedan en Google Play o en la App Store y se rigen por las políticas de esas tiendas.</p>
+          <p>Las instrucciones también están en <a href="./delete-data">la página de eliminación de datos</a>.</p>
+
+          <h3>10. Datos que PLAYCE no pide</h3>
+          <p>Para el marcador, PLAYCE no pide cuenta, ubicación precisa, contactos, micrófono ni cámara.</p>
+
+          <h3>11. Cambios</h3>
+          <p>Si esta política cambia, la fecha de “Última actualización” pasa a ser la de la versión nueva. La versión vigente está en https://tenniscounter.vercel.app/privacy</p>
+
+          <h3>12. Contacto</h3>
+          <p>
+            <strong>Atilio Guido Maculus</strong><br>
+            Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina<br>
+            Teléfono: <a href="tel:+5491163508919">+54 9 11 6350-8919</a><br>
+            Correo: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a>
+          </p>
+        </div>
+
+        <div data-lang="en">
+          <p>This policy describes how PLAYCE handles data on your phone, on your watch and on this website. Scores and history stay on your devices. On Android and Wear OS, Firebase Analytics and Firebase Crashlytics send technical usage and crash data to Google, including the Android advertising ID when the device provides one.</p>
+
+          <h3>1. Who we are</h3>
+          <p>The provider of the Service is:</p>
+          <p>
+            <strong>Atilio Guido Maculus</strong><br>
+            On Google Play the developer is listed as <strong>Atilio Maculus</strong>.<br>
+            Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina<br>
+            Phone: <a href="tel:+5491163508919">+54 9 11 6350-8919</a><br>
+            Email: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a>
+          </p>
+
+          <h3>2. What this policy covers</h3>
+          <p>PLAYCE is a tennis and padel scorer for:</p>
+          <ul>
+            <li>iPhone and Apple Watch (watchOS);</li>
+            <li>Android and Wear OS;</li>
+            <li>Garmin Connect IQ watches supported by the Android app (as of November 14, 2026, the Epix Pro 2, 47 mm);</li>
+            <li>this website, https://tenniscounter.vercel.app/.</li>
+          </ul>
+          <p>You can score a full match (Partido) or use the 21 training mode, on the phone and on the watch, for tennis and for padel. PLAYCE does not require an account to score.</p>
+
+          <h3>3. Data on your devices</h3>
+          <p>On the phone and on the watch, PLAYCE can process:</p>
+          <ul>
+            <li>the score (points, games, sets, final result and set breakdown);</li>
+            <li>player names you enter;</li>
+            <li>match duration and timestamps used for local history and sync retries;</li>
+            <li>technical sync identifiers such as <code>idempotencyKey</code>, and pending state until the phone acknowledges receipt;</li>
+            <li>a local Premium flag (that the unlock is active).</li>
+          </ul>
+          <p>PLAYCE does not operate its own server for match storage. History lives on the phone. During play, the watch can send state to the paired phone through the platform channel:</p>
+          <ul>
+            <li>Wear OS: Google Play Services Wearable Data Layer;</li>
+            <li>Apple Watch: WatchConnectivity;</li>
+            <li>Garmin: Garmin Connect IQ through Garmin Connect Mobile, into the Android app.</li>
+          </ul>
+          <p>If you share a card or export a CSV, the destination you pick receives only what you choose to send.</p>
+
+          <h3>4. Health and fitness</h3>
+          <p>If you grant the permissions and use PLAYCE on a supported watch, the app can access health and fitness data during a tennis or padel session. Depending on the device, that can include heart-rate samples, average and maximum heart rate, calories or active energy, exercise type, session start and end, and duration.</p>
+          <p>On Wear OS, Google Health Services runs the workout and reads heart-rate and calorie estimates. PLAYCE keeps that summary with the match on your devices and can sync it from the watch to the paired phone through the Wearable Data Layer. With your permission, the Android phone app writes a tennis exercise session and total calories burned to Health Connect. On Apple Watch, PLAYCE uses HealthKit to run the workout, read heart rate and active energy, and save the workout to Apple Health.</p>
+          <p>Those data are used to keep the session on the watch, show metrics in match detail, and save the session in the health platform you authorize. PLAYCE does not sell health data, use it for advertising, or upload it to a PLAYCE-operated server. Records already in Health Connect or Apple Health are managed in those platforms.</p>
+
+          <h3>5. Firebase Analytics and Crashlytics</h3>
+          <p>The Android phone app and the Wear OS app include two Firebase products, and no others (no Firebase Auth, Firestore, Cloud Messaging, Remote Config, or an ads SDK):</p>
+          <ul>
+            <li><strong>Firebase Analytics</strong> (Google Analytics for Firebase), for usage measurement;</li>
+            <li><strong>Firebase Crashlytics</strong>, for crash reports.</li>
+          </ul>
+          <p>The app code does not define custom events and does not set a user ID. Collection is the automatic collection of those SDKs once they are in the app.</p>
+          <p><strong>What is collected</strong></p>
+          <ul>
+            <li>an app instance ID;</li>
+            <li>the Android advertising ID (AAID), when the device provides one. Both manifests declare <code>com.google.android.gms.permission.AD_ID</code>, and the project does not disable collection (<code>google_analytics_adid_collection_enabled</code> is not set to false). PLAYCE does not show ads and does not include AdMob. The ID is used for Analytics measurement;</li>
+            <li>device model, operating-system version, language and app version;</li>
+            <li>automatic events such as first open, session start and, when a Google Play purchase happens, an in-app purchase event with the product id, price and currency. That event does not include your card number;</li>
+            <li>in Crashlytics: the crash stack trace, device model, operating system, app version, crash time and a Crashlytics installation identifier.</li>
+          </ul>
+          <p>The app code does not send player names, scores or health metrics to Firebase. This policy does not claim that the iOS app uses Firebase: that code is not in the Android repository this section was checked against. It also does not describe an iOS advertising identifier (IDFA).</p>
+          <p><strong>Purpose</strong></p>
+          <p>Analytics is used to understand aggregate usage and how the app behaves. Crashlytics is used to diagnose crashes and improve stability. PLAYCE does not sell this data and does not use it to show its own ads.</p>
+          <p><strong>Retention</strong></p>
+          <p>Google keeps Analytics event data for the period set on the Firebase / Google Analytics property. Google’s default for event data is 2 months (the console can keep 2 months or extend it to 14). PLAYCE does not keep a separate copy. Crashlytics keeps crash data for 90 days, according to Google’s documentation. After that, Google deletes or anonymizes it under its own policies.</p>
+          <p><strong>Third parties</strong></p>
+          <p>The recipient of Analytics and Crashlytics is Google (Firebase and Google Analytics). On Android, Google Play, Google Play Services, the Wearable Data Layer and Health Connect / Health Services also take part in other features. On Apple: the App Store, WatchConnectivity and HealthKit. On Garmin, Garmin Connect Mobile only carries messages between the watch and the Android phone. Each applies its own policy.</p>
+
+          <h3>6. Purchases</h3>
+          <p>Premium is a one-time purchase, not a subscription. On Android, Wear OS and the Garmin bridge that ships with the Android app, Google Play Billing processes the product <code>premium_unlock</code>. On iPhone and Apple Watch, the App Store processes the one-time Premium purchase. PLAYCE does not receive or store your card number. The phone app stores a local flag so Premium stays unlocked. Receipts and refunds are handled by Google or Apple.</p>
+
+          <h3>7. This website</h3>
+          <p>The site is static and does not create an account. The language you pick (ES or EN) is stored only in your browser, in <code>localStorage</code>, under the key <code>playce-lang</code>. That value is not sent to PLAYCE. The site is hosted on Vercel, which may process connection logs (including IP address and user agent) to deliver and protect the site, under Vercel’s policy.</p>
+
+          <h3>8. Children under 13</h3>
+          <p>PLAYCE is not directed to children under 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and you believe a child under 13 used the Android or Wear OS app in a way that sent Analytics or Crashlytics data to Google, email us and we will delete the data we can associate with that request.</p>
+
+          <h3>9. Data deletion</h3>
+          <p>You can delete what is on your devices without emailing us:</p>
+          <ul>
+            <li>on the phone: Settings → Apps → PLAYCE → Storage → Clear data, or uninstall the app;</li>
+            <li>on the watch: uninstall PLAYCE;</li>
+            <li>in Health Connect or Apple Health: delete the exercise session there. PLAYCE cannot delete it from outside those apps.</li>
+          </ul>
+          <p>To ask for deletion of Analytics or Crashlytics data Google holds about your use, email <a href="mailto:atiliogmaculus@gmail.com?subject=PLAYCE%20Data%20Deletion%20Request">atiliogmaculus@gmail.com</a> with the subject <code>PLAYCE Data Deletion Request</code>. Say which platform (Android, Wear OS, iPhone or Apple Watch). If you can, include the Android advertising ID or any identifier you have.</p>
+          <p>PLAYCE has no user accounts. Analytics and Crashlytics are tied to an app instance ID and, on Android, to the advertising ID, not to your email. If an email alone is not enough to find a record, we will tell you. Purchase records stay with Google Play or the App Store and follow those stores’ policies.</p>
+          <p>The same instructions are on <a href="./delete-data">the data deletion page</a>.</p>
+
+          <h3>10. Data PLAYCE does not ask for</h3>
+          <p>To score a match, PLAYCE does not ask for an account, precise location, contacts, microphone or camera.</p>
+
+          <h3>11. Changes</h3>
+          <p>If this policy changes, the “Last updated” date becomes the date of the new version. The current version is at https://tenniscounter.vercel.app/privacy</p>
+
+          <h3>12. Contact</h3>
+          <p>
+            <strong>Atilio Guido Maculus</strong><br>
+            Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina<br>
+            Phone: <a href="tel:+5491163508919">+54 9 11 6350-8919</a><br>
+            Email: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a>
+          </p>
+        </div>
+
+        <p class="legal-links">
+          <a href="./terms"><span data-lang="es">Términos de servicio</span><span data-lang="en">Terms of Service</span></a>
+          <a href="./delete-data"><span data-lang="es">Eliminar datos</span><span data-lang="en">Delete data</span></a>
+        </p>
       </article>
     </main>
   </div>
-
   <script src="./script.js"></script>
 </body>
 </html>

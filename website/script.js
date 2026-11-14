@@ -48,27 +48,34 @@ document.querySelectorAll(".reveal").forEach((element) => {
   const SUPPORTED = ["en", "es"];
 
   function detectInitialLang() {
-    // 1) explicit ?lang=es / ?lang=en in URL wins
     const params = new URLSearchParams(window.location.search);
     const urlLang = params.get("lang");
     if (urlLang && SUPPORTED.includes(urlLang)) return urlLang;
 
-    // 2) saved preference
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && SUPPORTED.includes(saved)) return saved;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && SUPPORTED.includes(saved)) return saved;
+    } catch (e) {
+      // localStorage may be blocked
+    }
 
-    // 3) browser language fallback
+    const fallback = document.documentElement.dataset.defaultLang;
+    if (fallback && SUPPORTED.includes(fallback)) return fallback;
+
     const browser = (navigator.language || "en").toLowerCase();
     if (browser.startsWith("es")) return "es";
     return "en";
   }
 
-  function applyLang(lang) {
-    if (!SUPPORTED.includes(lang)) lang = "en";
+  function applyLang(lang, persist) {
+    if (!SUPPORTED.includes(lang)) lang = document.documentElement.dataset.defaultLang || "en";
     document.documentElement.lang = lang;
     document.querySelectorAll("[data-set-lang]").forEach((btn) => {
       btn.setAttribute("aria-pressed", String(btn.dataset.setLang === lang));
     });
+    const title = document.documentElement.getAttribute("data-title-" + lang);
+    if (title) document.title = title;
+    if (!persist) return;
     try {
       localStorage.setItem(STORAGE_KEY, lang);
     } catch (e) {
@@ -76,13 +83,11 @@ document.querySelectorAll(".reveal").forEach((element) => {
     }
   }
 
-  // Initial application
-  applyLang(detectInitialLang());
+  applyLang(detectInitialLang(), false);
 
-  // Wire up clicks on every lang pill
   document.querySelectorAll("[data-set-lang]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      applyLang(btn.dataset.setLang);
+      applyLang(btn.dataset.setLang, true);
     });
   });
 })();

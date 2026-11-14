@@ -11,11 +11,20 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Download PLAYCE">
   <meta property="og:description" content="One link. iPhone goes to App Store, Android goes to Google Play.">
-  <meta property="og:image" content="/assets/feature-graphic-playce.png">
+  <meta property="og:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PLAYCE wordmark. Tennis and padel. Partido + 21 on phone and watch.">
   <meta property="og:url" content="https://tenniscounter.vercel.app/download">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Download PLAYCE">
+  <meta name="twitter:description" content="One link. iPhone goes to the App Store, Android goes to Google Play.">
+  <meta name="twitter:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
   <meta name="theme-color" content="#0b0f0a">
   <link rel="canonical" href="https://tenniscounter.vercel.app/download">
+  <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -107,9 +116,11 @@
     </div>
     <div class="store-fallbacks" aria-label="Store fallbacks">
       <span>Desktop?</span>
-      <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" rel="noreferrer">App Store</a>
+      <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754" rel="noreferrer">App Store</a>
       <a href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" rel="noreferrer">Google Play</a>
     </div>
+    <!-- TODO: Garmin Connect IQ store URL is not in this repository. Connect IQ app id c4f18a72b93e4d6fa1c8e5b2079d3a44. Do not invent an apps.garmin.com link. -->
+    <p class="download-note">Garmin watches use Connect IQ with the Android app on Google Play.</p>
     <div class="download-note">Free to start. No subscription.</div>
   </main>
 
@@ -120,14 +131,14 @@
       <h1>Choose your store</h1>
       <p>JavaScript is required for automatic store detection. Use the fallback links below.</p>
       <div class="store-fallbacks" aria-label="Store fallbacks">
-        <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB" rel="noreferrer">App Store</a>
+        <a href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754" rel="noreferrer">App Store</a>
         <a href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" rel="noreferrer">Google Play</a>
       </div>
     </main>
   </noscript>
 
   <script>
-    const IOS_URL = "https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754?l=en-GB";
+    const IOS_URL = "https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754";
     const ANDROID_URL = "https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app";
     const ua = navigator.userAgent || navigator.vendor || window.opera;
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
