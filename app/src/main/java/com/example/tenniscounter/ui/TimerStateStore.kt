@@ -1,6 +1,7 @@
 package com.example.tenniscounter.ui
 
 import android.content.Context
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -69,7 +70,10 @@ object TimerStateStore {
     }
 
     suspend fun read(context: Context): TimerSnapshot {
-        val prefs = context.dataStore.data.first()
+        return snapshotOf(context.dataStore.data.first())
+    }
+
+    fun snapshotOf(prefs: Preferences): TimerSnapshot {
         return TimerSnapshot(
             isRunning = prefs[IS_RUNNING_KEY] ?: true,
             startElapsedRealtime = prefs[START_ELAPSED_REALTIME_KEY] ?: 0L,

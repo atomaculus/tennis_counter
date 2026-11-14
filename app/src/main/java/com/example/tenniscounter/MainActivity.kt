@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -98,11 +99,15 @@ import com.example.tenniscounter.sync.MatchConfigRepository
 import com.example.tenniscounter.sync.LiveScoreBroadcaster
 import com.example.tenniscounter.sync.LiveScoreObserver
 import com.example.tenniscounter.sync.WearLiveMatchState
+import com.example.tenniscounter.ui.ActiveSessionStore
 import com.example.tenniscounter.ui.FinishedMatchSummary
 import com.example.tenniscounter.ui.MatchState
+import com.example.tenniscounter.ui.ParedonStubScreen
 import com.example.tenniscounter.ui.SpectatorScreen
 import com.example.tenniscounter.ui.TennisViewModel
+import com.example.tenniscounter.ui.VeintiunoScreen
 import com.google.android.gms.wearable.DataMapItem
+import com.playce.shared.training.TrainingFeatures
 import com.google.android.gms.wearable.Wearable
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -135,7 +140,7 @@ private fun healthPermissionsForDevice(): Array<String> {
  * controls change and the overlay should be shown again after an update.
  */
 private object WhatsNewPrefs {
-    const val CURRENT_WHATSNEW_VERSION = 1
+    const val CURRENT_WHATSNEW_VERSION = 2
     private const val PREFS_NAME = "playce_whatsnew"
     private const val KEY_LAST_SEEN_VERSION = "last_seen_version"
 
@@ -154,9 +159,12 @@ private object WhatsNewPrefs {
 }
 
 private enum class AppScreen {
+    ModeSelect,
     Counter,
     MatchFinished,
-    Spectator
+    Spectator,
+    Veintiuno,
+    ParedonStub
 }
 
 private enum class ActiveSheet {
@@ -188,11 +196,27 @@ private data class ServeIndicatorState(
 
 class MainActivity : ComponentActivity() {
 
+    private val isAmbient = mutableStateOf(false)
+    private val ambientCallback = object : AmbientLifecycleObserver.AmbientLifecycleCallback {
+        override fun onEnterAmbient(ambientDetails: AmbientLifecycleObserver.AmbientDetails) {
+            isAmbient.value = true
+        }
+
+        override fun onExitAmbient() {
+            isAmbient.value = false
+        }
+    }
+    private val ambientObserver = AmbientLifecycleObserver(this, ambientCallback)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Declares ambient support: during a match the activity stays on screen
+        // in ambient mode (simplified scoreboard) instead of falling back to the
+        // watch face.
+        lifecycle.addObserver(ambientObserver)
         setContent {
             TennisWearTheme {
-                TennisCounterApp()
+                TennisCounterApp(isAmbient = isAmbient.value)
             }
         }
     }
@@ -210,6 +234,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun TennisCounterApp(
+    isAmbient: Boolean = false,
     viewModel: TennisViewModel = viewModel()
 ) {
     val state by viewModel.matchState.collectAsState()
@@ -256,10 +281,22 @@ private fun TennisCounterApp(
     }
 
     LaunchedEffect(Unit) {
-        if (hasHealthPermissions()) {
+        val missing = mutableListOf<String>()
+        if (!hasHealthPermissions()) {
+            missing += healthPermissionsForDevice()
+        }
+        // Needed so the foreground-service notification (and its watch-face chip)
+        // can be shown while a match is running.
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            missing += Manifest.permission.POST_NOTIFICATIONS
+        }
+        if (missing.isEmpty()) {
             healthServicesManager.startMatchWorkoutIfPossible()
         } else {
-            healthPermissionLauncher.launch(healthPermissionsForDevice())
+            healthPermissionLauncher.launch(missing.toTypedArray())
         }
     }
 
@@ -291,10 +328,30 @@ private fun TennisCounterApp(
     )
     val spectatorState = spectatorUiState.spectatorState
 
-    var appScreen by remember { mutableStateOf(AppScreen.Counter) }
+    val restoredActiveMatch by viewModel.restoredActiveMatch.collectAsState()
+    val hasActiveMatch by viewModel.hasActiveMatch.collectAsState()
+    var appScreen by remember { mutableStateOf(if (hasActiveMatch) AppScreen.Counter else AppScreen.ModeSelect) }
     var activeSheet by remember { mutableStateOf(ActiveSheet.None) }
     var transientMessage by remember { mutableStateOf<String?>(null) }
     var showWhatsNew by remember { mutableStateOf(WhatsNewPrefs.shouldShow(context)) }
+    var lastMode by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        lastMode = ActiveSessionStore.readLastMode(context)
+    }
+
+    // A restored snapshot (or any in-memory progress, e.g. activity
+    // recreation) skips the mode selector straight to the scoreboard.
+    LaunchedEffect(restoredActiveMatch, hasActiveMatch) {
+        if ((restoredActiveMatch || hasActiveMatch) && appScreen == AppScreen.ModeSelect) {
+            appScreen = AppScreen.Counter
+        }
+    }
+
+    fun selectMode(mode: String, screen: AppScreen) {
+        appScreen = screen
+        uiScope.launch { ActiveSessionStore.saveLastMode(context, mode) }
+    }
 
     // Ask who serves first before the first point (unless phone config already fixed it).
     val showInitialServerPrompt by viewModel.showInitialServerPrompt.collectAsState()
@@ -391,8 +448,37 @@ private fun TennisCounterApp(
         }
     }
 
+    // Paredón is not selectable while the flag is off. If a session somehow
+    // lands on that screen, show the selector instead of the stub.
+    val visibleScreen = if (appScreen == AppScreen.ParedonStub && !TrainingFeatures.PAREDON_ENABLED) {
+        AppScreen.ModeSelect
+    } else {
+        appScreen
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        when (appScreen) {
+        when (visibleScreen) {
+            AppScreen.ModeSelect -> {
+                ModeSelectScreen(
+                    lastMode = lastMode,
+                    onSelectMatch = { selectMode(ActiveSessionStore.MODE_MATCH, AppScreen.Counter) },
+                    onSelectParedon = {
+                        if (TrainingFeatures.PAREDON_ENABLED) {
+                            selectMode(ActiveSessionStore.MODE_PAREDON, AppScreen.ParedonStub)
+                        }
+                    },
+                    onSelectVeintiuno = { selectMode(ActiveSessionStore.MODE_VEINTIUNO, AppScreen.Veintiuno) }
+                )
+            }
+
+            AppScreen.Veintiuno -> {
+                VeintiunoScreen(onExit = { appScreen = AppScreen.ModeSelect })
+            }
+
+            AppScreen.ParedonStub -> {
+                ParedonStubScreen(onBack = { appScreen = AppScreen.ModeSelect })
+            }
+
             AppScreen.Counter -> {
                 CounterScreen(
                     state = state,
@@ -440,8 +526,9 @@ private fun TennisCounterApp(
                         }
                         if (saved && summaryToSend != null) {
                             val setScoresText = buildSetScoresText(state)
+                            val pointEventsJson = viewModel.pointEventsJson()
                             uiScope.launch(Dispatchers.IO) {
-                                val pendingMessage = createPendingMatchMessage(summaryToSend, setScoresText)
+                                val pendingMessage = createPendingMatchMessage(summaryToSend, setScoresText, pointEventsJson)
                                 PendingMatchStore.savePending(context.applicationContext, pendingMessage)
                                 when (sendPendingMatchToPhone(
                                     context = context.applicationContext,
@@ -688,6 +775,66 @@ private fun TennisCounterApp(
                 }
             )
         }
+
+        // Ambient mode: simplified, burn-in-friendly scoreboard drawn over the
+        // match screens. Non-match screens (mode selector, training) get plain
+        // black instead of a misleading 0-0 match scoreboard.
+        if (isAmbient) {
+            when (appScreen) {
+                AppScreen.Counter, AppScreen.MatchFinished, AppScreen.Spectator ->
+                    AmbientMatchScreen(state = state)
+                else ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black)
+                    )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AmbientMatchScreen(state: MatchState) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "${state.playerAName.take(6).uppercase()} · ${state.playerBName.take(6).uppercase()}",
+            color = Color.Gray,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "${state.pointLabelForA()} – ${state.pointLabelForB()}",
+            color = Color.White,
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Light,
+            fontFamily = FontFamily.Monospace
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.label_sets) + " ${state.playerA.sets}-${state.playerB.sets}" +
+                "   " + stringResource(R.string.label_games) + " ${state.playerA.games}-${state.playerB.games}",
+            color = Color.Gray,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+        if (state.hasTimerStarted) {
+            Spacer(modifier = Modifier.height(10.dp))
+            val minutes = state.elapsedSeconds / 60
+            Text(
+                text = if (minutes >= 60) "%d:%02d".format(minutes / 60, minutes % 60) else "$minutes min",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
@@ -778,6 +925,58 @@ private fun rememberSpectatorUiState(
         hasActiveLiveMatch = hasActiveLiveMatch,
         spectatorState = spectatorState
     )
+}
+
+@Composable
+private fun ModeSelectScreen(
+    lastMode: String?,
+    onSelectMatch: () -> Unit,
+    onSelectParedon: () -> Unit,
+    onSelectVeintiuno: () -> Unit
+) {
+    // Fits everything in a static viewport on purpose — this screen must not
+    // scroll (long-press is undo on the scoreboard; scroll gestures would
+    // conflict with that convention project-wide).
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PlayceWearColors.Background)
+            .padding(horizontal = PlayceWearSpacing.Lg),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Sm)
+        ) {
+            PlayceChip(text = stringResource(R.string.mode_select_title), accent = true)
+            PlayceButton(
+                text = stringResource(R.string.mode_match),
+                onClick = onSelectMatch,
+                variant = PlayceButtonVariant.Primary
+            )
+            if (TrainingFeatures.PAREDON_ENABLED) {
+                PlayceButton(
+                    text = stringResource(R.string.mode_paredon),
+                    onClick = onSelectParedon,
+                    variant = if (lastMode == ActiveSessionStore.MODE_PAREDON) {
+                        PlayceButtonVariant.Primary
+                    } else {
+                        PlayceButtonVariant.Secondary
+                    }
+                )
+            }
+            PlayceButton(
+                text = stringResource(R.string.mode_veintiuno),
+                onClick = onSelectVeintiuno,
+                variant = if (lastMode == ActiveSessionStore.MODE_VEINTIUNO) {
+                    PlayceButtonVariant.Primary
+                } else {
+                    PlayceButtonVariant.Secondary
+                }
+            )
+        }
+    }
 }
 
 @Composable
@@ -1396,10 +1595,11 @@ private fun buildFinalScoreText(summary: FinishedMatchSummary): String {
 
 private fun createPendingMatchMessage(
     summary: FinishedMatchSummary,
-    setScoresText: String?
+    setScoresText: String?,
+    pointEventsJson: String? = null
 ): PendingMatchMessage {
     val idempotencyKey = UUID.randomUUID().toString()
-    val payload = buildMatchFinishedPayload(summary, setScoresText, idempotencyKey)
+    val payload = buildMatchFinishedPayload(summary, setScoresText, idempotencyKey, pointEventsJson)
     val now = System.currentTimeMillis()
     return PendingMatchMessage(
         idempotencyKey = idempotencyKey,
@@ -1414,7 +1614,8 @@ private fun createPendingMatchMessage(
 private fun buildMatchFinishedPayload(
     summary: FinishedMatchSummary,
     setScoresText: String?,
-    idempotencyKey: String
+    idempotencyKey: String,
+    pointEventsJson: String? = null
 ): ByteArray {
     val createdAt = if (summary.createdAt > 0L) summary.createdAt else System.currentTimeMillis()
     val finalScoreText = buildFinalScoreText(summary)
@@ -1431,6 +1632,9 @@ private fun buildMatchFinishedPayload(
         summary.avgHeartRateBpm?.let { putInt("avgHeartRateBpm", it) }
         summary.maxHeartRateBpm?.let { putInt("maxHeartRateBpm", it) }
         putString("idempotencyKey", idempotencyKey)
+        if (!pointEventsJson.isNullOrBlank()) {
+            putString("pointEventsJson", pointEventsJson)
+        }
     }
     return dataMap.toByteArray()
 }

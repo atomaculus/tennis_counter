@@ -7,9 +7,10 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [MatchEntity::class], version = 4, exportSchema = false)
+@Database(entities = [MatchEntity::class, TrainingSessionEntity::class], version = 6, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun matchDao(): MatchDao
+    abstract fun trainingSessionDao(): TrainingSessionDao
 
     companion object {
         @Volatile
@@ -25,6 +26,8 @@ abstract class AppDatabase : RoomDatabase() {
                     .addMigrations(MIGRATION_1_2)
                     .addMigrations(MIGRATION_2_3)
                     .addMigrations(MIGRATION_3_4)
+                    .addMigrations(MIGRATION_4_5)
+                    .addMigrations(MIGRATION_5_6)
                     .build()
                     .also { instance = it }
             }
@@ -73,6 +76,31 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE matches ADD COLUMN caloriesKcal REAL")
                 db.execSQL("ALTER TABLE matches ADD COLUMN avgHeartRateBpm INTEGER")
                 db.execSQL("ALTER TABLE matches ADD COLUMN maxHeartRateBpm INTEGER")
+            }
+        }
+
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE matches ADD COLUMN pointEventsJson TEXT")
+            }
+        }
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS training_sessions (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        modality TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        durationSeconds INTEGER NOT NULL,
+                        targetPoints INTEGER NOT NULL,
+                        finalCount INTEGER NOT NULL,
+                        bestStreak INTEGER NOT NULL,
+                        attempts INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

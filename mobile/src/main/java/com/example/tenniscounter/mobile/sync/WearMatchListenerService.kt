@@ -1,8 +1,6 @@
 package com.example.tenniscounter.mobile.sync
 
 import android.util.Log
-import com.example.tenniscounter.mobile.BuildConfig
-import com.example.tenniscounter.mobile.billing.PremiumAccessStore
 import com.example.tenniscounter.mobile.data.local.MatchEntity
 import com.example.tenniscounter.mobile.di.MobileServiceLocator
 import com.example.tenniscounter.mobile.health.HealthConnectMatchWriter
@@ -52,11 +50,13 @@ class WearMatchListenerService : WearableListenerService() {
         val caloriesKcal = dataMap.getOptionalDouble(KEY_CALORIES_KCAL)
         val avgHeartRateBpm = dataMap.getOptionalInt(KEY_AVG_HEART_RATE_BPM)
         val maxHeartRateBpm = dataMap.getOptionalInt(KEY_MAX_HEART_RATE_BPM)
+        val pointEventsJson = dataMap.getString(KEY_POINT_EVENTS_JSON)?.trim().orEmpty().ifBlank { null }
         Log.i(
             TAG,
             "Decoded payload createdAt=$createdAt durationSeconds=$durationSeconds finalScoreText=$finalScoreText " +
                 "setScoresText=${setScoresText.orEmpty()} idempotencyKey=$idempotencyKey caloriesKcal=$caloriesKcal " +
-                "avgHeartRateBpm=$avgHeartRateBpm maxHeartRateBpm=$maxHeartRateBpm"
+                "avgHeartRateBpm=$avgHeartRateBpm maxHeartRateBpm=$maxHeartRateBpm " +
+                "pointEventsJsonPresent=${pointEventsJson != null}"
         )
 
         if (createdAt <= 0L || durationSeconds < 0L || finalScoreText.isBlank()) {
@@ -69,12 +69,6 @@ class WearMatchListenerService : WearableListenerService() {
         }
 
         serviceScope.launch {
-            if (!BuildConfig.DEBUG && !PremiumAccessStore.isPremiumUnlocked(applicationContext)) {
-                Log.i(TAG, "Premium locked: match not saved. idempotencyKey=$idempotencyKey")
-                sendAck(messageEvent.sourceNodeId, idempotencyKey, status = "premium_locked")
-                return@launch
-            }
-
             val inserted = MobileServiceLocator.matchRepository(applicationContext).insertIfNotExists(
                 createdAt = createdAt,
                 durationSeconds = durationSeconds,
@@ -86,7 +80,8 @@ class WearMatchListenerService : WearableListenerService() {
                 playerBName = playerBName,
                 caloriesKcal = caloriesKcal,
                 avgHeartRateBpm = avgHeartRateBpm,
-                maxHeartRateBpm = maxHeartRateBpm
+                maxHeartRateBpm = maxHeartRateBpm,
+                pointEventsJson = pointEventsJson
             )
 
             if (inserted) {
@@ -103,7 +98,8 @@ class WearMatchListenerService : WearableListenerService() {
                         playerBName = playerBName,
                         caloriesKcal = caloriesKcal,
                         avgHeartRateBpm = avgHeartRateBpm,
-                        maxHeartRateBpm = maxHeartRateBpm
+                        maxHeartRateBpm = maxHeartRateBpm,
+                        pointEventsJson = pointEventsJson
                     )
                 )
                 sendAck(messageEvent.sourceNodeId, idempotencyKey, status = "inserted")
@@ -156,6 +152,7 @@ class WearMatchListenerService : WearableListenerService() {
         const val KEY_CALORIES_KCAL = "caloriesKcal"
         const val KEY_AVG_HEART_RATE_BPM = "avgHeartRateBpm"
         const val KEY_MAX_HEART_RATE_BPM = "maxHeartRateBpm"
+        const val KEY_POINT_EVENTS_JSON = "pointEventsJson"
     }
 }
 
