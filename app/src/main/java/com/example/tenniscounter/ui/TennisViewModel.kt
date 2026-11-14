@@ -11,17 +11,21 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tenniscounter.health.HealthMetricsSnapshot
 import com.example.tenniscounter.timer.MatchTimerService
+import com.playce.shared.scoring.MatchEventCodec
 import com.playce.shared.scoring.MatchFormat
 import com.playce.shared.scoring.ScoringEngine
 import com.playce.shared.scoring.ScoringEngine.MatchScore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -84,6 +88,13 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     private var timerJob: Job? = null
     private val eventHistory = mutableListOf<ScoringEngine.MatchEvent>()
 
+    /**
+     * Active-session disk writes are async. A newer reset must win over an
+     * in-flight save that still holds the pre-reset points.
+     */
+    private val sessionWriteMutex = Mutex()
+    private val sessionWrites = ActiveSessionWriteGate()
+
     /** True once the initial server has been fixed (phone config or user choice) or the prompt was dismissed. */
     private val _initialServerResolved = MutableStateFlow(false)
 
@@ -101,6 +112,14 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
             ScoringEngine.canOfferDecidingTiebreak(state.score) && !declined
         }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    /** True once a match with at least one scored event has been restored from [ActiveSessionStore] on launch. */
+    private val _restoredActiveMatch = MutableStateFlow(false)
+    val restoredActiveMatch: StateFlow<Boolean> = _restoredActiveMatch.asStateFlow()
+
+    /** True while the scoreboard has any progress (points/games/sets), whether restored or scored this session. */
+    val hasActiveMatch: StateFlow<Boolean> =
+        _matchState.map { !it.isFreshScoreboard() }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     init {
         viewModelScope.launch {
             TimerStateStore.ensureInitialized(appContext, SystemClock.elapsedRealtime())
@@ -109,6 +128,65 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
                 startMatchTimerService()
             }
             startTicker()
+            restoreActiveSessionIfPresent()
+        }
+    }
+
+    private suspend fun restoreActiveSessionIfPresent() {
+        val snapshot = ActiveSessionStore.readActive(appContext) ?: return
+        val restoredEvents = MatchEventCodec.fromJson(snapshot.eventsJson)
+        if (restoredEvents.isEmpty()) return
+
+        val format = matchFormatFromName(snapshot.matchFormat)
+        val initialServerIsPlayerA = snapshot.initialServerIsPlayerA ?: true
+
+        eventHistory.clear()
+        eventHistory.addAll(restoredEvents)
+        _matchFormat.value = format
+        _initialServerResolved.value = true
+        _decidingTiebreakDeclined.value = false
+
+        val restoredScore = ScoringEngine.replayEvents(restoredEvents, format, initialServerIsPlayerA)
+        _matchState.value = _matchState.value.copy(
+            score = restoredScore,
+            playerAName = snapshot.playerAName.ifBlank { _matchState.value.playerAName },
+            playerBName = snapshot.playerBName.ifBlank { _matchState.value.playerBName }
+        )
+        _restoredActiveMatch.value = true
+    }
+
+    private fun persistActiveSessionSnapshot() {
+        val generation = sessionWrites.open()
+        val state = _matchState.value
+        val eventsJson = MatchEventCodec.toJson(eventHistory.toList())
+        val formatName = matchFormatToName(_matchFormat.value)
+        val initialServerIsPlayerA = if (_initialServerResolved.value) {
+            state.score.initialServerIsPlayerA
+        } else {
+            null
+        }
+        viewModelScope.launch {
+            sessionWriteMutex.withLock {
+                if (!sessionWrites.isCurrent(generation)) return@withLock
+                ActiveSessionStore.saveMatchSnapshot(
+                    context = appContext,
+                    eventsJson = eventsJson,
+                    playerAName = state.playerAName,
+                    playerBName = state.playerBName,
+                    matchFormat = formatName,
+                    initialServerIsPlayerA = initialServerIsPlayerA
+                )
+            }
+        }
+    }
+
+    private fun clearPersistedActiveSession() {
+        val generation = sessionWrites.open()
+        viewModelScope.launch {
+            sessionWriteMutex.withLock {
+                if (!sessionWrites.isCurrent(generation)) return@withLock
+                ActiveSessionStore.clear(appContext)
+            }
         }
     }
 
@@ -117,6 +195,7 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
             playerAName = nameA.ifBlank { "Player A" },
             playerBName = nameB.ifBlank { "Player B" }
         )
+        persistActiveSessionSnapshot()
     }
 
     fun setMatchFormat(format: MatchFormat) {
@@ -128,6 +207,7 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
                 score = state.score.copy(format = format)
             )
         }
+        persistActiveSessionSnapshot()
     }
 
     /** Fix who serves first. Only valid before the first point is played. */
@@ -139,6 +219,7 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
                 score = state.score.copy(initialServerIsPlayerA = isPlayerA)
             )
         }
+        persistActiveSessionSnapshot()
     }
 
     /** User ignored the "Who serves first?" prompt; keep default (Player A) and stop asking. */
@@ -155,10 +236,11 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     fun startDecidingTiebreak(targetPoints: Int) {
         val state = _matchState.value
         if (!ScoringEngine.canOfferDecidingTiebreak(state.score)) return
-        eventHistory.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints))
+        eventHistory.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints, timestampMillis = System.currentTimeMillis()))
         _matchState.value = state.copy(
             score = ScoringEngine.startDecidingTiebreak(state.score, targetPoints)
         )
+        persistActiveSessionSnapshot()
     }
 
     private fun startTicker() {
@@ -239,13 +321,15 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun addPointToPlayerA() {
-        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = true))
+        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = System.currentTimeMillis()))
         applyPoint(isPlayerA = true)
+        persistActiveSessionSnapshot()
     }
 
     fun addPointToPlayerB() {
-        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = false))
+        eventHistory.add(ScoringEngine.MatchEvent.Point(isPlayerA = false, timestampMillis = System.currentTimeMillis()))
         applyPoint(isPlayerA = false)
+        persistActiveSessionSnapshot()
     }
 
     fun undoLastPointForPlayerA(): Boolean = undoLastPointForPlayer(true)
@@ -253,22 +337,27 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
     fun undoLastPointForPlayerB(): Boolean = undoLastPointForPlayer(false)
 
     fun resetGame() {
-        eventHistory.clear()
-        _decidingTiebreakDeclined.value = false
-        val state = _matchState.value
-        _matchState.value = state.copy(
-            score = state.score.copy(
-                playerA = state.playerA.copy(points = 0),
-                playerB = state.playerB.copy(points = 0),
-                isTiebreak = false
-            )
+        val kept = ScoringEngine.withoutOpenGame(
+            eventHistory.toList(),
+            _matchFormat.value,
+            _matchState.value.score.initialServerIsPlayerA
         )
+        eventHistory.clear()
+        eventHistory.addAll(kept)
+        _decidingTiebreakDeclined.value = false
+        rebuildScoreFromHistory()
+        if (kept.isEmpty()) {
+            clearPersistedActiveSession()
+        } else {
+            persistActiveSessionSnapshot()
+        }
     }
 
     fun resetMatch() {
         eventHistory.clear()
         _initialServerResolved.value = false
         _decidingTiebreakDeclined.value = false
+        clearPersistedActiveSession()
         viewModelScope.launch {
             TimerStateStore.resetStopped(appContext)
             _matchState.value = MatchState(
@@ -297,6 +386,7 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
                 }
                 prefs[SAVED_MATCHES_KEY] = current + encodeSavedMatch(summary)
             }
+            clearPersistedActiveSession()
         }
         return true
     }
@@ -311,6 +401,9 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         _isFinishedMatchSaved.value = false
         resetMatch()
     }
+
+    /** JSON-encoded point/event history for the match currently in progress (or just finished). */
+    fun pointEventsJson(): String = MatchEventCodec.toJson(eventHistory)
 
     private fun buildFinishedSummary(
         state: MatchState,
@@ -370,6 +463,7 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
 
         eventHistory.removeAt(index)
         rebuildScoreFromHistory()
+        persistActiveSessionSnapshot()
         return true
     }
 
@@ -381,6 +475,45 @@ class TennisViewModel(application: Application) : AndroidViewModel(application) 
         )
         _decidingTiebreakDeclined.value = false
         _matchState.value = _matchState.value.copy(score = newScore)
+    }
+
+    /**
+     * [MatchFormat] is a plain data class (not a real Kotlin enum), but the
+     * common formats used across the app are the three named companion
+     * constants. Encode those as their names for a compact, human-readable
+     * snapshot; encode anything else (e.g. a custom config pushed from the
+     * phone) as its raw fields so a restore never silently drops a custom
+     * format. Falls back to STANDARD on any parse failure.
+     */
+    private fun matchFormatToName(format: MatchFormat): String = when (format) {
+        MatchFormat.STANDARD -> "STANDARD"
+        MatchFormat.GRAND_SLAM -> "GRAND_SLAM"
+        MatchFormat.FAST4 -> "FAST4"
+        else -> "CUSTOM:${format.setsToWin},${format.tiebreakAtSixAll}," +
+            "${format.tiebreakPoints},${format.superTiebreakInFinalSet},${format.noAdScoring}"
+    }
+
+    private fun matchFormatFromName(name: String): MatchFormat = when {
+        name == "STANDARD" -> MatchFormat.STANDARD
+        name == "GRAND_SLAM" -> MatchFormat.GRAND_SLAM
+        name == "FAST4" -> MatchFormat.FAST4
+        name.startsWith("CUSTOM:") -> parseCustomMatchFormat(name.removePrefix("CUSTOM:"))
+        else -> MatchFormat.STANDARD
+    }
+
+    private fun parseCustomMatchFormat(payload: String): MatchFormat {
+        return try {
+            val parts = payload.split(",")
+            MatchFormat(
+                setsToWin = parts[0].toInt(),
+                tiebreakAtSixAll = parts[1].toBoolean(),
+                tiebreakPoints = parts[2].toInt(),
+                superTiebreakInFinalSet = parts[3].toBoolean(),
+                noAdScoring = parts[4].toBoolean()
+            )
+        } catch (e: Exception) {
+            MatchFormat.STANDARD
+        }
     }
 
     private fun formatDuration(totalSeconds: Int): String {

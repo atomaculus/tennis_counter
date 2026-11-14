@@ -8,7 +8,7 @@ plugins {
 apply(plugin = "com.google.gms.google-services")
 apply(plugin = "com.google.firebase.crashlytics")
 
-val playceVersionCode = (project.findProperty("PLAYCE_VERSION_CODE") as String?)?.toIntOrNull() ?: 1
+val playceVersionCode = (project.findProperty("PLAYCE_WEAR_VERSION_CODE") as String?)?.toIntOrNull() ?: 1
 val playceVersionName = (project.findProperty("PLAYCE_VERSION_NAME") as String?) ?: "1.0.0"
 
 android {
@@ -21,10 +21,13 @@ android {
         targetSdk = 35
         versionCode = playceVersionCode
         versionName = playceVersionName
+        // Paredón is a coming-soon stub. Debug builds can open it; release builds hide it.
+        buildConfigField("boolean", "SHOW_PAREDON_MODE", "false")
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -41,9 +44,13 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            buildConfigField("boolean", "SHOW_PAREDON_MODE", "true")
+        }
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            buildConfigField("boolean", "SHOW_PAREDON_MODE", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -84,6 +91,8 @@ dependencies {
     implementation("androidx.wear.compose:compose-material:1.3.1")
     implementation("androidx.wear.compose:compose-foundation:1.3.1")
     implementation("androidx.wear:wear:1.3.0")
+    implementation("androidx.wear:wear-ongoing:1.0.0")
+    implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.health:health-services-client:1.0.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("com.google.android.gms:play-services-wearable:18.2.0")

@@ -163,4 +163,21 @@
     <string name="btn_delete_match">Eliminar partido</string>
     <string name="delete_match_dialog_title">¿Eliminar partido?</string>
     <string name="btn_delete">Eliminar</string>
+
+    <!-- Selector de modo de juego -->
+    <string name="tab_play">Jugar</string>
+    <string name="mode_match">Partido</string>
+    <string name="mode_paredon">Paredón</string>
+    <string name="mode_veintiuno">21</string>
+
+    <!-- Modo de entrenamiento 21 (veintiuno) -->
+    <string name="veintiuno_title">21</string>
+    <string name="veintiuno_best_streak">Mejor racha: %d</string>
+    <string name="veintiuno_plus_one">+1</string>
+    <string name="veintiuno_miss">FALLÉ</string>
+    <string name="veintiuno_save_and_exit">Guardar y salir</string>
+    <string name="veintiuno_exit_small">Salir</string>
+
+    <!-- Stub de paredón -->
+    <string name="paredon_stub_message">Paredón llega pronto — contá tus golpes desde tu reloj.</string>
 </resources>

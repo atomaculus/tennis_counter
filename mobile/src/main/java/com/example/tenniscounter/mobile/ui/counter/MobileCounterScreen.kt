@@ -28,9 +28,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.example.tenniscounter.mobile.R
 import androidx.compose.ui.draw.clip
@@ -41,11 +43,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tenniscounter.mobile.billing.PremiumUiState
+import com.example.tenniscounter.mobile.data.local.MatchEntity
 import com.example.tenniscounter.mobile.ui.components.PlayceWordmark
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
+import com.example.tenniscounter.mobile.ui.share.MatchShareManager
+import com.example.tenniscounter.mobile.ui.share.ShareCardCaptureDialog
 import com.example.tenniscounter.mobile.ui.theme.PlayceColors
 import com.example.tenniscounter.mobile.ui.theme.PlayceTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun MobileCounterScreen(
@@ -545,6 +551,10 @@ private fun MobileMatchFinishedContent(
     onNewMatch: () -> Unit
 ) {
     var saved by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val shareError = remember { mutableStateOf<String?>(null) }
+    val shareRenderModel = remember { mutableStateOf<MatchShareManager.ShareRenderModel?>(null) }
 
     Column(
         modifier = Modifier
@@ -641,12 +651,84 @@ private fun MobileMatchFinishedContent(
                 modifier = Modifier.fillMaxWidth()
             )
             PrimaryButton(
+                text = stringResource(R.string.btn_share_playce),
+                onClick = {
+                    shareError.value = null
+                    scope.launch {
+                        val transientMatch = MatchEntity(
+                            createdAt = summary.createdAt,
+                            durationSeconds = summary.durationSeconds.toLong(),
+                            finalScoreText = summary.setsScore,
+                            setScoresText = summary.completedSetsText,
+                            photoUri = null,
+                            idempotencyKey = "share_transient_${summary.createdAt}",
+                            playerAName = summary.playerAName,
+                            playerBName = summary.playerBName
+                        )
+                        val prepared = MatchShareManager.prepareShareRenderModel(
+                            context = context,
+                            match = transientMatch
+                        )
+                        if (prepared.isSuccess) {
+                            shareRenderModel.value = prepared.getOrNull()
+                        } else {
+                            shareError.value = prepared.exceptionOrNull()?.message
+                                ?: "Failed to prepare share card"
+                        }
+                    }
+                },
+                style = PrimaryButtonStyle.Outline,
+                modifier = Modifier.fillMaxWidth()
+            )
+            PrimaryButton(
                 text = stringResource(R.string.btn_new_match),
                 onClick = onNewMatch,
                 style = PrimaryButtonStyle.Danger,
                 modifier = Modifier.fillMaxWidth()
             )
+            shareError.value?.let { error ->
+                Text(
+                    text = error,
+                    color = PlayceColors.Danger,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
+    }
+
+    shareRenderModel.value?.let { model ->
+        ShareCardCaptureDialog(
+            renderModel = model,
+            onCaptured = { attachedView, captureRect ->
+                scope.launch {
+                    val bitmapResult = MatchShareManager.captureAttachedViewArea(
+                        sourceView = attachedView,
+                        captureRect = captureRect
+                    )
+                    if (bitmapResult.isFailure) {
+                        shareError.value =
+                            bitmapResult.exceptionOrNull()?.message ?: "Failed to capture share card"
+                        shareRenderModel.value = null
+                        return@launch
+                    }
+
+                    val shareResult = MatchShareManager.shareRenderedBitmap(
+                        context = context,
+                        bitmap = bitmapResult.getOrThrow()
+                    )
+                    if (shareResult.isFailure) {
+                        shareError.value =
+                            shareResult.exceptionOrNull()?.message ?: "Failed to share image"
+                    }
+                    shareRenderModel.value = null
+                }
+            },
+            onDismissRequest = {
+                shareRenderModel.value = null
+            }
+        )
     }
 }
 

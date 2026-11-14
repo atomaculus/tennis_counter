@@ -137,8 +137,10 @@ object ScoringEngine {
      * points) so that undo can also rewind a deciding-tiebreak choice.
      */
     sealed interface MatchEvent {
-        data class Point(val isPlayerA: Boolean) : MatchEvent
-        data class DecidingTiebreakStarted(val targetPoints: Int) : MatchEvent
+        /** Epoch millis del momento del evento; 0 = desconocido (legacy/tests). */
+        val timestampMillis: Long
+        data class Point(val isPlayerA: Boolean, override val timestampMillis: Long = 0L) : MatchEvent
+        data class DecidingTiebreakStarted(val targetPoints: Int, override val timestampMillis: Long = 0L) : MatchEvent
     }
 
     /**
@@ -151,12 +153,38 @@ object ScoringEngine {
     ): MatchScore {
         var score = MatchScore(format = format, initialServerIsPlayerA = initialServerIsPlayerA)
         events.forEach { event ->
-            score = when (event) {
-                is MatchEvent.Point -> scorePoint(score, event.isPlayerA)
-                is MatchEvent.DecidingTiebreakStarted -> startDecidingTiebreak(score, event.targetPoints)
-            }
+            score = applyEvent(score, event)
         }
         return score
+    }
+
+    /**
+     * Drops the in-progress game or tiebreak.
+     *
+     * Replaying the result keeps completed games and sets, with the current
+     * points at 0. An empty list means nothing had been completed, so a
+     * relaunch must not bring the discarded points back.
+     */
+    fun withoutOpenGame(
+        events: List<MatchEvent>,
+        format: MatchFormat = MatchFormat.STANDARD,
+        initialServerIsPlayerA: Boolean = true
+    ): List<MatchEvent> {
+        if (events.isEmpty()) return emptyList()
+        var score = MatchScore(format = format, initialServerIsPlayerA = initialServerIsPlayerA)
+        var boundary = 0
+        events.forEachIndexed { index, event ->
+            score = applyEvent(score, event)
+            if (score.playerA.points == 0 && score.playerB.points == 0) {
+                boundary = index + 1
+            }
+        }
+        return events.subList(0, boundary).toList()
+    }
+
+    private fun applyEvent(score: MatchScore, event: MatchEvent): MatchScore = when (event) {
+        is MatchEvent.Point -> scorePoint(score, event.isPlayerA)
+        is MatchEvent.DecidingTiebreakStarted -> startDecidingTiebreak(score, event.targetPoints)
     }
 
     /**

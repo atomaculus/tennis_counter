@@ -9,7 +9,7 @@ plugins {
 apply(plugin = "com.google.gms.google-services")
 apply(plugin = "com.google.firebase.crashlytics")
 
-val playceVersionCode = (project.findProperty("PLAYCE_VERSION_CODE") as String?)?.toIntOrNull() ?: 1
+val playceVersionCode = (project.findProperty("PLAYCE_MOBILE_VERSION_CODE") as String?)?.toIntOrNull() ?: 1
 val playceVersionName = (project.findProperty("PLAYCE_VERSION_NAME") as String?) ?: "1.0.0"
 
 android {
@@ -22,6 +22,8 @@ android {
         targetSdk = 35
         versionCode = playceVersionCode
         versionName = playceVersionName
+        // Paredón is a coming-soon stub. Debug builds can open it; release builds hide it.
+        buildConfigField("boolean", "SHOW_PAREDON_MODE", "false")
     }
 
     buildFeatures {
@@ -42,10 +44,18 @@ android {
         jvmTarget = "17"
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     buildTypes {
+        getByName("debug") {
+            buildConfigField("boolean", "SHOW_PAREDON_MODE", "true")
+        }
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            buildConfigField("boolean", "SHOW_PAREDON_MODE", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -103,6 +113,7 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
 tasks.register("prepareKotlinBuildScriptModel")

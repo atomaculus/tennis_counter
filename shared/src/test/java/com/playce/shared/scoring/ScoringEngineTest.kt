@@ -393,6 +393,168 @@ class ScoringEngineTest {
         assertTrue(ScoringEngine.canOfferDecidingTiebreak(undone)) // question re-arms
     }
 
+    @Test
+    fun `replayEvents produces same score with and without timestamps`() {
+        val baseTime = 1_723_050_000_000L
+        val eventsWithoutTimestamps = buildList {
+            repeat(24) { add(ScoringEngine.MatchEvent.Point(isPlayerA = true)) }
+            repeat(24) { add(ScoringEngine.MatchEvent.Point(isPlayerA = false)) }
+            add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(10))
+            repeat(3) { add(ScoringEngine.MatchEvent.Point(isPlayerA = true)) }
+        }
+        val eventsWithTimestamps = eventsWithoutTimestamps.mapIndexed { index, event ->
+            when (event) {
+                is ScoringEngine.MatchEvent.Point ->
+                    event.copy(timestampMillis = baseTime + index * 1000L)
+                is ScoringEngine.MatchEvent.DecidingTiebreakStarted ->
+                    event.copy(timestampMillis = baseTime + index * 1000L)
+            }
+        }
+
+        val scoreWithout = ScoringEngine.replayEvents(eventsWithoutTimestamps)
+        val scoreWith = ScoringEngine.replayEvents(eventsWithTimestamps)
+
+        assertEquals(scoreWithout, scoreWith)
+    }
+
+    // ---- MatchEventCodec ----
+
+    @Test
+    fun `toJson of empty list is empty array`() {
+        assertEquals("[]", MatchEventCodec.toJson(emptyList()))
+    }
+
+    @Test
+    fun `toJson of single point event`() {
+        val events = listOf(ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 1723050000123))
+        assertEquals(
+            "[{\"type\":\"point\",\"isPlayerA\":true,\"t\":1723050000123}]",
+            MatchEventCodec.toJson(events)
+        )
+    }
+
+    @Test
+    fun `toJson of mixed point and deciding tiebreak events`() {
+        val events = listOf(
+            ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 1723050000123),
+            ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints = 10, timestampMillis = 1723050100456)
+        )
+        assertEquals(
+            "[{\"type\":\"point\",\"isPlayerA\":true,\"t\":1723050000123},{\"type\":\"deciding_tb\",\"targetPoints\":10,\"t\":1723050100456}]",
+            MatchEventCodec.toJson(events)
+        )
+    }
+
+    @Test
+    fun `fromJson of empty array is empty list`() {
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[]"))
+    }
+
+    @Test
+    fun `fromJson tolerates surrounding and interior whitespace`() {
+        val json = "  [ { \"type\" : \"point\" , \"isPlayerA\" : true , \"t\" : 42 } ] "
+        val events = MatchEventCodec.fromJson(json)
+        assertEquals(1, events.size)
+        assertEquals(ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 42), events[0])
+    }
+
+    @Test
+    fun `round-trip toJson then fromJson for empty list`() {
+        val events = emptyList<ScoringEngine.MatchEvent>()
+        assertEquals(events, MatchEventCodec.fromJson(MatchEventCodec.toJson(events)))
+    }
+
+    @Test
+    fun `round-trip toJson then fromJson for single point event`() {
+        val events = listOf(ScoringEngine.MatchEvent.Point(isPlayerA = false, timestampMillis = 1723050000123))
+        assertEquals(events, MatchEventCodec.fromJson(MatchEventCodec.toJson(events)))
+    }
+
+    @Test
+    fun `round-trip toJson then fromJson for mixed events`() {
+        val events = listOf(
+            ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 1),
+            ScoringEngine.MatchEvent.Point(isPlayerA = false, timestampMillis = 2),
+            ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints = 10, timestampMillis = 3),
+            ScoringEngine.MatchEvent.Point(isPlayerA = true, timestampMillis = 4)
+        )
+        assertEquals(events, MatchEventCodec.fromJson(MatchEventCodec.toJson(events)))
+    }
+
+    @Test
+    fun `fromJson of malformed json returns empty list instead of throwing`() {
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("not json"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson(""))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("{\"type\":\"point\"}"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[{\"type\":\"point\"}]"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[{\"type\":\"unknown\",\"t\":1}]"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[{\"type\":\"point\",\"isPlayerA\":true"))
+        assertEquals(emptyList<ScoringEngine.MatchEvent>(), MatchEventCodec.fromJson("[{\"type\":\"point\",\"isPlayerA\":true,\"t\":1}"))
+    }
+
+    // ---- Reset game / new match: relaunch must not restore discarded points ----
+
+    @Test
+    fun `reset game keeps completed games and drops the open points`() {
+        val events = gameFor(isPlayerA = true) + listOf(point(false), point(false))
+
+        val kept = ScoringEngine.withoutOpenGame(events)
+        val restored = ScoringEngine.replayEvents(kept)
+
+        assertEquals(1, restored.playerA.games)
+        assertEquals(0, restored.playerB.games)
+        assertEquals(0, restored.playerA.points)
+        assertEquals(0, restored.playerB.points)
+        assertEquals("30", ScoringEngine.replayEvents(events).pointLabelForB())
+    }
+
+    @Test
+    fun `reset game with only open points leaves nothing for a relaunch to restore`() {
+        val events = listOf(point(true), point(true), point(false))
+
+        val kept = ScoringEngine.withoutOpenGame(events)
+        val restored = ScoringEngine.replayEvents(kept)
+
+        assertTrue(kept.isEmpty())
+        assertEquals(0, restored.playerA.points)
+        assertEquals(0, restored.playerB.points)
+        assertEquals(0, restored.playerA.games)
+        assertEquals(0, restored.playerB.games)
+    }
+
+    @Test
+    fun `reset game during a tiebreak drops those points and restarts the tiebreak`() {
+        val events = mutableListOf<ScoringEngine.MatchEvent>()
+        repeat(6) {
+            events += gameFor(true)
+            events += gameFor(false)
+        }
+        events += point(true)
+        events += point(false)
+        events += point(true)
+
+        val kept = ScoringEngine.withoutOpenGame(events)
+        val restored = ScoringEngine.replayEvents(kept)
+
+        assertEquals(6, restored.playerA.games)
+        assertEquals(6, restored.playerB.games)
+        assertEquals(0, restored.playerA.points)
+        assertEquals(0, restored.playerB.points)
+        assertTrue(restored.isTiebreak)
+    }
+
+    @Test
+    fun `cleared match restores as a blank scoreboard`() {
+        val restored = ScoringEngine.replayEvents(emptyList())
+
+        assertEquals(0, restored.playerA.points)
+        assertEquals(0, restored.playerB.points)
+        assertEquals(0, restored.playerA.games)
+        assertEquals(0, restored.playerB.games)
+        assertEquals(0, restored.playerA.sets)
+        assertEquals(0, restored.playerB.sets)
+    }
+
     // ---- Helpers ----
 
     private fun scoreToTiedSets(setsEach: Int, format: MatchFormat = MatchFormat.STANDARD): MatchScore {
@@ -420,6 +582,11 @@ class ScoringEngineTest {
         }
         return score
     }
+
+    private fun point(isPlayerA: Boolean) = ScoringEngine.MatchEvent.Point(isPlayerA)
+
+    private fun gameFor(isPlayerA: Boolean): List<ScoringEngine.MatchEvent> =
+        List(4) { ScoringEngine.MatchEvent.Point(isPlayerA) }
 
     private fun winGameForPlayer(score: MatchScore, isPlayerA: Boolean): MatchScore {
         var s = score
