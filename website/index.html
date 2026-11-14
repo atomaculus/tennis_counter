@@ -6,19 +6,82 @@
   <title>PLAYCE | Tennis & Padel Scorer for iPhone, Apple Watch, Android, Wear OS & Garmin</title>
   <meta
     name="description"
-    content="PLAYCE is a tennis and padel score tracker for iPhone, Apple Watch, Android, Wear OS and Garmin. Score from your wrist, sync to your phone, review history and share match cards. Pay once, no subscription."
+    content="PLAYCE scores tennis and padel on iPhone, Apple Watch, Android, Wear OS and Garmin. Full match (Partido) and 21 training mode on phone and watch. Pay once."
   >
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PLAYCE">
   <meta property="og:title" content="PLAYCE | Tennis & Padel Scorer for iPhone, Apple Watch, Android, Wear OS & Garmin">
-  <meta property="og:description" content="Score every point from your wrist. Keep the full match on your phone. iOS, Android, Wear OS and Garmin. Pay once, no subscription.">
-  <meta property="og:image" content="/assets/feature-graphic-playce.png">
+  <meta property="og:description" content="Tennis and padel from the court. Partido for a full match, 21 for training, on your phone and your watch. Pay once, no subscription.">
+  <meta property="og:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PLAYCE wordmark. Tennis and padel. Partido + 21 on phone and watch.">
   <meta property="og:url" content="https://tenniscounter.vercel.app/">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="es_AR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PLAYCE | Tennis & Padel Scorer for iPhone, Apple Watch, Android, Wear OS & Garmin">
+  <meta name="twitter:description" content="Tennis and padel from the court. Partido for a full match, 21 for training, on your phone and your watch. Pay once, no subscription.">
+  <meta name="twitter:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta name="twitter:image:alt" content="PLAYCE wordmark. Tennis and padel. Partido + 21 on phone and watch.">
   <meta name="theme-color" content="#040703">
   <link rel="canonical" href="https://tenniscounter.vercel.app/">
   <link rel="alternate" hreflang="en" href="https://tenniscounter.vercel.app/">
   <link rel="alternate" hreflang="es" href="https://tenniscounter.vercel.app/?lang=es">
   <link rel="alternate" hreflang="x-default" href="https://tenniscounter.vercel.app/">
+  <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "PLAYCE",
+    "applicationCategory": "SportsApplication",
+    "operatingSystem": "Android, Wear OS, iOS, watchOS, Garmin Connect IQ",
+    "url": "https://tenniscounter.vercel.app/",
+    "image": "https://tenniscounter.vercel.app/assets/og-playce.png",
+    "description": "Tennis and padel scoring for iPhone, Apple Watch, Android, Wear OS and Garmin. Partido is a full match. 21 is a training mode on phone and watch. Premium is a one-time unlock, not a subscription.",
+    "inLanguage": ["en", "es"],
+    "isAccessibleForFree": true,
+    "featureList": [
+      "Tennis scoring",
+      "Padel scoring",
+      "Partido match mode",
+      "21 training mode",
+      "Apple Watch",
+      "Wear OS",
+      "Garmin Connect IQ",
+      "One-time Premium unlock"
+    ],
+    "downloadUrl": [
+      "https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app",
+      "https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754"
+    ],
+    "offers": {
+      "@type": "AggregateOffer",
+      "priceCurrency": "USD",
+      "lowPrice": "0",
+      "highPrice": "3.99",
+      "offerCount": 2,
+      "description": "Free scorer. Premium is a one-time unlock (USD 3.99 on the App Store, USD 3.33 on Google Play), not a subscription."
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Atilio Guido Maculus",
+      "email": "atiliogmaculus@gmail.com",
+      "telephone": "+54 9 11 6350-8919",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Las Camelias 3324",
+        "addressLocality": "Del Viso",
+        "addressRegion": "Buenos Aires",
+        "postalCode": "B1669",
+        "addressCountry": "AR"
+      }
+    }
+  }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -89,8 +152,8 @@
           <span class="ht-line ht-accent reveal" data-lang="es">EN EL HISTORIAL.</span>
         </h1>
         <p class="hero-sub reveal">
-          <span data-lang="en">PLAYCE is a tennis &amp; padel scoring system built for real courtside use. Score live on your watch, sync instantly to your phone, then review history, stats and share cards after the match.</span>
-          <span data-lang="es">PLAYCE es un sistema de marcador de tenis y pádel pensado para la cancha de verdad. Marcá en vivo desde el reloj, sincronizá al instante con el teléfono, y después revisá historial, stats y tarjetas para compartir.</span>
+          <span data-lang="en">PLAYCE scores tennis and padel from the court. Partido is a full match. 21 is a training mode on your phone and your watch. The watch keeps the live score. The phone keeps history, stats and share cards.</span>
+          <span data-lang="es">PLAYCE marca tenis y pádel en la cancha. Partido es el encuentro completo. 21 es un modo de entrenamiento en el teléfono y en el reloj. El reloj lleva el score en vivo. El teléfono guarda historial, stats y tarjetas para compartir.</span>
         </p>
         <div class="hero-actions reveal">
           <a class="btn btn-solid btn-big" href="./download">
@@ -99,6 +162,12 @@
           <a class="btn btn-ghost btn-big" href="#demo">
             <span data-lang="en">Try the live demo ↓</span><span data-lang="es">Probá la demo en vivo ↓</span>
           </a>
+        </div>
+        <div class="store-row reveal">
+          <a class="btn btn-solid" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" rel="noopener noreferrer">Google Play</a>
+          <a class="btn btn-ghost" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754" rel="noopener noreferrer">App Store</a>
+          <!-- TODO: Garmin Connect IQ store URL is not in this repository. Connect IQ app id c4f18a72b93e4d6fa1c8e5b2079d3a44 (GarminConstants / playce_garmin manifest). Do not invent an apps.garmin.com link. -->
+          <span class="store-garmin">Garmin Connect IQ</span>
         </div>
         <div class="hero-stats reveal">
           <div><strong>5</strong><span data-lang="en">devices, one engine</span><span data-lang="es">dispositivos, un motor</span></div>
@@ -113,10 +182,10 @@
       <div class="ticker-track">
         <span>APPLE WATCH</span><i>●</i><span>IPHONE</span><i>●</i><span>WEAR OS</span><i>●</i>
         <span>ANDROID</span><i>●</i><span>GARMIN</span><i>●</i><span>NO SUBSCRIPTION</span><i>●</i>
-        <span>PAY ONCE</span><i>●</i><span>LOCAL-FIRST</span><i>●</i><span>TENNIS</span><i>●</i><span>PADEL</span><i>●</i>
+        <span>PAY ONCE</span><i>●</i><span>PARTIDO</span><i>●</i><span>21</span><i>●</i><span>TENNIS</span><i>●</i><span>PADEL</span><i>●</i>
         <span>APPLE WATCH</span><i>●</i><span>IPHONE</span><i>●</i><span>WEAR OS</span><i>●</i>
         <span>ANDROID</span><i>●</i><span>GARMIN</span><i>●</i><span>NO SUBSCRIPTION</span><i>●</i>
-        <span>PAY ONCE</span><i>●</i><span>LOCAL-FIRST</span><i>●</i><span>TENNIS</span><i>●</i><span>PADEL</span><i>●</i>
+        <span>PAY ONCE</span><i>●</i><span>PARTIDO</span><i>●</i><span>21</span><i>●</i><span>TENNIS</span><i>●</i><span>PADEL</span><i>●</i>
       </div>
     </div>
 
@@ -236,10 +305,10 @@
         </article>
         <article class="sys-card sys-card-wide reveal">
           <span class="sys-index">04</span>
-          <h3 data-lang="en">Local-first, always</h3>
-          <h3 data-lang="es">Local-first, siempre</h3>
-          <p data-lang="en">There is no backend for scoring or history. A pending match is stored on the watch until the phone acknowledges receipt — then it lives on your phone. Your data never leaves your devices.</p>
-          <p data-lang="es">No hay backend para el score ni el historial. Un partido pendiente queda guardado en el reloj hasta que el teléfono confirma la recepción — y de ahí vive en tu teléfono. Tus datos nunca salen de tus dispositivos.</p>
+          <h3 data-lang="en">Scores stay on your devices</h3>
+          <h3 data-lang="es">El marcador queda en tus dispositivos</h3>
+          <p data-lang="en">There is no PLAYCE server for scores or history. A pending match stays on the watch until the phone acknowledges it, and then the history lives on your phone. On Android and Wear OS, Firebase Analytics and Crashlytics send technical usage, crash reports and the advertising ID to Google. Match names, scores and health data are not sent there.</p>
+          <p data-lang="es">No hay un servidor de PLAYCE para el marcador ni el historial. Un partido pendiente queda en el reloj hasta que el teléfono confirma la recepción, y después el historial vive en tu teléfono. En Android y Wear OS, Firebase Analytics y Crashlytics envían a Google datos técnicos de uso, informes de fallos y el ID de publicidad. Los nombres, el marcador y los datos de salud no van ahí.</p>
         </article>
       </div>
     </section>
@@ -248,10 +317,25 @@
     <section class="section features-section" id="features">
       <div class="set-label reveal">
         <span class="set-chip">SET 3</span>
-        <h2 data-lang="en">Built features. Not promises.</h2>
-        <h2 data-lang="es">Funciones reales. No promesas.</h2>
-        <p data-lang="en">Everything below ships today across iOS, Android, Wear OS, Apple Watch and Garmin.</p>
-        <p data-lang="es">Todo lo de abajo está en la app hoy, en iOS, Android, Wear OS, Apple Watch y Garmin.</p>
+        <h2 data-lang="en">Phone, watch, tennis, padel.</h2>
+        <h2 data-lang="es">Teléfono, reloj, tenis, pádel.</h2>
+        <p data-lang="en">Tennis and padel, on iPhone, Apple Watch, Android, Wear OS and Garmin. Partido is the full match. 21 is the training mode on your phone and your watch.</p>
+        <p data-lang="es">Tenis y pádel, en iPhone, Apple Watch, Android, Wear OS y Garmin. Partido es el encuentro completo. 21 es el modo de entrenamiento en el teléfono y en el reloj.</p>
+      </div>
+
+      <div class="mode-board">
+        <article class="feat reveal">
+          <span class="feat-num">SET</span>
+          <h3 data-lang="en">Partido</h3><h3 data-lang="es">Partido</h3>
+          <p data-lang="en">A full tennis or padel match: points, games, sets, deuce, advantage and tiebreaks. Same rules on the phone and on the watch.</p>
+          <p data-lang="es">Un partido completo de tenis o pádel: puntos, games, sets, deuce, ventaja y tiebreaks. Las mismas reglas en el teléfono y en el reloj.</p>
+        </article>
+        <article class="feat reveal">
+          <span class="feat-num">21</span>
+          <h3 data-lang="en">21 training mode</h3><h3 data-lang="es">Modo de entrenamiento 21</h3>
+          <p data-lang="en">21 is a training mode on your phone and on your watch, for tennis and for padel. Use it alongside Partido, the full match.</p>
+          <p data-lang="es">21 es un modo de entrenamiento en el teléfono y en el reloj, para tenis y para pádel. Se usa junto a Partido, el encuentro completo.</p>
+        </article>
       </div>
 
       <div class="feature-board">
@@ -287,9 +371,9 @@
         </article>
         <article class="feat reveal">
           <span class="feat-num">GS</span>
-          <h3 data-lang="en">Padel included</h3><h3 data-lang="es">Pádel incluido</h3>
-          <p data-lang="en">Padel shares tennis scoring — PLAYCE handles both, with configurable formats per match.</p>
-          <p data-lang="es">El pádel comparte el scoring del tenis — PLAYCE maneja los dos, con formatos configurables por partido.</p>
+          <h3 data-lang="en">Padel, next to tennis</h3><h3 data-lang="es">Pádel, junto al tenis</h3>
+          <p data-lang="en">Padel is a first-class sport in PLAYCE. Partido and 21 both cover padel and tennis, with the format you set for that session.</p>
+          <p data-lang="es">El pádel es un deporte de verdad en PLAYCE. Partido y 21 cubren pádel y tenis, con el formato que elijas para esa sesión.</p>
         </article>
       </div>
     </section>
@@ -361,6 +445,12 @@
           <span data-lang="en">Download PLAYCE — the link picks your store</span>
           <span data-lang="es">Descargar PLAYCE — el link elige tu store</span>
         </a>
+        <div class="store-row">
+          <a class="btn btn-ghost" href="https://play.google.com/store/apps/details?id=com.playce.tenniscounter.app" rel="noopener noreferrer">Google Play</a>
+          <a class="btn btn-ghost" href="https://apps.apple.com/ar/app/playce-tennis-padel/id6769161754" rel="noopener noreferrer">App Store</a>
+          <!-- TODO: Garmin Connect IQ store URL is not in this repository. See the hero note. -->
+          <span class="store-garmin">Garmin Connect IQ</span>
+        </div>
         <p data-lang="en">No monthly fee. No trial countdown. No upsell.</p>
         <p data-lang="es">Sin cuota mensual. Sin trial con cuenta regresiva. Sin upsell.</p>
       </div>
@@ -376,8 +466,13 @@
       <div class="faq-list reveal">
         <details class="faq-item">
           <summary><span data-lang="en">Does PLAYCE work for padel?</span><span data-lang="es">¿PLAYCE funciona para pádel?</span><i>+</i></summary>
-          <p data-lang="en">Yes. The scoring engine handles padel with the same point / game / set / tiebreak rules as tennis, plus configurable formats like Fast4.</p>
-          <p data-lang="es">Sí. El motor de score maneja pádel con las mismas reglas de point / game / set / tiebreak que el tenis, más formatos configurables como Fast4.</p>
+          <p data-lang="en">Yes. Padel sits next to tennis. Partido and the 21 training mode both cover padel, including configurable formats like Fast4 on a full match.</p>
+          <p data-lang="es">Sí. El pádel va junto al tenis. Partido y el modo de entrenamiento 21 cubren pádel, incluidos formatos configurables como Fast4 en un partido completo.</p>
+        </details>
+        <details class="faq-item">
+          <summary><span data-lang="en">What are Partido and 21?</span><span data-lang="es">¿Qué son Partido y 21?</span><i>+</i></summary>
+          <p data-lang="en">Partido is a full match: games, sets and tiebreaks, for tennis and padel, on your phone and your watch. 21 is a training mode on the phone and the watch, for the same two sports.</p>
+          <p data-lang="es">Partido es un encuentro completo: games, sets y tiebreaks, para tenis y pádel, en el teléfono y en el reloj. 21 es un modo de entrenamiento en el teléfono y en el reloj, para los mismos dos deportes.</p>
         </details>
         <details class="faq-item">
           <summary><span data-lang="en">Do I need both a phone and a watch?</span><span data-lang="es">¿Necesito teléfono y reloj a la vez?</span><i>+</i></summary>
@@ -401,8 +496,8 @@
         </details>
         <details class="faq-item">
           <summary><span data-lang="en">Where is my data stored?</span><span data-lang="es">¿Dónde se guardan mis datos?</span><i>+</i></summary>
-          <p data-lang="en">Locally, on your devices. PLAYCE does not operate a backend for match storage. See the <a href="./privacy.html">privacy policy</a>.</p>
-          <p data-lang="es">Localmente, en tus dispositivos. PLAYCE no opera un backend para guardar partidos. Más en la <a href="./privacy.html">política de privacidad</a>.</p>
+          <p data-lang="en">Match history stays on your devices. PLAYCE does not run a server for scores. On Android and Wear OS, Firebase Analytics and Crashlytics send technical usage, crash reports and the advertising ID to Google. See the <a href="./privacy">privacy policy</a>.</p>
+          <p data-lang="es">El historial queda en tus dispositivos. PLAYCE no tiene un servidor para el marcador. En Android y Wear OS, Firebase Analytics y Crashlytics envían a Google datos técnicos de uso, informes de fallos y el ID de publicidad. Más en la <a href="./privacy">política de privacidad</a>.</p>
         </details>
       </div>
     </section>
@@ -434,8 +529,9 @@
       </div>
       <nav class="footer-links" aria-label="Footer">
         <a href="mailto:atiliogmaculus@gmail.com"><span data-lang="en">Support</span><span data-lang="es">Soporte</span></a>
-        <a href="./privacy.html"><span data-lang="en">Privacy Policy</span><span data-lang="es">Política de privacidad</span></a>
-        <a href="./terms.html"><span data-lang="en">Terms of Service</span><span data-lang="es">Términos</span></a>
+        <a href="./privacy"><span data-lang="en">Privacy Policy</span><span data-lang="es">Política de privacidad</span></a>
+        <a href="./terms"><span data-lang="en">Terms of Service</span><span data-lang="es">Términos</span></a>
+        <a href="./delete-data"><span data-lang="en">Delete data</span><span data-lang="es">Eliminar datos</span></a>
         <a href="./download"><span data-lang="en">Download</span><span data-lang="es">Descargar</span></a>
       </nav>
     </div>

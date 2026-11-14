@@ -1,11 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es" data-default-lang="es" data-title-es="PLAYCE | Términos de servicio" data-title-en="PLAYCE | Terms of Service">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PLAYCE | Terms of Service</title>
-  <meta name="description" content="Terms of Service for PLAYCE, the Android and Wear OS tennis scoring app.">
+  <title>PLAYCE | Términos de servicio</title>
+  <script>
+    (function () {
+      var supported = { en: 1, es: 1 };
+      var lang = document.documentElement.getAttribute("data-default-lang") || "es";
+      try {
+        var q = new URLSearchParams(location.search).get("lang");
+        var saved = localStorage.getItem("playce-lang");
+        if (supported[q]) lang = q;
+        else if (supported[saved]) lang = saved;
+      } catch (e) {}
+      document.documentElement.lang = lang;
+      var title = document.documentElement.getAttribute("data-title-" + lang);
+      if (title) document.title = title;
+    })();
+  </script>
+  <meta name="description" content="Términos de servicio de PLAYCE para tenis y pádel en iPhone, Apple Watch, Android, Wear OS y Garmin. English terms are on this page.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PLAYCE | Términos de servicio">
+  <meta property="og:description" content="Términos de servicio de PLAYCE. Tenis y pádel en iPhone, Apple Watch, Android, Wear OS y Garmin.">
+  <meta property="og:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PLAYCE wordmark. Tennis and padel. Partido + 21 on phone and watch.">
+  <meta property="og:url" content="https://tenniscounter.vercel.app/terms">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PLAYCE | Términos de servicio">
+  <meta name="twitter:description" content="Términos de servicio de PLAYCE. Tenis y pádel en iPhone, Apple Watch, Android, Wear OS y Garmin.">
+  <meta name="twitter:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta name="theme-color" content="#07110a">
+  <link rel="canonical" href="https://tenniscounter.vercel.app/terms">
+  <link rel="alternate" hreflang="es" href="https://tenniscounter.vercel.app/terms">
+  <link rel="alternate" hreflang="en" href="https://tenniscounter.vercel.app/terms?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://tenniscounter.vercel.app/terms">
+  <link rel="icon" href="./favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -14,60 +50,187 @@
   >
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
+<body class="legal-page">
   <div class="page-shell">
     <header class="site-header">
-      <a class="brand" href="./index.html" aria-label="PLAYCE home">
-        <img src="./assets/playce-wordmark.png" alt="PLAYCE wordmark">
+      <a class="brand" href="./" aria-label="PLAYCE home">
+        <img src="./assets/playce-wordmark.png" alt="PLAYCE">
       </a>
       <div class="site-actions">
-        <a class="button button-secondary" href="./index.html">Back to site</a>
+        <div class="lang-toggle" role="group" aria-label="Idioma / Language">
+          <button class="lang-pill" type="button" data-set-lang="es" aria-pressed="true">ES</button>
+          <button class="lang-pill" type="button" data-set-lang="en" aria-pressed="false">EN</button>
+        </div>
+        <a class="button button-secondary" href="./">
+          <span data-lang="es">Volver al sitio</span>
+          <span data-lang="en">Back to site</span>
+        </a>
       </div>
     </header>
 
     <main class="section faq-section">
       <div class="section-intro reveal is-visible">
         <p class="eyebrow">Legal</p>
-        <h2>Terms of Service</h2>
-        <p>Last updated: April 8, 2026</p>
+        <h2 data-lang="es">Términos de Servicio</h2>
+        <h2 data-lang="en">Terms of Service</h2>
+        <p class="legal-updated" data-lang="es">Última actualización: 14 de noviembre de 2026 (2026-11-14)</p>
+        <p class="legal-updated" data-lang="en">Last updated: November 14, 2026 (2026-11-14)</p>
       </div>
 
-      <article class="panel panel-wide reveal is-visible" style="grid-column: span 12; margin-top: 28px;">
-        <p>These Terms of Service govern your use of PLAYCE, including the Wear OS scorer app, the Android companion app, and the public website.</p>
+      <article class="panel legal-copy reveal is-visible">
+        <div data-lang="es">
+          <p>Estos Términos de Servicio (los “Términos”) rigen el uso de PLAYCE, el sistema de marcador de tenis y pádel para iPhone, Apple Watch, Android, Wear OS y relojes Garmin compatibles, y del sitio web público en https://tenniscounter.vercel.app/ (en conjunto, el “Servicio”).</p>
+          <p>Al descargar, instalar o usar PLAYCE, o al usar el sitio web, aceptás estos Términos. Si no estás de acuerdo, no uses el Servicio.</p>
 
-        <h3>Use of the app</h3>
-        <p>PLAYCE is intended as a tennis and padel scoring tool. You are responsible for how you use the app, the accuracy of the match information you enter, and any content you choose to share from the app.</p>
+          <h3>1. Identidad del prestador</h3>
+          <p>El Servicio es ofrecido por:</p>
+          <p>
+            <strong>Atilio Guido Maculus</strong><br>
+            Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina<br>
+            Teléfono: <a href="tel:+5491163508919">+54 9 11 6350-8919</a><br>
+            Correo de soporte: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a>
+          </p>
 
-        <h3>Accounts and purchases</h3>
-        <p>PLAYCE does not require account creation for core use. Premium access, if offered, is processed through Google Play Billing and is subject to Google Play purchase, refund, and payment rules.</p>
+          <h3>2. Qué es PLAYCE</h3>
+          <p>PLAYCE es una herramienta para marcar partidos de tenis y pádel desde el teléfono o un reloj compatible, sincronizar el resultado con el teléfono emparejado, y —en la versión Premium— guardar historial, ver detalle y estadísticas, exportar a CSV y generar tarjetas para compartir.</p>
+          <p>PLAYCE no es un dispositivo médico ni un servicio de salud. Las métricas de ejercicio o ritmo cardíaco que puedan mostrarse o guardarse en Apple Health, Health Connect u otras plataformas de salud son informativas y dependen de los sensores y permisos del dispositivo.</p>
 
-        <h3>Availability</h3>
-        <p>We may update, improve, limit, or discontinue app features at any time. We do not guarantee uninterrupted availability of website hosting, device compatibility, wearable connectivity, or third-party platform services.</p>
+          <h3>3. Uso del Servicio</h3>
+          <p>Podés usar PLAYCE para marcar y, si corresponde, guardar y compartir tus partidos. Sos responsable de la exactitud de los datos que ingresás (nombres, marcador, formato) y de cualquier contenido que elijas compartir o exportar.</p>
+          <p>El Servicio está pensado para uso personal y amateur. No prometemos compatibilidad con todos los modelos de reloj o versiones de sistema operativo. En Garmin, la compatibilidad publicada al día de estos Términos es el Epix Pro 2 (47 mm); pueden sumarse otros modelos más adelante.</p>
 
-        <h3>Data and privacy</h3>
-        <p>Your use of PLAYCE is also governed by the <a href="./privacy.html">Privacy Policy</a>. That policy describes how the current build handles score data, local storage, Firebase diagnostics, analytics, and purchase-related state.</p>
+          <h3>4. Cuentas y compras</h3>
+          <p>PLAYCE no exige crear una cuenta para usar el marcador.</p>
+          <p>La versión gratuita permite marcar partidos completos desde el teléfono o el reloj. <strong>PLAYCE Premium</strong> es una <strong>compra única</strong> (no una suscripción) que desbloquea el guardado en historial, el detalle y las estadísticas, la exportación a CSV y las tarjetas para compartir.</p>
+          <p>Las compras se procesan a través de la tienda correspondiente:</p>
+          <ul>
+            <li>App Store / Apple, en iPhone y Apple Watch;</li>
+            <li>Google Play Billing, en Android, Wear OS y el puente Garmin asociado a la app de Android.</li>
+          </ul>
+          <p>Los precios, impuestos, métodos de pago, confirmación de compra y reembolsos se rigen por las políticas de Apple o de Google, según corresponda. PLAYCE no procesa ni almacena los datos de tu tarjeta.</p>
 
-        <h3>Acceptable use</h3>
-        <p>You agree not to misuse the app or website, interfere with their normal operation, attempt unauthorized access, reverse engineer paid access controls in violation of applicable law, or use PLAYCE in a way that violates platform rules or applicable law.</p>
+          <h3>5. Privacidad</h3>
+          <p>El uso de PLAYCE también se rige por la <a href="https://tenniscounter.vercel.app/privacy">Política de Privacidad</a>. Esa política describe qué datos se procesan en el dispositivo, el tratamiento de datos de salud cuando otorgás permiso, las compras, y los servicios de diagnóstico o analítica que puedan incluirse en algunas versiones.</p>
 
-        <h3>Intellectual property</h3>
-        <p>PLAYCE branding, app design, and related materials remain the property of their respective owner unless explicitly stated otherwise. Open-source components remain governed by their own licenses.</p>
+          <h3>6. Uso aceptable</h3>
+          <p>Te comprometés a no:</p>
+          <ul>
+            <li>usar el Servicio de forma ilegal o que infrinja las reglas de Apple, Google o Garmin;</li>
+            <li>interferir con el funcionamiento normal de la app o del sitio, ni intentar un acceso no autorizado;</li>
+            <li>eludir, de forma ilícita, los controles de acceso de Premium;</li>
+            <li>usar PLAYCE para hacer pasar el contenido de otra persona como propio, o para compartir datos de terceros sin base legítima.</li>
+          </ul>
 
-        <h3>No warranty</h3>
-        <p>PLAYCE is provided on an "as is" and "as available" basis. To the maximum extent permitted by law, we disclaim warranties of merchantability, fitness for a particular purpose, and non-infringement.</p>
+          <h3>7. Propiedad intelectual</h3>
+          <p>La marca PLAYCE, el diseño de la app, el sitio y los materiales relacionados son propiedad de Atilio Guido Maculus, salvo que se indique lo contrario. Los componentes de código abierto conservan sus propias licencias. Estos Términos no te transfieren la propiedad del Servicio; solo te otorgan una licencia limitada, revocable y no exclusiva para usarlo según estos Términos.</p>
 
-        <h3>Limitation of liability</h3>
-        <p>To the maximum extent permitted by law, PLAYCE will not be liable for indirect, incidental, special, consequential, or punitive damages, or for loss of data, match history, business, revenue, or device availability arising from use of the app or site.</p>
+          <h3>8. Disponibilidad y cambios</h3>
+          <p>Podemos actualizar, mejorar, limitar o discontinuar funciones en cualquier momento. No garantizamos disponibilidad ininterrumpida del sitio, de la sincronización entre reloj y teléfono, ni de los servicios de terceros (Apple, Google, Garmin u otros). Un partido pendiente o el historial pueden perderse si desinstalás la app, borrás los datos locales o falla la sincronización.</p>
 
-        <h3>Changes to these terms</h3>
-        <p>We may update these terms from time to time. Continued use of PLAYCE after an update means you accept the revised terms.</p>
+          <h3>9. Ausencia de garantía</h3>
+          <p>El Servicio se ofrece “tal cual” y “según disponibilidad”. En la máxima medida permitida por la ley, se excluyen garantías de comerciabilidad, adecuación a un fin particular y no infracción.</p>
+          <p>Nada de estos Términos limita los derechos irrenunciables que te correspondan como consumidor, en particular los de la Ley de Defensa del Consumidor de la República Argentina y, si aplica, la normativa de consumo del país o región desde el que uses el Servicio.</p>
 
-        <h3>Contact</h3>
-        <p>Support email: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a></p>
+          <h3>10. Limitación de responsabilidad</h3>
+          <p>En la máxima medida permitida por la ley, Atilio Guido Maculus no será responsable por daños indirectos, incidentales, especiales, consecuentes o punitivos, ni por la pérdida de datos, historial de partidos, negocio, ingresos o disponibilidad del dispositivo, derivados del uso del Servicio.</p>
+          <p>Esta limitación no aplica en casos de dolo o en aquellos que la ley no permita limitar o excluir.</p>
+
+          <h3>11. Cambios a estos Términos</h3>
+          <p>Podemos actualizar estos Términos de vez en cuando. La fecha de “Última actualización” al inicio indica la versión vigente. El uso continuado del Servicio después de un cambio significa que aceptás los Términos revisados. La versión actual se publica en https://tenniscounter.vercel.app/terms</p>
+
+          <h3>12. Ley aplicable</h3>
+          <p>Estos Términos se rigen por las leyes de la República Argentina, sin perjuicio de las normas de consumo que resulten irrenunciables en tu lugar de residencia.</p>
+
+          <h3>13. Contacto</h3>
+          <p>Para consultas sobre estos Términos o sobre el Servicio:</p>
+          <p>
+            <strong>Atilio Guido Maculus</strong><br>
+            Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina<br>
+            Teléfono: <a href="tel:+5491163508919">+54 9 11 6350-8919</a><br>
+            Correo: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a>
+          </p>
+        </div>
+
+        <div data-lang="en">
+          <p>These Terms of Service (the “Terms”) govern your use of PLAYCE, the tennis and padel scoring system for iPhone, Apple Watch, Android, Wear OS and supported Garmin watches, and of the public website at https://tenniscounter.vercel.app/ (together, the “Service”).</p>
+          <p>By downloading, installing or using PLAYCE, or by using the website, you agree to these Terms. If you do not agree, do not use the Service.</p>
+
+          <h3>1. Provider identity</h3>
+          <p>The Service is offered by:</p>
+          <p>
+            <strong>Atilio Guido Maculus</strong><br>
+            Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina<br>
+            Phone: <a href="tel:+5491163508919">+54 9 11 6350-8919</a><br>
+            Support email: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a>
+          </p>
+
+          <h3>2. What PLAYCE is</h3>
+          <p>PLAYCE is a tool for scoring tennis and padel matches from a phone or a compatible watch, syncing the result to the paired phone, and — in the Premium version — saving history, viewing match detail and stats, exporting to CSV and generating share cards.</p>
+          <p>PLAYCE is not a medical device or a health-care service. Any exercise or heart-rate metrics that may be shown or saved to Apple Health, Health Connect or other health platforms are informational and depend on the device’s sensors and the permissions you grant.</p>
+
+          <h3>3. Use of the Service</h3>
+          <p>You may use PLAYCE to score matches and, where applicable, to save and share them. You are responsible for the accuracy of the information you enter (names, score, format) and for any content you choose to share or export.</p>
+          <p>The Service is intended for personal and amateur use. We do not promise compatibility with every watch model or operating-system version. For Garmin, the published compatibility as of these Terms is the Epix Pro 2 (47 mm); additional models may follow.</p>
+
+          <h3>4. Accounts and purchases</h3>
+          <p>PLAYCE does not require you to create an account to use the scorer.</p>
+          <p>The free version lets you score complete matches from the phone or the watch. <strong>PLAYCE Premium</strong> is a <strong>one-time purchase</strong> (not a subscription) that unlocks saving to history, match detail and stats, CSV export and share cards.</p>
+          <p>Purchases are processed by the relevant store:</p>
+          <ul>
+            <li>the App Store / Apple, on iPhone and Apple Watch;</li>
+            <li>Google Play Billing, on Android, Wear OS and the Garmin bridge associated with the Android app.</li>
+          </ul>
+          <p>Prices, taxes, payment methods, purchase confirmation and refunds are governed by Apple’s or Google’s policies, as applicable. PLAYCE does not process or store your card details.</p>
+
+          <h3>5. Privacy</h3>
+          <p>Your use of PLAYCE is also governed by the <a href="https://tenniscounter.vercel.app/privacy">Privacy Policy</a>. That policy describes data processed on your devices, health data when you grant permission, purchases, and any diagnostics or analytics services that may be included in some builds.</p>
+
+          <h3>6. Acceptable use</h3>
+          <p>You agree not to:</p>
+          <ul>
+            <li>use the Service unlawfully or in a way that violates Apple, Google or Garmin rules;</li>
+            <li>interfere with the normal operation of the app or website, or attempt unauthorized access;</li>
+            <li>unlawfully circumvent Premium access controls;</li>
+            <li>use PLAYCE to pass off someone else’s content as your own, or to share third-party data without a legitimate basis.</li>
+          </ul>
+
+          <h3>7. Intellectual property</h3>
+          <p>The PLAYCE name, app design, website and related materials are owned by Atilio Guido Maculus unless expressly stated otherwise. Open-source components remain governed by their own licenses. These Terms do not transfer ownership of the Service; they grant you a limited, revocable, non-exclusive licence to use it in accordance with these Terms.</p>
+
+          <h3>8. Availability and changes</h3>
+          <p>We may update, improve, limit or discontinue features at any time. We do not guarantee uninterrupted availability of the website, of watch-to-phone sync, or of third-party platform services (Apple, Google, Garmin or others). A pending match or your history may be lost if you uninstall the app, clear local data, or if sync fails.</p>
+
+          <h3>9. No warranty</h3>
+          <p>The Service is provided “as is” and “as available.” To the maximum extent permitted by law, warranties of merchantability, fitness for a particular purpose and non-infringement are disclaimed.</p>
+          <p>Nothing in these Terms limits any non-waivable consumer rights that apply to you, including those under Argentina’s Consumer Protection Law and, where applicable, the consumer laws of the country or region from which you use the Service.</p>
+
+          <h3>10. Limitation of liability</h3>
+          <p>To the maximum extent permitted by law, Atilio Guido Maculus will not be liable for indirect, incidental, special, consequential or punitive damages, or for loss of data, match history, business, revenue or device availability arising from use of the Service.</p>
+          <p>This limitation does not apply in cases of wilful misconduct or in any case where applicable law does not allow the limitation or exclusion of liability.</p>
+
+          <h3>11. Changes to these Terms</h3>
+          <p>We may update these Terms from time to time. The “Last updated” date at the top indicates the current version. Continued use of the Service after a change means you accept the revised Terms. The current version is published at https://tenniscounter.vercel.app/terms</p>
+
+          <h3>12. Governing law</h3>
+          <p>These Terms are governed by the laws of the Republic of Argentina, without prejudice to any mandatory consumer-protection rules that apply in your place of residence.</p>
+
+          <h3>13. Contact</h3>
+          <p>For questions about these Terms or the Service:</p>
+          <p>
+            <strong>Atilio Guido Maculus</strong><br>
+            Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina<br>
+            Phone: <a href="tel:+5491163508919">+54 9 11 6350-8919</a><br>
+            Email: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a>
+          </p>
+        </div>
+
+        <p class="legal-links">
+          <a href="./privacy"><span data-lang="es">Política de privacidad</span><span data-lang="en">Privacy Policy</span></a>
+          <a href="./delete-data"><span data-lang="es">Eliminar datos</span><span data-lang="en">Delete data</span></a>
+        </p>
       </article>
     </main>
   </div>
-
   <script src="./script.js"></script>
 </body>
 </html>

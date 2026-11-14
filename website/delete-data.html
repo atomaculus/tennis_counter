@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es" data-default-lang="es" data-title-es="PLAYCE | Eliminar datos" data-title-en="PLAYCE | Delete your data">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLAYCE | Eliminar datos</title>
+  <script>
+    (function () {
+      var supported = { en: 1, es: 1 };
+      var lang = document.documentElement.getAttribute("data-default-lang") || "es";
+      try {
+        var q = new URLSearchParams(location.search).get("lang");
+        var saved = localStorage.getItem("playce-lang");
+        if (supported[q]) lang = q;
+        else if (supported[saved]) lang = saved;
+      } catch (e) {}
+      document.documentElement.lang = lang;
+      var title = document.documentElement.getAttribute("data-title-" + lang);
+      if (title) document.title = title;
+    })();
+  </script>
+  <meta name="description" content="Cómo pedir la eliminación de datos de PLAYCE. Borrado local en el teléfono y el reloj, y solicitud por correo. Updated 2026-11-14.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PLAYCE | Eliminar datos">
+  <meta property="og:description" content="Pedí la eliminación de datos de PLAYCE por correo, o borralos en el teléfono y en el reloj.">
+  <meta property="og:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PLAYCE wordmark. Tennis and padel. Partido + 21 on phone and watch.">
+  <meta property="og:url" content="https://tenniscounter.vercel.app/delete-data">
+  <meta property="og:locale" content="es_AR">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PLAYCE | Eliminar datos">
+  <meta name="twitter:description" content="Pedí la eliminación de datos de PLAYCE por correo, o borralos en el teléfono y en el reloj.">
+  <meta name="twitter:image" content="https://tenniscounter.vercel.app/assets/og-playce.png">
+  <meta name="theme-color" content="#07110a">
+  <link rel="canonical" href="https://tenniscounter.vercel.app/delete-data">
+  <link rel="alternate" hreflang="es" href="https://tenniscounter.vercel.app/delete-data">
+  <link rel="alternate" hreflang="en" href="https://tenniscounter.vercel.app/delete-data?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://tenniscounter.vercel.app/delete-data">
+  <link rel="icon" href="./favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Sora:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="legal-page">
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="PLAYCE home">
+        <img src="./assets/playce-wordmark.png" alt="PLAYCE">
+      </a>
+      <div class="site-actions">
+        <div class="lang-toggle" role="group" aria-label="Idioma / Language">
+          <button class="lang-pill" type="button" data-set-lang="es" aria-pressed="true">ES</button>
+          <button class="lang-pill" type="button" data-set-lang="en" aria-pressed="false">EN</button>
+        </div>
+        <a class="button button-secondary" href="./">
+          <span data-lang="es">Volver al sitio</span>
+          <span data-lang="en">Back to site</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="section faq-section">
+      <div class="section-intro reveal is-visible">
+        <p class="eyebrow">Privacy</p>
+        <h2 data-lang="es">Eliminar datos</h2>
+        <h2 data-lang="en">Delete your data</h2>
+        <p class="legal-updated" data-lang="es">Última actualización: 14 de noviembre de 2026 (2026-11-14)</p>
+        <p class="legal-updated" data-lang="en">Last updated: November 14, 2026 (2026-11-14)</p>
+      </div>
+
+      <article class="panel legal-copy reveal is-visible">
+        <div data-lang="es">
+          <p>PLAYCE no tiene cuentas. El historial del partido está en tu teléfono y en tu reloj. En Android y Wear OS, Firebase Analytics y Crashlytics pueden tener datos técnicos de uso y de fallos en Google.</p>
+
+          <h3>En tus dispositivos</h3>
+          <ol>
+            <li>En el teléfono: Ajustes → Aplicaciones → PLAYCE → Almacenamiento → Borrar datos. También podés desinstalar la app.</li>
+            <li>En el reloj: desinstalá PLAYCE.</li>
+            <li>Si guardaste una sesión en Health Connect o en Apple Health, borrala desde esa app.</li>
+          </ol>
+
+          <h3>Pedido por correo</h3>
+          <p>Para pedir que borremos datos de Analytics o Crashlytics que podamos asociar a tu uso, escribinos:</p>
+          <p>
+            <a class="button button-primary" href="mailto:atiliogmaculus@gmail.com?subject=PLAYCE%20Data%20Deletion%20Request">Enviar pedido de eliminación</a>
+          </p>
+          <p>Correo: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a><br>
+            Asunto: <code>PLAYCE Data Deletion Request</code></p>
+          <p>En el mensaje, decinos la plataforma (Android, Wear OS, iPhone o Apple Watch). Si la tenés, incluí el ID de publicidad de Android.</p>
+          <p>Esos registros no están atados a un correo. Si no podemos encontrarlos con lo que nos envíes, te respondemos y lo decimos. Los comprobantes de Google Play y de la App Store los administran esas tiendas.</p>
+          <p>Responsable: Atilio Guido Maculus (en Google Play, Atilio Maculus), Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina. Teléfono <a href="tel:+5491163508919">+54 9 11 6350-8919</a>.</p>
+        </div>
+
+        <div data-lang="en">
+          <p>PLAYCE has no accounts. Match history is on your phone and on your watch. On Android and Wear OS, Firebase Analytics and Crashlytics may hold technical usage and crash data at Google.</p>
+
+          <h3>On your devices</h3>
+          <ol>
+            <li>On the phone: Settings → Apps → PLAYCE → Storage → Clear data. You can also uninstall the app.</li>
+            <li>On the watch: uninstall PLAYCE.</li>
+            <li>If you saved a session to Health Connect or Apple Health, delete it in that app.</li>
+          </ol>
+
+          <h3>Request by email</h3>
+          <p>To ask us to delete Analytics or Crashlytics data we can associate with your use, email us:</p>
+          <p>
+            <a class="button button-primary" href="mailto:atiliogmaculus@gmail.com?subject=PLAYCE%20Data%20Deletion%20Request">Send a deletion request</a>
+          </p>
+          <p>Email: <a href="mailto:atiliogmaculus@gmail.com">atiliogmaculus@gmail.com</a><br>
+            Subject: <code>PLAYCE Data Deletion Request</code></p>
+          <p>In the message, tell us the platform (Android, Wear OS, iPhone or Apple Watch). If you have it, include the Android advertising ID.</p>
+          <p>Those records are not tied to an email address. If we cannot find them from what you send, we will write back and say so. Google Play and App Store receipts stay with those stores.</p>
+          <p>Provider: Atilio Guido Maculus (on Google Play, Atilio Maculus), Las Camelias 3324, Pilar (Del Viso), Buenos Aires, B1669, Argentina. Phone <a href="tel:+5491163508919">+54 9 11 6350-8919</a>.</p>
+        </div>
+
+        <p class="legal-links">
+          <a href="./privacy"><span data-lang="es">Política de privacidad</span><span data-lang="en">Privacy Policy</span></a>
+          <a href="./terms"><span data-lang="es">Términos de servicio</span><span data-lang="en">Terms of Service</span></a>
+        </p>
+      </article>
+    </main>
+  </div>
+  <script src="./script.js"></script>
+</body>
+</html>
