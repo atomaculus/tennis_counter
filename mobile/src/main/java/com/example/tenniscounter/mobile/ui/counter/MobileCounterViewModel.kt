@@ -3,14 +3,18 @@ package com.example.tenniscounter.mobile.ui.counter
 import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playce.shared.scoring.MatchEventCodec
 import com.playce.shared.scoring.MatchFormat
 import com.playce.shared.scoring.ScoringEngine
 import com.playce.shared.scoring.ScoringEngine.MatchScore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 // Re-export shared types for UI backward compat
@@ -69,8 +73,25 @@ class MobileCounterViewModel : ViewModel() {
     private val matchEvents = mutableListOf<ScoringEngine.MatchEvent>()
     private var initialServerIsPlayerA = true
 
+    /** Mirrors whether [matchEvents] is non-empty, so the UI can react to it reactively. */
+    private val _hasEvents = MutableStateFlow(false)
+
+    /**
+     * True while a local match is in progress: at least one point/event has
+     * been scored and the match hasn't finished yet. Used to decide whether
+     * the "Play" tab should skip straight to the scoreboard instead of
+     * showing the mode selector ("session in progress wins").
+     */
+    val hasActiveMatch: StateFlow<Boolean> =
+        combine(_state, _hasEvents) { state, hasEvents -> hasEvents && !state.isMatchOver }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     init {
         startTicker()
+    }
+
+    private fun updateHasEventsFlag() {
+        _hasEvents.value = matchEvents.isNotEmpty()
     }
 
     fun setPlayerNames(nameA: String, nameB: String) {
@@ -100,13 +121,15 @@ class MobileCounterViewModel : ViewModel() {
 
     fun addPointToPlayerA() {
         if (_state.value.isMatchOver) return
-        matchEvents.add(ScoringEngine.MatchEvent.Point(true))
+        matchEvents.add(ScoringEngine.MatchEvent.Point(true, timestampMillis = System.currentTimeMillis()))
+        updateHasEventsFlag()
         applyPoint(isPlayerA = true)
     }
 
     fun addPointToPlayerB() {
         if (_state.value.isMatchOver) return
-        matchEvents.add(ScoringEngine.MatchEvent.Point(false))
+        matchEvents.add(ScoringEngine.MatchEvent.Point(false, timestampMillis = System.currentTimeMillis()))
+        updateHasEventsFlag()
         applyPoint(isPlayerA = false)
     }
 
@@ -119,7 +142,8 @@ class MobileCounterViewModel : ViewModel() {
     fun startDecidingTiebreak(targetPoints: Int) {
         val current = _state.value
         if (!ScoringEngine.canOfferDecidingTiebreak(current.score)) return
-        matchEvents.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints))
+        matchEvents.add(ScoringEngine.MatchEvent.DecidingTiebreakStarted(targetPoints, timestampMillis = System.currentTimeMillis()))
+        updateHasEventsFlag()
         val newScore = ScoringEngine.startDecidingTiebreak(current.score, targetPoints)
         _state.value = current.copy(score = newScore, declinedDecidingTiebreak = false)
     }
@@ -130,6 +154,7 @@ class MobileCounterViewModel : ViewModel() {
 
     fun resetGame() {
         matchEvents.clear()
+        updateHasEventsFlag()
         val current = _state.value
         _state.value = current.copy(
             score = current.score.copy(
@@ -142,6 +167,7 @@ class MobileCounterViewModel : ViewModel() {
 
     fun resetMatch() {
         matchEvents.clear()
+        updateHasEventsFlag()
         accumulatedSeconds = 0
         timerStartElapsedRealtime = SystemClock.elapsedRealtime()
         _state.value = MobileCounterState(
@@ -188,12 +214,16 @@ class MobileCounterViewModel : ViewModel() {
 
     fun startNewMatch() {
         matchEvents.clear()
+        updateHasEventsFlag()
         accumulatedSeconds = 0
         timerStartElapsedRealtime = SystemClock.elapsedRealtime()
         _state.value = MobileCounterState(
             score = MatchScore(format = _matchFormat.value, initialServerIsPlayerA = initialServerIsPlayerA)
         )
     }
+
+    /** JSON-encoded point/event history for the match currently in progress (or just finished). */
+    fun pointEventsJson(): String = MatchEventCodec.toJson(matchEvents)
 
     fun toggleTimer() {
         val current = _state.value
@@ -243,6 +273,7 @@ class MobileCounterViewModel : ViewModel() {
         val index = matchEvents.indexOfLast { it is ScoringEngine.MatchEvent.Point && it.isPlayerA == isPlayerA }
         if (index < 0) return false
         matchEvents.removeAt(index)
+        updateHasEventsFlag()
         rebuildScoreFromHistory()
         return true
     }
