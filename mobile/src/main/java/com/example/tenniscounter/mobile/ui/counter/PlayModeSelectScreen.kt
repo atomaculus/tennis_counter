@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.tenniscounter.mobile.BuildConfig
 import com.example.tenniscounter.mobile.R
 import com.example.tenniscounter.mobile.ui.components.PlayceWordmark
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
@@ -19,14 +20,15 @@ import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
 /**
  * Entry point for the "Play" tab when there's no session already in
  * progress: pick a modality before landing on its screen. "Partido" is the
- * visually highlighted default (solid, primary style); the other two are
- * outlined.
+ * visually highlighted default (solid, primary style); 21 is outlined.
+ * Paredón stays in the app behind [BuildConfig.SHOW_PAREDON_MODE] (debug only).
  */
 @Composable
 fun PlayModeSelectScreen(
     onSelectMatch: () -> Unit,
     onSelectParedon: () -> Unit,
     onSelectVeintiuno: () -> Unit,
+    showParedon: Boolean = BuildConfig.SHOW_PAREDON_MODE,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -47,12 +49,14 @@ fun PlayModeSelectScreen(
                 modifier = Modifier.fillMaxWidth(),
                 style = PrimaryButtonStyle.Solid
             )
-            PrimaryButton(
-                text = stringResource(R.string.mode_paredon),
-                onClick = onSelectParedon,
-                modifier = Modifier.fillMaxWidth(),
-                style = PrimaryButtonStyle.Outline
-            )
+            if (showParedon) {
+                PrimaryButton(
+                    text = stringResource(R.string.mode_paredon),
+                    onClick = onSelectParedon,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = PrimaryButtonStyle.Outline
+                )
+            }
             PrimaryButton(
                 text = stringResource(R.string.mode_veintiuno),
                 onClick = onSelectVeintiuno,

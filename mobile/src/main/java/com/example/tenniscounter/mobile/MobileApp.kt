@@ -177,7 +177,7 @@ fun MobileApp() {
                     )
                 } else if (!skipModeSelect && playMode == PlayMode.Veintiuno) {
                     MobileVeintiunoScreen(onExit = { playMode = null })
-                } else if (!skipModeSelect && playMode == PlayMode.Paredon) {
+                } else if (!skipModeSelect && playMode == PlayMode.Paredon && BuildConfig.SHOW_PAREDON_MODE) {
                     ParedonStubScreen(onBack = { playMode = null })
                 } else {
                     MobileCounterScreen(

@@ -463,7 +463,9 @@ private fun TennisCounterApp(
             }
 
             AppScreen.ParedonStub -> {
-                ParedonStubScreen(onBack = { appScreen = AppScreen.ModeSelect })
+                if (BuildConfig.SHOW_PAREDON_MODE) {
+                    ParedonStubScreen(onBack = { appScreen = AppScreen.ModeSelect })
+                }
             }
 
             AppScreen.Counter -> {
@@ -942,15 +944,17 @@ private fun ModeSelectScreen(
                 onClick = onSelectMatch,
                 variant = PlayceButtonVariant.Primary
             )
-            PlayceButton(
-                text = stringResource(R.string.mode_paredon),
-                onClick = onSelectParedon,
-                variant = if (lastMode == ActiveSessionStore.MODE_PAREDON) {
-                    PlayceButtonVariant.Primary
-                } else {
-                    PlayceButtonVariant.Secondary
-                }
-            )
+            if (BuildConfig.SHOW_PAREDON_MODE) {
+                PlayceButton(
+                    text = stringResource(R.string.mode_paredon),
+                    onClick = onSelectParedon,
+                    variant = if (lastMode == ActiveSessionStore.MODE_PAREDON) {
+                        PlayceButtonVariant.Primary
+                    } else {
+                        PlayceButtonVariant.Secondary
+                    }
+                )
+            }
             PlayceButton(
                 text = stringResource(R.string.mode_veintiuno),
                 onClick = onSelectVeintiuno,

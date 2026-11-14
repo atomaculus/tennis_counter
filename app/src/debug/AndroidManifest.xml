@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Dev-only N1 sensor spike. Compiled and merged for debug only, so the
+      activity and service are absent from release AABs. No launcher entry;
+      start with adb.
+    -->
+    <application>
+        <activity
+            android:name=".spike.SensorSpikeLoggerActivity"
+            android:exported="true" />
+
+        <service
+            android:name=".spike.SensorSpikeLoggerService"
+            android:exported="false"
+            android:foregroundServiceType="health" />
+    </application>
+
+</manifest>

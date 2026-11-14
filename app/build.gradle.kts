@@ -21,10 +21,13 @@ android {
         targetSdk = 35
         versionCode = playceVersionCode
         versionName = playceVersionName
+        // Paredón is a coming-soon stub. Debug builds can open it; release builds hide it.
+        buildConfigField("boolean", "SHOW_PAREDON_MODE", "false")
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -41,9 +44,13 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            buildConfigField("boolean", "SHOW_PAREDON_MODE", "true")
+        }
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            buildConfigField("boolean", "SHOW_PAREDON_MODE", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
