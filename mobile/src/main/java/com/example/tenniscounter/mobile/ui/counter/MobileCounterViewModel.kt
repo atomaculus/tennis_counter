@@ -153,16 +153,15 @@ class MobileCounterViewModel : ViewModel() {
     fun undoLastPointForPlayerB(): Boolean = undoLastPointForPlayer(false)
 
     fun resetGame() {
-        matchEvents.clear()
-        updateHasEventsFlag()
-        val current = _state.value
-        _state.value = current.copy(
-            score = current.score.copy(
-                playerA = current.playerA.copy(points = 0),
-                playerB = current.playerB.copy(points = 0),
-                isTiebreak = false
-            )
+        val kept = ScoringEngine.withoutOpenGame(
+            matchEvents.toList(),
+            _matchFormat.value,
+            initialServerIsPlayerA
         )
+        matchEvents.clear()
+        matchEvents.addAll(kept)
+        updateHasEventsFlag()
+        rebuildScoreFromHistory()
     }
 
     fun resetMatch() {
