@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,15 +33,15 @@ import com.example.tenniscounter.ui.components.PlayceChip
 import com.example.tenniscounter.ui.components.PlayceWearColors
 import com.example.tenniscounter.ui.components.PlayceWearSpacing
 import com.playce.shared.training.TrainingSession
+import com.playce.shared.training.VeintiunoSession
 import java.util.UUID
 import kotlinx.coroutines.launch
-
-private const val VEINTIUNO_TARGET = 21
 
 /**
  * Minimal "21" training counter: tap +1 up to 21, MISS resets the current
  * streak and counts an attempt, and reaching 21 unlocks a save-and-exit
- * state. No scroll (project rule): everything fits a static viewport.
+ * state. Scoring lives in [VeintiunoSession]. No scroll (project rule):
+ * everything fits a static viewport.
  */
 @Composable
 fun VeintiunoScreen(onExit: () -> Unit) {
@@ -51,12 +49,9 @@ fun VeintiunoScreen(onExit: () -> Unit) {
     val uiScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
 
-    var count by remember { mutableIntStateOf(0) }
-    var bestStreak by remember { mutableIntStateOf(0) }
-    var attempts by remember { mutableIntStateOf(0) }
-    var hasActivity by remember { mutableStateOf(false) }
+    var session by remember { mutableStateOf(VeintiunoSession()) }
     val sessionStartedAtElapsedRealtime = remember { SystemClock.elapsedRealtime() }
-    val reachedTarget by remember { derivedStateOf { count >= VEINTIUNO_TARGET } }
+    val reachedTarget = session.reachedTarget
 
     LaunchedEffect(reachedTarget) {
         if (reachedTarget) {
@@ -66,17 +61,17 @@ fun VeintiunoScreen(onExit: () -> Unit) {
 
     fun saveSession() {
         val durationSeconds = (SystemClock.elapsedRealtime() - sessionStartedAtElapsedRealtime) / 1000L
-        val session = TrainingSession(
+        val saved = TrainingSession(
             id = UUID.randomUUID().toString(),
             modality = TrainingSession.MODALITY_VEINTIUNO,
             createdAt = System.currentTimeMillis(),
             durationSeconds = durationSeconds,
-            targetPoints = VEINTIUNO_TARGET,
-            finalCount = count,
-            bestStreak = bestStreak,
-            attempts = attempts + 1 // the run in progress (or just finished) counts as an attempt
+            targetPoints = session.target,
+            finalCount = session.count,
+            bestStreak = session.bestStreak,
+            attempts = session.savedAttempts()
         )
-        uiScope.launch { TrainingSessionStore.addSession(context, session) }
+        uiScope.launch { TrainingSessionStore.addSession(context, saved) }
     }
 
     Box(
@@ -92,8 +87,8 @@ fun VeintiunoScreen(onExit: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(PlayceWearSpacing.Xs)
         ) {
             PlayceChip(text = stringResource(R.string.veintiuno_title), accent = reachedTarget)
-            Text21Count(count = count, reachedTarget = reachedTarget)
-            Text21BestStreak(bestStreak = bestStreak)
+            Text21Count(count = session.count, reachedTarget = reachedTarget)
+            Text21BestStreak(bestStreak = session.bestStreak)
 
             if (reachedTarget) {
                 PlayceButton(
@@ -112,9 +107,7 @@ fun VeintiunoScreen(onExit: () -> Unit) {
                     PlayceButton(
                         text = stringResource(R.string.veintiuno_plus_one),
                         onClick = {
-                            count += 1
-                            hasActivity = true
-                            if (count > bestStreak) bestStreak = count
+                            session = session.plusOne()
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         },
                         modifier = Modifier.weight(1f),
@@ -123,9 +116,7 @@ fun VeintiunoScreen(onExit: () -> Unit) {
                     PlayceButton(
                         text = stringResource(R.string.veintiuno_miss),
                         onClick = {
-                            attempts += 1
-                            count = 0
-                            hasActivity = true
+                            session = session.miss()
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         },
                         modifier = Modifier.weight(1f),
@@ -137,7 +128,7 @@ fun VeintiunoScreen(onExit: () -> Unit) {
             PlayceButton(
                 text = stringResource(R.string.veintiuno_exit_small),
                 onClick = {
-                    if (hasActivity) saveSession()
+                    if (session.hasActivity) saveSession()
                     onExit()
                 },
                 variant = PlayceButtonVariant.Secondary

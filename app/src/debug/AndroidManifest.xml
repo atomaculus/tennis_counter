@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Dev-only N1 sensor spike. This manifest is merged into debug builds only,
+        so the logger is not installed in release and WAKE_LOCK is not a release
+        permission. Launch (debug):
+        adb shell am start -n com.playce.tenniscounter.app/com.example.tenniscounter.spike.SensorSpikeLoggerActivity
+    -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application>
+        <activity
+            android:name=".spike.SensorSpikeLoggerActivity"
+            android:exported="true" />
+
+        <service
+            android:name=".spike.SensorSpikeLoggerService"
+            android:exported="false"
+            android:foregroundServiceType="health" />
+    </application>
+
+</manifest>

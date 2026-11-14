@@ -15,12 +15,13 @@ import com.example.tenniscounter.mobile.R
 import com.example.tenniscounter.mobile.ui.components.PlayceWordmark
 import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
+import com.playce.shared.training.TrainingFeatures
 
 /**
  * Entry point for the "Play" tab when there's no session already in
  * progress: pick a modality before landing on its screen. "Partido" is the
- * visually highlighted default (solid, primary style); the other two are
- * outlined.
+ * visually highlighted default (solid, primary style); 21 is outlined.
+ * Paredón stays behind [TrainingFeatures.PAREDON_ENABLED] until it is playable.
  */
 @Composable
 fun PlayModeSelectScreen(
@@ -47,12 +48,14 @@ fun PlayModeSelectScreen(
                 modifier = Modifier.fillMaxWidth(),
                 style = PrimaryButtonStyle.Solid
             )
-            PrimaryButton(
-                text = stringResource(R.string.mode_paredon),
-                onClick = onSelectParedon,
-                modifier = Modifier.fillMaxWidth(),
-                style = PrimaryButtonStyle.Outline
-            )
+            if (TrainingFeatures.PAREDON_ENABLED) {
+                PrimaryButton(
+                    text = stringResource(R.string.mode_paredon),
+                    onClick = onSelectParedon,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = PrimaryButtonStyle.Outline
+                )
+            }
             PrimaryButton(
                 text = stringResource(R.string.mode_veintiuno),
                 onClick = onSelectVeintiuno,

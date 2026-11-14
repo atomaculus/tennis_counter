@@ -54,6 +54,7 @@ import com.example.tenniscounter.mobile.ui.components.GarminConnectionBadge
 import com.example.tenniscounter.mobile.ui.counter.FormatPreset
 import com.example.tenniscounter.mobile.ui.stats.StatsScreen
 import com.example.tenniscounter.mobile.ui.stats.StatsViewModel
+import com.playce.shared.training.TrainingFeatures
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -172,12 +173,14 @@ fun MobileApp() {
                 } else if (!skipModeSelect && playMode == null) {
                     PlayModeSelectScreen(
                         onSelectMatch = { playMode = PlayMode.Match },
-                        onSelectParedon = { playMode = PlayMode.Paredon },
+                        onSelectParedon = {
+                            if (TrainingFeatures.PAREDON_ENABLED) playMode = PlayMode.Paredon
+                        },
                         onSelectVeintiuno = { playMode = PlayMode.Veintiuno }
                     )
                 } else if (!skipModeSelect && playMode == PlayMode.Veintiuno) {
                     MobileVeintiunoScreen(onExit = { playMode = null })
-                } else if (!skipModeSelect && playMode == PlayMode.Paredon) {
+                } else if (!skipModeSelect && playMode == PlayMode.Paredon && TrainingFeatures.PAREDON_ENABLED) {
                     ParedonStubScreen(onBack = { playMode = null })
                 } else {
                     MobileCounterScreen(

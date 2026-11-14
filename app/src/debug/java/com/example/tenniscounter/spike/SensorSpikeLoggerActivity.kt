@@ -24,7 +24,9 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Text
 
 /**
- * Dev-only entry point for the N1 sensor spike. Not in the launcher; open with:
+ * Dev-only entry point for the N1 sensor spike. Compiled into debug builds only
+ * (src/debug) — release has neither this activity nor its WAKE_LOCK permission.
+ * Not in the launcher; open a debug build with:
  *
  * adb shell am start -n com.playce.tenniscounter.app/com.example.tenniscounter.spike.SensorSpikeLoggerActivity
  *

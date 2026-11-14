@@ -10,7 +10,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-feature android:name="android.hardware.type.watch" />
 
     <application
@@ -37,16 +36,6 @@
 
         <service
             android:name=".timer.MatchTimerService"
-            android:exported="false"
-            android:foregroundServiceType="health" />
-
-        <!-- Dev-only N1 sensor spike: no launcher entry, started via adb. -->
-        <activity
-            android:name=".spike.SensorSpikeLoggerActivity"
-            android:exported="true" />
-
-        <service
-            android:name=".spike.SensorSpikeLoggerService"
             android:exported="false"
             android:foregroundServiceType="health" />
 

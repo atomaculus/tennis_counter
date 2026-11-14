@@ -12,7 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -31,47 +30,44 @@ import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
 import com.example.tenniscounter.mobile.ui.theme.PlayceColors
 import com.playce.shared.training.TrainingSession
+import com.playce.shared.training.VeintiunoSession
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private const val VEINTIUNO_TARGET = 21
-
 /**
  * Phone version of the "21" training counter. Same rules as the watch
  * screen: +1 up to 21, MISS resets the current streak and counts an
- * attempt, reaching 21 unlocks save-and-exit. Persists to the Room
- * `training_sessions` table instead of the watch's local DataStore.
+ * attempt, reaching 21 unlocks save-and-exit. Scoring lives in
+ * [VeintiunoSession]. Persists to the Room `training_sessions` table
+ * instead of the watch's local DataStore.
  */
 @Composable
 fun MobileVeintiunoScreen(onExit: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var count by remember { mutableIntStateOf(0) }
-    var bestStreak by remember { mutableIntStateOf(0) }
-    var attempts by remember { mutableIntStateOf(0) }
-    var hasActivity by remember { mutableStateOf(false) }
+    var session by remember { mutableStateOf(VeintiunoSession()) }
     val sessionStartedAtElapsedRealtime = remember { SystemClock.elapsedRealtime() }
-    val reachedTarget = count >= VEINTIUNO_TARGET
+    val reachedTarget = session.reachedTarget
 
     fun saveSession() {
         val durationSeconds = (SystemClock.elapsedRealtime() - sessionStartedAtElapsedRealtime) / 1000L
-        val session = TrainingSession(
+        val saved = TrainingSession(
             id = UUID.randomUUID().toString(),
             modality = TrainingSession.MODALITY_VEINTIUNO,
             createdAt = System.currentTimeMillis(),
             durationSeconds = durationSeconds,
-            targetPoints = VEINTIUNO_TARGET,
-            finalCount = count,
-            bestStreak = bestStreak,
-            attempts = attempts + 1 // the run in progress (or just finished) counts as an attempt
+            targetPoints = session.target,
+            finalCount = session.count,
+            bestStreak = session.bestStreak,
+            attempts = session.savedAttempts()
         )
         val dao = MobileServiceLocator.trainingSessionDao(context.applicationContext)
         scope.launch {
             withContext(Dispatchers.IO) {
-                dao.insert(session.toEntity())
+                dao.insert(saved.toEntity())
             }
         }
     }
@@ -93,13 +89,13 @@ fun MobileVeintiunoScreen(onExit: () -> Unit, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.labelLarge
             )
             Text(
-                text = "$count",
+                text = "${session.count}",
                 fontSize = 72.sp,
                 fontWeight = FontWeight.Black,
                 color = if (reachedTarget) PlayceColors.Accent else PlayceColors.TextPrimary
             )
             Text(
-                text = stringResource(R.string.veintiuno_best_streak, bestStreak),
+                text = stringResource(R.string.veintiuno_best_streak, session.bestStreak),
                 color = PlayceColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -122,9 +118,7 @@ fun MobileVeintiunoScreen(onExit: () -> Unit, modifier: Modifier = Modifier) {
                     PrimaryButton(
                         text = stringResource(R.string.veintiuno_plus_one),
                         onClick = {
-                            count += 1
-                            hasActivity = true
-                            if (count > bestStreak) bestStreak = count
+                            session = session.plusOne()
                         },
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         style = PrimaryButtonStyle.Solid
@@ -132,9 +126,7 @@ fun MobileVeintiunoScreen(onExit: () -> Unit, modifier: Modifier = Modifier) {
                     PrimaryButton(
                         text = stringResource(R.string.veintiuno_miss),
                         onClick = {
-                            attempts += 1
-                            count = 0
-                            hasActivity = true
+                            session = session.miss()
                         },
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         style = PrimaryButtonStyle.Outline
@@ -145,7 +137,7 @@ fun MobileVeintiunoScreen(onExit: () -> Unit, modifier: Modifier = Modifier) {
             PrimaryButton(
                 text = stringResource(R.string.veintiuno_exit_small),
                 onClick = {
-                    if (hasActivity) saveSession()
+                    if (session.hasActivity) saveSession()
                     onExit()
                 },
                 modifier = Modifier.fillMaxWidth(),

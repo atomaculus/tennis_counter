@@ -22,7 +22,11 @@ import com.example.tenniscounter.ui.components.PlayceChip
 import com.example.tenniscounter.ui.components.PlayceWearColors
 import com.example.tenniscounter.ui.components.PlayceWearSpacing
 
-/** Placeholder for the future paredón mode. No scroll, per project rule. */
+/**
+ * Placeholder for the future paredón mode. Not reachable while
+ * [com.playce.shared.training.TrainingFeatures.PAREDON_ENABLED] is false.
+ * No scroll, per project rule.
+ */
 @Composable
 fun ParedonStubScreen(onBack: () -> Unit) {
     Box(

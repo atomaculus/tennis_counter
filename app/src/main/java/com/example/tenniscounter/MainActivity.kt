@@ -107,6 +107,7 @@ import com.example.tenniscounter.ui.SpectatorScreen
 import com.example.tenniscounter.ui.TennisViewModel
 import com.example.tenniscounter.ui.VeintiunoScreen
 import com.google.android.gms.wearable.DataMapItem
+import com.playce.shared.training.TrainingFeatures
 import com.google.android.gms.wearable.Wearable
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -447,13 +448,25 @@ private fun TennisCounterApp(
         }
     }
 
+    // Paredón is not selectable while the flag is off. If a session somehow
+    // lands on that screen, show the selector instead of the stub.
+    val visibleScreen = if (appScreen == AppScreen.ParedonStub && !TrainingFeatures.PAREDON_ENABLED) {
+        AppScreen.ModeSelect
+    } else {
+        appScreen
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        when (appScreen) {
+        when (visibleScreen) {
             AppScreen.ModeSelect -> {
                 ModeSelectScreen(
                     lastMode = lastMode,
                     onSelectMatch = { selectMode(ActiveSessionStore.MODE_MATCH, AppScreen.Counter) },
-                    onSelectParedon = { selectMode(ActiveSessionStore.MODE_PAREDON, AppScreen.ParedonStub) },
+                    onSelectParedon = {
+                        if (TrainingFeatures.PAREDON_ENABLED) {
+                            selectMode(ActiveSessionStore.MODE_PAREDON, AppScreen.ParedonStub)
+                        }
+                    },
                     onSelectVeintiuno = { selectMode(ActiveSessionStore.MODE_VEINTIUNO, AppScreen.Veintiuno) }
                 )
             }
@@ -942,15 +955,17 @@ private fun ModeSelectScreen(
                 onClick = onSelectMatch,
                 variant = PlayceButtonVariant.Primary
             )
-            PlayceButton(
-                text = stringResource(R.string.mode_paredon),
-                onClick = onSelectParedon,
-                variant = if (lastMode == ActiveSessionStore.MODE_PAREDON) {
-                    PlayceButtonVariant.Primary
-                } else {
-                    PlayceButtonVariant.Secondary
-                }
-            )
+            if (TrainingFeatures.PAREDON_ENABLED) {
+                PlayceButton(
+                    text = stringResource(R.string.mode_paredon),
+                    onClick = onSelectParedon,
+                    variant = if (lastMode == ActiveSessionStore.MODE_PAREDON) {
+                        PlayceButtonVariant.Primary
+                    } else {
+                        PlayceButtonVariant.Secondary
+                    }
+                )
+            }
             PlayceButton(
                 text = stringResource(R.string.mode_veintiuno),
                 onClick = onSelectVeintiuno,

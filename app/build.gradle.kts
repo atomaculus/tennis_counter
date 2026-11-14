@@ -8,7 +8,11 @@ plugins {
 apply(plugin = "com.google.gms.google-services")
 apply(plugin = "com.google.firebase.crashlytics")
 
-val playceVersionCode = (project.findProperty("PLAYCE_VERSION_CODE") as String?)?.toIntOrNull() ?: 1
+// Wear uses its own code. Phone and Wear share an applicationId, and Play
+// rejects a second artifact that reuses a versionCode (production: phone 19, Wear 18).
+val playceVersionCode = (project.findProperty("PLAYCE_WEAR_VERSION_CODE") as String?)?.toIntOrNull()
+    ?: (project.findProperty("PLAYCE_VERSION_CODE") as String?)?.toIntOrNull()
+    ?: 1
 val playceVersionName = (project.findProperty("PLAYCE_VERSION_NAME") as String?) ?: "1.0.0"
 
 android {

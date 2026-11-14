@@ -18,7 +18,10 @@ import com.example.tenniscounter.mobile.ui.components.PrimaryButton
 import com.example.tenniscounter.mobile.ui.components.PrimaryButtonStyle
 import com.example.tenniscounter.mobile.ui.theme.PlayceColors
 
-/** Placeholder for the future paredón mode on the phone. */
+/**
+ * Placeholder for the future paredón mode on the phone. Not reachable while
+ * [com.playce.shared.training.TrainingFeatures.PAREDON_ENABLED] is false.
+ */
 @Composable
 fun ParedonStubScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     Box(
